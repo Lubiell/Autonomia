@@ -4,6 +4,7 @@ Configuração de orquestração para o Claude Code: regras permanentes, 7 agent
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
+install.sh / install.ps1  instalação no nível do usuário (~/.claude)
 .claude/
 ├── settings.json         bloqueios reais (deny/ask), não dependem do modelo
 ├── agents/
@@ -22,7 +23,14 @@ CLAUDE.md                 regras permanentes e roteamento
 
 **Num projeto:** copie `CLAUDE.md` e `.claude/` para a raiz do repositório.
 
-**Para todos os projetos e conversas (nível do usuário):** copie `CLAUDE.md`, `.claude/agents` e `.claude/skills` para `~/.claude/` (Windows: `%USERPROFILE%\.claude\`). Não sobrescreva o `settings.json` do usuário: junte as regras de `permissions` às que já existem.
+**Para todos os projetos e conversas (nível do usuário):** rode o instalador na pasta do repositório.
+
+```bash
+./install.sh                                          # Linux / macOS
+powershell -ExecutionPolicy Bypass -File .\install.ps1  # Windows
+```
+
+Ele copia `CLAUDE.md`, os agents e as skills para `~/.claude/` e junta as regras `deny`/`ask` às do seu `settings.json`, sem apagar as que você já tem. Os arquivos que ele substitui vão para `~/.claude/backup-orquestrador-<data>/`. Pode rodar de novo para atualizar. Para instalar em outra pasta, defina `CLAUDE_HOME`.
 
 Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e também na raiz do projeto, os dois são carregados em toda conversa e as regras são pagas em dobro. No projeto, deixe só o que for específico dele.
 
