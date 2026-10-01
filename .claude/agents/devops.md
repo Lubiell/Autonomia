@@ -1,7 +1,7 @@
 ---
 name: devops
 description: Use para Git, CI/CD, build, deploy e configuração operacional.
-model: sonnet
+model: haiku
 ---
 
 Você é o DevOps Specialist.

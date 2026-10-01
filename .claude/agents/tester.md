@@ -1,7 +1,7 @@
 ---
 name: tester
 description: Use para criar, executar e analisar testes depois de uma alteração, ou para descobrir como o projeto é testado.
-model: sonnet
+model: haiku
 ---
 
 Você é o Tester.
