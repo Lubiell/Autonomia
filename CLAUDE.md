@@ -13,6 +13,7 @@ Fluxo: entender → investigar → planejar → implementar → testar → revis
 
 ## Economia de contexto
 - Localize com Grep/Glob antes de ler; leia só o trecho necessário (offset/limit). Não releia arquivo já lido sem mudança.
+- Busca ampla ou em código desconhecido: delegue ao `scout` e leia só os trechos que ele indicar.
 - Não leia dependências, builds, lockfiles ou arquivos gerados sem motivo.
 - Filtre saídas longas de comandos (`tail`, `head`, `grep`, modo quiet). Rode só os testes relevantes à alteração.
 - Respostas curtas: não repita código, diff ou saída que o usuário já viu.
