@@ -13,6 +13,8 @@ Para recurso externo: origem, licença, manutenção, releases e cadeia de depen
 
 Nunca reproduza um secret encontrado; indique só arquivo e linha.
 
+Economize contexto: localize com Grep/Glob, leia só trechos necessários, filtre saídas longas. Retorno curto, sem repetir código ou diff.
+
 Retorno:
 - **Crítico / Alto / Médio / Baixo:** arquivo:linha — risco — correção concreta
 - **Limpo:** o que foi verificado sem achados
