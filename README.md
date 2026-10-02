@@ -8,7 +8,7 @@ install.sh / install.ps1  instalação no nível do usuário (~/.claude)
 .claude/
 ├── settings.json         bloqueios reais (deny/ask), sandbox e hook; não dependem do modelo
 ├── hooks/
-│   └── guard.sh          bloqueia comandos destrutivos em qualquer posição do comando
+│   └── guard.sh          bloqueia comando destrutivo, segredo em commit, SQL sem WHERE
 ├── agents/
 │   ├── architect.md      planeja, somente leitura (opus)
 │   ├── developer.md      implementa (sonnet)
@@ -20,7 +20,10 @@ install.sh / install.ps1  instalação no nível do usuário (~/.claude)
 │   └── scout.md          localiza código, somente leitura (sonnet)
 └── skills/
     └── discover-resources/   avaliar recurso externo antes de instalar
-tests/guard.test.sh       testes do hook (bash tests/guard.test.sh)
+        ├── auditoria.md      checklist de segurança antes de instalar
+        └── decisoes.md       registro do que foi adotado ou recusado
+tests/                    testes do hook e dos instaladores
+.github/workflows/test.yml  CI: Linux, macOS (bash 3.2) e Windows (Git Bash, PowerShell 7 e 5.1)
 ```
 
 ## Instalação
@@ -47,7 +50,12 @@ Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e tamb
 
 ## Segurança em camadas
 - **Permissões (`deny`/`ask`)**: bloqueio por prefixo de comando e leitura de arquivos sensíveis.
-- **Hook `guard.sh`** (PreToolUse em Bash e PowerShell): analisa o comando inteiro, separado por `;`, `|`, `&&`, `$( )` etc., e bloqueia `rm` recursivo forçado (`-rf`, `-r -f`, `-fr`, `sudo`, `xargs`, `bash -c`), `git push --force`/`-f`/`+ref`, `git reset --hard`, `git clean -f` sem `-n`, `Remove-Item -Recurse` e `curl … | sh`. `--force-with-lease` passa. Usa `jq` ou `python3` se houver; senão lê o JSON bruto. Teste: `bash tests/guard.test.sh`.
+- **Hook `guard.sh`** (PreToolUse em Bash e PowerShell): analisa o comando inteiro, separado por `;`, `|`, `&&`, `$( )` etc., e bloqueia:
+  - `rm` recursivo forçado (`-rf`, `-r -f`, `-fr`, `sudo`, `xargs`, `bash -c`), `Remove-Item -Recurse`, `git push --force`/`-f`/`+ref`, `git reset --hard`, `git clean -f` sem `-n` e `curl … | sh`; `--force-with-lease` passa;
+  - `git commit` (inclusive `-a`) com `.env`, `*.pem`, `*.key`, `id_rsa` ou chave conhecida (AWS, GitHub, Anthropic, OpenAI, Slack, Google, GitLab, chave privada) nas linhas adicionadas; `.env.example` passa. Com `git add` no mesmo comando, examina a árvore de trabalho inteira, inclusive arquivos novos (pode bloquear por um arquivo não rastreado que não ia entrar); segue `cd dir` e `git -C dir`;
+  - `DELETE`/`UPDATE` sem `WHERE` quando o comando chama `sqlite3`, `psql`, `mysql`, `wrangler` etc.;
+  - escrita pelo shell em `.claude/settings*` ou `.claude/hooks/` (`>`, `sed -i`, `cp`, `mv`, `tee`, `Set-Content`…). As ferramentas Edit/Write já são protegidas pelo Claude Code, que nunca aprova sozinho escrita em `.claude/`.
+  Usa `jq` ou `python3` se houver; senão lê o JSON bruto. Teste: `bash tests/guard.test.sh`.
 - **Sandbox nativo** (`sandbox.enabled`): o sistema operacional limita escrita e rede dos comandos de shell e esconde `~/.ssh`, `~/.aws/credentials` e `~/.gnupg` deles. Funciona em macOS, Linux e WSL2; no Linux/WSL2 precisa de `bubblewrap` e `socat` (ex.: `sudo apt-get install bubblewrap socat`); veja o estado com `/sandbox`. Sem eles, ou no Windows nativo, os comandos rodam fora do sandbox. `autoAllowBashIfSandboxed: false` mantém os pedidos de permissão de sempre; mude para `true` se quiser que comandos dentro do sandbox rodem sem perguntar. Repetir um comando fora do sandbox sempre pergunta (`Bash(dangerouslyDisableSandbox:true)` em `ask`).
 
 ## Plugins e referências (opcional)
@@ -57,9 +65,17 @@ Não vêm instalados; avalie com a skill `discover-resources`.
 - `code-review` e `feature-dev` repetem o `reviewer` e o `architect`/`developer`; não instale junto.
 - Referências: [anthropics/skills](https://github.com/anthropics/skills) (formato de skills), [obra/superpowers](https://github.com/obra/superpowers) (TDD e depuração, de onde vieram os passos do `tester` e do `debugger`), [karanb192/claude-code-hooks](https://github.com/karanb192/claude-code-hooks) e [disler/claude-code-damage-control](https://github.com/disler/claude-code-damage-control) (hooks de segurança).
 
+## Testes
+```bash
+bash tests/guard.test.sh      # hook
+bash tests/install.test.sh    # install.sh, em pastas temporárias
+pwsh -NoProfile -File tests/install.test.ps1   # install.ps1 (Windows)
+```
+O CI (`.github/workflows/test.yml`) roda tudo em todo PR. Na reinstalação, `decisoes.md` é substituído pelo do repositório; a versão anterior fica no backup.
+
 ## Limites
 - Regras do `CLAUDE.md` e dos agents são orientação ao modelo, não garantia.
-- `settings.json` bloqueia por prefixo de comando; o hook `guard.sh` cobre as variações comuns (ex.: `rm -r -f`), mas é análise de texto: comando ofuscado (variáveis, `eval`, base64) pode passar, e texto citado como `echo "rm -rf x"` é bloqueado por precaução. Isolamento real só com o sandbox.
+- `settings.json` bloqueia por prefixo de comando; o hook `guard.sh` cobre as variações comuns (ex.: `rm -r -f`), mas é análise de texto: comando ofuscado (variáveis, `eval`, base64) pode passar, e texto citado, como `git commit -m "rm -rf docs"`, é bloqueado por precaução. Escrita em `.claude/` por script (ex.: Python) não é pega pelo hook; o sandbox nega essa escrita. Isolamento real só com o sandbox.
 - As regras `Bash(...)` não valem para a ferramenta PowerShell (Windows); por isso o `settings.json` repete os bloqueios como `PowerShell(...)`. O hook roda com `bash`: no Windows precisa do Git Bash à frente do `bash.exe` do WSL no `PATH`; sem ele, o hook falha sem bloquear.
 - `Read(**/.env)` bloqueia `.env` em qualquer subpasta do projeto; `Read(./.env)` pegaria só o da raiz.
 - Agents com `tools:` restrito (architect, reviewer, security) não têm Edit/Write; ainda têm Bash, então a restrição de não editar via shell é por instrução.
