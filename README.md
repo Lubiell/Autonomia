@@ -45,4 +45,6 @@ Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e tamb
 ## Limites
 - Regras do `CLAUDE.md` e dos agents são orientação ao modelo, não garantia.
 - `settings.json` bloqueia por prefixo de comando: pega o caso comum, mas não cobre toda variação (ex.: `rm -r -f`). Não é sandbox.
+- As regras `Bash(...)` não valem para a ferramenta PowerShell (Windows); por isso o `settings.json` repete os bloqueios como `PowerShell(...)`.
+- `Read(**/.env)` bloqueia `.env` em qualquer subpasta do projeto; `Read(./.env)` pegaria só o da raiz.
 - Agents com `tools:` restrito (architect, reviewer, security) não têm Edit/Write; ainda têm Bash, então a restrição de não editar via shell é por instrução.
