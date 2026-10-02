@@ -15,7 +15,7 @@ install.sh / install.ps1  instalação no nível do usuário (~/.claude)
 │   ├── reviewer.md       revisão do diff, somente leitura (sonnet)
 │   ├── security.md       auditoria, somente leitura (sonnet)
 │   ├── devops.md         Git, CI/CD, deploy (haiku)
-│   └── scout.md          localiza código, somente leitura (haiku)
+│   └── scout.md          localiza código, somente leitura (sonnet)
 └── skills/
     └── discover-resources/   avaliar recurso externo antes de instalar
 ```
@@ -38,7 +38,7 @@ Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e tamb
 ## Economia de tokens
 - `CLAUDE.md` entra em todo turno: mantenha-o curto. Instrução longa e rara vai para uma skill (só a `description` fica no contexto até ela ser usada).
 - A `description` dos agents decide quando o Claude delega. Cada subagent começa do zero e relê contexto, então architect e reviewer só disparam em mudança não trivial.
-- Modelo por custo: `haiku` para busca e execução (scout, tester, devops), `sonnet` onde a qualidade pesa (developer, debugger, reviewer, security) e `opus` só no architect, que é raro.
+- Modelo por custo: `haiku` para execução (tester, devops), `sonnet` onde a qualidade pesa (scout, developer, debugger, reviewer, security) e `opus` só no architect, que é raro.
 - O `scout` localiza código e devolve só `arquivo:linha`, para a sessão principal ler apenas os trechos certos. Ele roda com `omitClaudeMd: true` (Claude Code v2.1.271+), sem carregar o `CLAUDE.md`.
 - `settings.json` nega leitura de `node_modules`, `.venv`, `venv`, `__pycache__` e `coverage` para o Claude não carregar arquivos gerados no contexto.
 
