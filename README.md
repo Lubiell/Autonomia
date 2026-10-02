@@ -39,10 +39,12 @@ Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e tamb
 - `CLAUDE.md` entra em todo turno: mantenha-o curto. Instrução longa e rara vai para uma skill (só a `description` fica no contexto até ela ser usada).
 - A `description` dos agents decide quando o Claude delega. Cada subagent começa do zero e relê contexto, então architect e reviewer só disparam em mudança não trivial.
 - Modelo por custo: `haiku` para busca e execução (scout, tester, devops), `sonnet` onde a qualidade pesa (developer, debugger, reviewer, security) e `opus` só no architect, que é raro.
-- O `scout` localiza código e devolve só `arquivo:linha`, para a sessão principal ler apenas os trechos certos.
+- O `scout` localiza código e devolve só `arquivo:linha`, para a sessão principal ler apenas os trechos certos. Ele roda com `omitClaudeMd: true` (Claude Code v2.1.271+), sem carregar o `CLAUDE.md`.
 - `settings.json` nega leitura de `node_modules`, `.venv`, `venv`, `__pycache__` e `coverage` para o Claude não carregar arquivos gerados no contexto.
 
 ## Limites
 - Regras do `CLAUDE.md` e dos agents são orientação ao modelo, não garantia.
 - `settings.json` bloqueia por prefixo de comando: pega o caso comum, mas não cobre toda variação (ex.: `rm -r -f`). Não é sandbox.
+- As regras `Bash(...)` não valem para a ferramenta PowerShell (Windows); por isso o `settings.json` repete os bloqueios como `PowerShell(...)`.
+- `Read(**/.env)` bloqueia `.env` em qualquer subpasta do projeto; `Read(./.env)` pegaria só o da raiz.
 - Agents com `tools:` restrito (architect, reviewer, security) não têm Edit/Write; ainda têm Bash, então a restrição de não editar via shell é por instrução.
