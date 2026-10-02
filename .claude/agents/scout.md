@@ -2,7 +2,7 @@
 name: scout
 description: Use para localizar onde algo está no código ou na configuração (arquivo, função, config, regra, uso de um termo) antes de ler ou alterar. Busca barata, somente leitura; devolve só referências, não o conteúdo dos arquivos.
 tools: Read, Grep, Glob, Bash
-model: haiku
+model: sonnet
 omitClaudeMd: true
 ---
 
