@@ -29,6 +29,7 @@ Revise com o `reviewer` só alteração de código não trivial (lógica, vário
 
 ## Conclusão
 Só conclua com o pedido implementado, validações executadas e bloqueios resolvidos ou explicitados.
+Evidência é saída gerada depois da última alteração; relatório de subagent é alegação: confira o `git diff` e rode a verificação você mesmo. Dizer "não verifiquei X" é aceitável; afirmar sem verificar não é.
 
 Relatório final (curto; omita seção vazia):
 - **Feito:**

@@ -1,0 +1,47 @@
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  bash:
+    name: bash (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sintaxe
+        run: for f in .claude/hooks/guard.sh install.sh tests/*.sh; do bash -n "$f"; done
+      # No macOS, /bin/bash é o 3.2 que o hook precisa suportar.
+      - name: Hook
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then /bin/bash tests/guard.test.sh; else bash tests/guard.test.sh; fi
+      - name: Instalador (install.sh)
+        if: runner.os != 'Windows'
+        run: bash tests/install.test.sh
+
+  powershell:
+    name: install.ps1 (${{ matrix.shell }})
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [pwsh, powershell]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalador (install.ps1)
+        shell: pwsh
+        run: |
+          & ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File tests/install.test.ps1
+          exit $LASTEXITCODE
