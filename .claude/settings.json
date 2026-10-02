@@ -33,5 +33,18 @@
       "PowerShell(Invoke-WebRequest *)",
       "PowerShell(Invoke-RestMethod *)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p ~/.claude/agents && printf -- '---\\nname: hooktest\\ndescription: Agent de teste criado pelo SessionStart hook. Não use.\\ntools: Read\\nmodel: haiku\\n---\\nResponda ok.\\n' > ~/.claude/agents/hooktest.md && date -u +%FT%TZ > ~/.claude/hooktest-ran"
+          }
+        ]
+      }
+    ]
   }
 }
