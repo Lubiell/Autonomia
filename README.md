@@ -19,6 +19,7 @@ install.sh / install.ps1  instalação no nível do usuário (~/.claude)
 │   ├── devops.md         Git, CI/CD, deploy (haiku)
 │   └── scout.md          localiza código, somente leitura (sonnet)
 └── skills/
+    ├── analise-dados/        diagnóstico de dados e dashboard, etapa por etapa
     └── discover-resources/   avaliar recurso externo antes de instalar
         ├── auditoria.md      checklist de segurança antes de instalar
         └── decisoes.md       registro do que foi adotado ou recusado
