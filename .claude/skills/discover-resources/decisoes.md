@@ -15,6 +15,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Skill `analise-dados` (definir → validar → investigar → priorizar → entregar, checklist de dashboard) — método dos materiais "Agente de Diagnóstico", "Kit Claude Dash" e "25 prompts de dashboard" (ExStart), reescrito sem copiar — 2026-10-03
 - `shellcheck` no CI (nível warning, só Linux, já vem no runner) e Dependabot para as GitHub Actions, com `actions/checkout` fixado por hash — recursos nativos do GitHub; o hash fixado segue a recomendação do `agentic-actions-auditor` (`trailofbits/skills`) — 2026-10-03
 - Regra "pedido com duas leituras: apresente as duas" no `CLAUDE.md` — princípio 1 de `multica-ai/andrej-karpathy-skills` (MIT); os outros três já estavam cobertos — 2026-10-03
+- Skills `frontend-design` e `webapp-testing` — `anthropics/skills` (Apache-2.0), cópia sem alteração do commit `8a1541c` com o `LICENSE.txt`; auditadas: só instruções, o script `with_server.py` sobe o servidor indicado e testa a porta em localhost. Para sites: direção visual que não parece template e teste no navegador real com Playwright (instalar `playwright` no projeto quando for usar) — 2026-10-03
 - Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
 
 ## Instalar — fila, em ordem de valor
@@ -35,7 +36,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 
 ## Complementos pontuais
 Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
-`playwright` (teste de navegador) ou a skill oficial `webapp-testing` (`anthropics/skills`, pacote `example-skills`: abre a página, clica, preenche e lê o console com Playwright), `cloudflare` (Workers/D1), `frontend-design` (UI), `canva` (peça gráfica), `marketing` (campanha e conteúdo). Do pack `coreyhaines31/marketingskills` (MIT, ~50 skills), copiar à mão só a skill avulsa que o trabalho pedir (`social`, `copywriting`, `video`), nunca o pack inteiro.
+`playwright` (teste de navegador; a skill `webapp-testing` já vem no Autonomia), `cloudflare` (Workers/D1), `frontend-design` (UI), `canva` (peça gráfica), `marketing` (campanha e conteúdo). Do pack `coreyhaines31/marketingskills` (MIT, ~50 skills), copiar à mão só a skill avulsa que o trabalho pedir (`social`, `copywriting`, `video`), nunca o pack inteiro.
 
 ## Opcionais
 - Language server da linguagem do projeto (além do `pyright-lsp`) — marketplace oficial — busca por símbolo mais barata que Grep; escolher por projeto — 2026-10-02
@@ -60,6 +61,9 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `rampstackco/claude-skills` (launch-runbook) | o checklist de publicação já está no `deploy.md` do `protocolo-dev` (2026-10-03) |
 | "Prompt de instalação" das 42 skills (@marcondes.ai) | instala tudo de uma vez, contra a regra de um recurso por vez; skills oficiais citadas (`skill-creator`, `mcp-builder`, `frontend-design`, `canvas-design`, `xlsx`, `docx`, `internal-comms` e outras) já estão disponíveis na conta (2026-10-03) |
 | `shanraisshan/claude-code-best-practice` | guia de referência, não instalável; o que serve já está aplicado (CLAUDE.md curto, settings para o que é determinístico, subagent para isolar contexto) (2026-10-03) |
+| `nimrodfisher/data-analytics-skills` (MIT, 31 skills) | sobrepõe a skill `analise-dados` e cobraria 31 descrições de contexto em todo turno; a ideia útil (processar por script, trazer só o resultado) entrou na `analise-dados` (2026-10-03) |
+| `danielrosehill/Claude-Data-Analyst-plugin` | 12 estrelas; exige DuckDB, csvkit, Miller e `uv` no PATH (2026-10-03) |
+| `vercel-labs/agent-skills` (react-best-practices) | stack é HTML/CSS/JS puro; o `web-design-guidelines` da mesma coleção já está ativo na conta (2026-10-03) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
