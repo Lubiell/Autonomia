@@ -11,13 +11,15 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Hook `guard.sh` próprio — este repositório — bloqueia comando destrutivo, segredo em commit, `DELETE`/`UPDATE` sem `WHERE` e escrita na configuração, sem dependência nova — 2026-10-02
 - Passos de teste primeiro e hipótese com evidência (agents `tester` e `debugger`) — ideia de `obra/superpowers` (MIT), sem instalar — 2026-10-02
 - Checklist de auditoria, registro de decisões e regra de evidência — adaptados da skill `protocolo-dev` — 2026-10-02
+- Regra contra concordar por insistência (`CLAUDE.md`) e causa raiz por categorias, pontos cegos e 5 porquês (agent `debugger`) — ideias do material "Agente de Diagnóstico" (ExStart), adaptadas sem copiar — 2026-10-03
 
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |
 |---|---|---|
 | `NVIDIA/SkillSpector` | audita skill antes de instalar. Vem **primeiro**: é ele que checa o resto | GitHub |
 | `pyright-lsp` | erro de tipo no mesmo turno em vez de dez turnos depois. Exige o binário `pyright-langserver` no PATH | marketplace oficial |
-| `security-guidance` | aviso ao editar, revisão do diff ao parar, revisor de commit. Custo: uma chamada de LLM ao fim de cada turno e em `git commit`/`push`, e exige Python 3.8+; `ENABLE_STOP_REVIEW=0` deixa só as revisões de commit/push | marketplace oficial |
+| `claude-security` | varredura de segurança do repositório ou do diff, sob demanda, com cada achado verificado antes do relatório; não aplica nada sozinho. Substitui o `security-guidance` na fila (2026-10-03) | marketplace oficial |
+| `claude-code-setup` | lê o projeto e recomenda hooks, skills, MCP e subagents; somente leitura, uma vez por projeto (2026-10-03) | marketplace oficial |
 | `session-report` | mostra tokens, cache e quais skills dispararam. Único jeito de medir se as regras funcionam | marketplace oficial |
 | `context7` | documentação da versão certa; evita API inventada em biblioteca que mudou | marketplace oficial |
 | `code-simplifier` | corta o que foi escrito a mais, preservando comportamento | marketplace oficial |
@@ -42,6 +44,8 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `pr-review-toolkit` | colide com o agent `reviewer` |
 | `disler/claude-code-damage-control` | exige `uv` ou Bun; coberto pelo `guard.sh` (2026-10-02) |
 | `karanb192/claude-code-hooks` | exige Node ≥18; coberto pelo `guard.sh` (2026-10-02) |
+| `security-guidance` | trocado pelo `claude-security`: faz uma chamada de LLM ao fim de todo turno e em `git commit`/`push` e exige Python; o `claude-security` roda só quando chamado (2026-10-03) |
+| `caveman` (JuliusBrussee/caveman) | o modo proxy intercepta o tráfego da API; a skill só encurta a prosa, que o `CLAUDE.md` já pede curta, e é feita para inglês. Ganho real citado no próprio repositório (estudo JetBrains): ~8,5% menos tokens de saída, não os 65% anunciados (2026-10-03) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |

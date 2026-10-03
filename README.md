@@ -61,7 +61,8 @@ Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e tamb
 ## Plugins e referências (opcional)
 Não vêm instalados; avalie com a skill `discover-resources`.
 - **Language server** da sua linguagem (`/plugin` → Discover, marketplace `claude-plugins-official`): navegação de código mais barata que Grep.
-- **`security-guidance@claude-plugins-official`**: avisos de padrões inseguros ao editar e revisão de segurança do diff. Custa uma chamada de LLM ao fim de cada turno e em `git commit`/`git push` e exige Python 3.8+; `ENABLE_STOP_REVIEW=0` deixa só as revisões de commit/push.
+- **`claude-security@claude-plugins-official`**: varredura de segurança do repositório ou só do diff, sob demanda (`/claude-security`), com cada achado verificado antes do relatório; não aplica nada sozinho. Preferido ao `security-guidance`, que faz uma chamada de LLM ao fim de todo turno.
+- **`claude-code-setup@claude-plugins-official`**: lê o projeto e recomenda hooks, skills, MCP e subagents. Somente leitura; rode uma vez por projeto.
 - `code-review` e `feature-dev` repetem o `reviewer` e o `architect`/`developer`; não instale junto.
 - Referências: [anthropics/skills](https://github.com/anthropics/skills) (formato de skills), [obra/superpowers](https://github.com/obra/superpowers) (TDD e depuração, de onde vieram os passos do `tester` e do `debugger`), [karanb192/claude-code-hooks](https://github.com/karanb192/claude-code-hooks) e [disler/claude-code-damage-control](https://github.com/disler/claude-code-damage-control) (hooks de segurança).
 
