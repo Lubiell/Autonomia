@@ -20,6 +20,8 @@ install.sh / install.ps1  instalação no nível do usuário (~/.claude)
 │   └── scout.md          localiza código, somente leitura (sonnet)
 └── skills/
     ├── analise-dados/        diagnóstico de dados e dashboard, etapa por etapa
+    ├── frontend-design/      direção visual de sites (oficial Anthropic, Apache-2.0)
+    ├── webapp-testing/       teste de site no navegador com Playwright (oficial Anthropic, Apache-2.0)
     └── discover-resources/   avaliar recurso externo antes de instalar
         ├── auditoria.md      checklist de segurança antes de instalar
         └── decisoes.md       registro do que foi adotado ou recusado

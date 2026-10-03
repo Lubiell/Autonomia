@@ -35,6 +35,8 @@ for mode in $modes; do
   [ -x "$H/hooks/guard.sh" ] && ok || ko "[$mode] novo: guard.sh executável"
   [ -f "$H/skills/discover-resources/decisoes.md" ] && ok || ko "[$mode] novo: skill copiada"
   [ -f "$H/skills/analise-dados/SKILL.md" ] && ok || ko "[$mode] novo: skill analise-dados copiada"
+  [ -f "$H/skills/webapp-testing/scripts/with_server.py" ] && ok || ko "[$mode] novo: skill webapp-testing copiada com scripts"
+  [ -f "$H/skills/frontend-design/LICENSE.txt" ] && ok || ko "[$mode] novo: skill frontend-design copiada com licença"
   echo '{"tool_input":{"command":"rm -r -f x"}}' | bash -c "$(jq -r '.hooks.PreToolUse[0].hooks[0].command' "$S")" 2>/dev/null
   [ $? = 2 ] && ok || ko "[$mode] novo: hook instalado bloqueia"
 

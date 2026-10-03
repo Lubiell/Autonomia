@@ -7,6 +7,12 @@ description: Use ao analisar uma base de dados (CSV, planilha, tabela, query), m
 
 Ordem fixa. Não avance sem o usuário confirmar a etapa anterior; se ele quiser pular, diga em que etapa estamos e pergunte se segue assim mesmo.
 
+## Ferramentas e contexto
+- Processe a base por script e traga só o resultado (contagens, amostra de 10 linhas, tabela agregada). Nunca cole o arquivo inteiro na conversa.
+- Use o que o projeto já tem: Python com `pandas` ou `duckdb` (SQL direto no CSV/Parquet), planilha com a skill `xlsx`. Sem nada disso, ferramentas de linha (`head`, `wc -l`, `cut`, `sort | uniq -c`) bastam para a validação. Ferramenta nova só com a skill `discover-resources`.
+- Gráfico: siga a skill `dataviz` se estiver disponível.
+- Guarde o script da análise junto do resultado: é ele que deixa o número rastreável e repetível.
+
 ## 1. Definir — problema em número
 - Reclamação ("a margem está ruim") não é problema. Problema tem número e período ("a margem caiu de 14% para 11,4% em 3 meses"). Sem número, pergunte qual dado mediria.
 - Critério de resolvido: que número encerra o assunto.
