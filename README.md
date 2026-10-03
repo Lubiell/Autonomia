@@ -5,6 +5,7 @@ Configuração de orquestração para o Claude Code: regras permanentes, 8 agent
 ```text
 CLAUDE.md                 regras permanentes e roteamento
 install.sh / install.ps1  instalação no nível do usuário (~/.claude)
+package.sh / package.ps1  empacota as skills em zip para o claude.ai
 .claude/
 ├── settings.json         bloqueios reais (deny/ask), sandbox e hook; não dependem do modelo
 ├── hooks/
@@ -44,6 +45,16 @@ Ele copia `CLAUDE.md`, os agents, as skills e os hooks para `~/.claude/` e junta
 
 Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e também na raiz do projeto, os dois são carregados em toda conversa e as regras são pagas em dobro. No projeto, deixe só o que for específico dele.
 
+## Usar as skills no claude.ai (chat, desktop e Cowork)
+As skills de `~/.claude/skills` valem só no Claude Code; no claude.ai elas entram por upload de zip. Para gerar os zips:
+
+```bash
+./package.sh                                            # Linux / macOS / Git Bash (usa zip ou python)
+powershell -ExecutionPolicy Bypass -File .\package.ps1   # Windows
+```
+
+Sai um `dist/<skill>.zip` por skill, com a pasta da skill no topo, como o claude.ai exige; passe nomes para empacotar só algumas (`./package.sh analise-dados`). Envie em **Personalizar > Skills** e ative cada uma. Não há sincronização: ao mudar uma skill, gere e envie o zip de novo. A `discover-resources` fala de instalar no Claude Code; no chat ela serve só para avaliar.
+
 ## Economia de tokens
 - `CLAUDE.md` entra em todo turno: mantenha-o curto. Instrução longa e rara vai para uma skill (só a `description` fica no contexto até ela ser usada).
 - A `description` dos agents decide quando o Claude delega. Cada subagent começa do zero e relê contexto, então architect e reviewer só disparam em mudança não trivial.
@@ -76,7 +87,9 @@ Não vêm instalados; avalie com a skill `discover-resources`.
 bash tests/guard.test.sh      # hook
 bash tests/install.test.sh    # install.sh, em pastas temporárias
 bash tests/skills.test.sh     # cabeçalho de skills e agents (name igual à pasta, description presente)
+bash tests/package.test.sh    # package.sh: um zip por skill, pasta no topo, com zip e com python
 pwsh -NoProfile -File tests/install.test.ps1   # install.ps1 (Windows)
+pwsh -NoProfile -File tests/package.test.ps1   # package.ps1 (Windows)
 ```
 O CI (`.github/workflows/test.yml`) roda tudo em todo PR, mais o `shellcheck` nos scripts. O Dependabot (`.github/dependabot.yml`) abre PR quando sai versão nova das actions. Na reinstalação, `decisoes.md` é substituído pelo do repositório; a versão anterior fica no backup.
 
