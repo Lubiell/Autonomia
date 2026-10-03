@@ -46,7 +46,7 @@ done
 
 # Baixar e executar direto (curl ... | sh).
 dl='(curl|wget|iwr|irm|invoke-webrequest|invoke-restmethod)'
-if printf '%s' "$cmd" | grep -Eiq "$dl[^|]*\\|[[:space:]]*(sudo([[:space:]]+-[^[:space:]]+)*[[:space:]]+)?(ba|z|da|k)?sh([[:space:]]|\$)|$dl[^|]*\\|[[:space:]]*(iex|invoke-expression)|(ba|z|da|k)?sh[[:space:]]+(-c[[:space:]]+)?[\"']?(\\\$\\(|<\\()[[:space:]]*$dl"; then
+if printf '%s' "$cmd" | grep -Eiq "${dl}[^|]*\\|[[:space:]]*(sudo([[:space:]]+-[^[:space:]]+)*[[:space:]]+)?(ba|z|da|k)?sh([[:space:]]|\$)|${dl}[^|]*\\|[[:space:]]*(iex|invoke-expression)|(ba|z|da|k)?sh[[:space:]]+(-c[[:space:]]+)?[\"']?(\\\$\\(|<\\()[[:space:]]*${dl}"; then
   block "download executado direto no shell (curl | sh)"
 fi
 
@@ -56,7 +56,8 @@ fi
 scan_secrets() {
   local cwd range=--cached untracked="" bad f
   cwd="$(extract cwd)"
-  [ -n "$cwd" ] && cd "$cwd" 2>/dev/null
+  # Sem conseguir entrar na pasta não dá para saber o que vai no commit: não bloqueia por palpite.
+  if [ -n "$cwd" ]; then cd "$cwd" 2>/dev/null || return 0; fi
   if [ -n "$commit_dir" ]; then cd "$commit_dir" 2>/dev/null || return 0; fi
   command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1 || return 0
   if [ "$commit_all" = 1 ] || [ "$add_any" = 1 ]; then

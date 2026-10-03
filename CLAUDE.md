@@ -4,6 +4,7 @@ Fluxo: entender → investigar → planejar → implementar → testar → revis
 
 ## Regras permanentes
 - Entenda o pedido e descubra a stack real antes de alterar arquivos. Não presuma tecnologia.
+- Pedido com duas leituras razoáveis: apresente as duas e a sua recomendação; não escolha calado.
 - Nunca invente arquivos, comandos, APIs, dependências ou resultados.
 - Menor alteração adequada. Sem refatoração não pedida. Preserve o trabalho existente.
 - Nunca exponha secrets, tokens, senhas ou chaves.

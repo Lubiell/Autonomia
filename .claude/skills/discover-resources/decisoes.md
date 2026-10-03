@@ -13,6 +13,8 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Checklist de auditoria, registro de decisões e regra de evidência — adaptados da skill `protocolo-dev` — 2026-10-02
 - Regra contra concordar por insistência (`CLAUDE.md`) e causa raiz por categorias, pontos cegos e 5 porquês (agent `debugger`) — ideias do material "Agente de Diagnóstico" (ExStart), adaptadas sem copiar — 2026-10-03
 - Skill `analise-dados` (definir → validar → investigar → priorizar → entregar, checklist de dashboard) — método dos materiais "Agente de Diagnóstico", "Kit Claude Dash" e "25 prompts de dashboard" (ExStart), reescrito sem copiar — 2026-10-03
+- `shellcheck` no CI (nível warning, só Linux, já vem no runner) e Dependabot para as GitHub Actions, com `actions/checkout` fixado por hash — recursos nativos do GitHub; o hash fixado segue a recomendação do `agentic-actions-auditor` (`trailofbits/skills`) — 2026-10-03
+- Regra "pedido com duas leituras: apresente as duas" no `CLAUDE.md` — princípio 1 de `multica-ai/andrej-karpathy-skills` (MIT); os outros três já estavam cobertos — 2026-10-03
 - Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
 
 ## Instalar — fila, em ordem de valor
@@ -57,6 +59,7 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `w95/awesome-claude-corporate-skills` | finanças, operações e jurídico escritos para o direito e a contabilidade dos EUA; fora do escopo de desenvolvimento, e copiar as pastas inteiras traz mais de 40 skills (2026-10-03) |
 | `rampstackco/claude-skills` (launch-runbook) | o checklist de publicação já está no `deploy.md` do `protocolo-dev` (2026-10-03) |
 | "Prompt de instalação" das 42 skills (@marcondes.ai) | instala tudo de uma vez, contra a regra de um recurso por vez; skills oficiais citadas (`skill-creator`, `mcp-builder`, `frontend-design`, `canvas-design`, `xlsx`, `docx`, `internal-comms` e outras) já estão disponíveis na conta (2026-10-03) |
+| `shanraisshan/claude-code-best-practice` | guia de referência, não instalável; o que serve já está aplicado (CLAUDE.md curto, settings para o que é determinístico, subagent para isolar contexto) (2026-10-03) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
