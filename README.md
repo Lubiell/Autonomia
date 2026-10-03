@@ -52,7 +52,7 @@ Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e tamb
 - `settings.json` nega leitura de `node_modules`, `.venv`, `venv`, `__pycache__` e `coverage` para o Claude não carregar arquivos gerados no contexto.
 
 ## Segurança em camadas
-- **Permissões (`deny`/`ask`)**: bloqueio por prefixo de comando e leitura de arquivos sensíveis.
+- **Permissões (`deny`/`ask`)**: bloqueio por prefixo de comando e leitura de arquivos sensíveis, inclusive `~/.ssh`, `~/.aws/credentials` e `~/.gnupg` pela ferramenta Read, que não passa pelo sandbox. Pergunta antes de `git push`, `curl`/`wget`, `pip install` (também `pip3` e `python -m pip`), `npm install -g` e `npm publish`.
 - **Hook `guard.sh`** (PreToolUse em Bash e PowerShell): analisa o comando inteiro, separado por `;`, `|`, `&&`, `$( )` etc., e bloqueia:
   - `rm` recursivo forçado (`-rf`, `-r -f`, `-fr`, `sudo`, `xargs`, `bash -c`), `Remove-Item -Recurse`, `git push --force`/`-f`/`+ref`, `git reset --hard`, `git clean -f` sem `-n` e `curl … | sh`; `--force-with-lease` passa;
   - pular os hooks do Git: `--no-verify` (ou abreviado) em `commit`, `push`, `merge` e `rebase`, `git commit -n` e `core.hooksPath` passado ao `git` (`-c`, `--config-env`);

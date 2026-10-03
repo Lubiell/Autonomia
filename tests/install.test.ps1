@@ -30,6 +30,7 @@ try {
     Check 'novo: sandbox ligado' ($S.sandbox.enabled -eq $true)
     Check 'novo: ask inclui retry fora do sandbox' (@($S.permissions.ask) -contains 'Bash(dangerouslyDisableSandbox:true)')
     Check 'novo: deny copiado' (@($S.permissions.deny).Count -gt 0)
+    Check 'novo: deny inclui leitura de ~/.ssh' (@($S.permissions.deny) -contains 'Read(~/.ssh/**)')
     Check 'novo: guard.sh copiado' (Test-Path (Join-Path $H 'hooks\guard.sh'))
     Check 'novo: skill copiada' (Test-Path (Join-Path $H 'skills\discover-resources\decisoes.md'))
 
