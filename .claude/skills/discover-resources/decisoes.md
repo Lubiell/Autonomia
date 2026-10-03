@@ -22,7 +22,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 | `claude-security` | varredura de segurança do repositório ou do diff, sob demanda, com cada achado verificado antes do relatório; não aplica nada sozinho. Substitui o `security-guidance` na fila (2026-10-03) | marketplace oficial |
 | `claude-code-setup` | lê o projeto e recomenda hooks, skills, MCP e subagents; somente leitura, uma vez por projeto (2026-10-03) | marketplace oficial |
 | `session-report` | mostra tokens, cache e quais skills dispararam. Único jeito de medir se as regras funcionam | marketplace oficial |
-| `context7` | documentação da versão certa; evita API inventada em biblioteca que mudou | marketplace oficial |
+| `context7` | documentação da versão certa; evita API inventada em biblioteca que mudou. É servidor MCP: `npx ctx7 setup --claude` pede login e gera chave | marketplace oficial |
 | `code-simplifier` | corta o que foi escrito a mais, preservando comportamento | marketplace oficial |
 | `skill-eval-action` | testa se a skill dispara, rodando no GitHub — funciona pelo celular | GitHub Action |
 | `Sentry` | erro em produção chega no celular. Hoje o trabalho termina no deploy e depois fica cego | MCP oficial |
@@ -32,7 +32,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 
 ## Complementos pontuais
 Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
-`playwright` (teste de navegador), `cloudflare` (Workers/D1), `frontend-design` (UI), `canva` (peça gráfica), `marketing` (campanha e conteúdo).
+`playwright` (teste de navegador) ou a skill oficial `webapp-testing` (`anthropics/skills`, pacote `example-skills`: abre a página, clica, preenche e lê o console com Playwright), `cloudflare` (Workers/D1), `frontend-design` (UI), `canva` (peça gráfica), `marketing` (campanha e conteúdo). Do pack `coreyhaines31/marketingskills` (MIT, ~50 skills), copiar à mão só a skill avulsa que o trabalho pedir (`social`, `copywriting`, `video`), nunca o pack inteiro.
 
 ## Opcionais
 - Language server da linguagem do projeto (além do `pyright-lsp`) — marketplace oficial — busca por símbolo mais barata que Grep; escolher por projeto — 2026-10-02
@@ -51,6 +51,11 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `last30days` (mvanhorn/last30days-skill) | pesquisa de tendências em redes sociais; fora do escopo de desenvolvimento (2026-10-03) |
 | `wshobson/agents` | coleção de 199 agents, 161 skills e 90 plugins: gatilhos sobrepostos aos agents daqui (2026-10-03) |
 | `ai-berkshire` (xbtlin/ai-berkshire) | análise de investimentos, fora do escopo; instala por script (`install-claude-commands.sh`) (2026-10-03) |
+| `claude-mem` (thedotmack/claude-mem) | instalador `npx` que grava as sessões e injeta resumo em toda sessão nova; a continuidade aqui é o `PROGRESS.md` versionado (`handoff.md` do `protocolo-dev`) (2026-10-03) |
+| `ui-ux-pro-max` (nextlevelbuilder) | sobrepõe `frontend-design` e `web-design-guidelines`; a busca exige Python (2026-10-03) |
+| `w95/awesome-claude-corporate-skills` | finanças, operações e jurídico escritos para o direito e a contabilidade dos EUA; fora do escopo de desenvolvimento, e copiar as pastas inteiras traz mais de 40 skills (2026-10-03) |
+| `rampstackco/claude-skills` (launch-runbook) | o checklist de publicação já está no `deploy.md` do `protocolo-dev` (2026-10-03) |
+| "Prompt de instalação" das 42 skills (@marcondes.ai) | instala tudo de uma vez, contra a regra de um recurso por vez; skills oficiais citadas (`skill-creator`, `mcp-builder`, `frontend-design`, `canvas-design`, `xlsx`, `docx`, `internal-comms` e outras) já estão disponíveis na conta (2026-10-03) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
