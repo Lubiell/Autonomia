@@ -151,7 +151,32 @@ reset_repo; echo "key = '$AWS'" > "$REPO/app.py"; git -C "$REPO" add app.py
 check block Bash "git -C $REPO commit -m x" "$BARE"
 check block Bash 'cd repo && git commit -m x' "$BARE"
 check allow Bash 'git commit -m x' "$BARE"
+reset_repo; echo "k = 'sk_live_""$(printf 'a%.0s' $(seq 1 24))'" > "$REPO/pay.py"; git -C "$REPO" add pay.py
+check block Bash 'git commit -m x' "$REPO"
 reset_repo
+
+# Pular os hooks do Git (--no-verify, -n, core.hooksPath)
+check block Bash 'git commit --no-verify -m x' "$BARE"
+check block Bash 'git commit -n -m x' "$BARE"
+check block Bash 'git commit -anm x' "$BARE"
+check block Bash 'git commit -m "x" -n' "$BARE"
+check block Bash 'git push --no-verify origin main' "$BARE"
+check block Bash 'git merge --no-verify feature' "$BARE"
+check block Bash 'git -c core.hooksPath=/dev/null commit -m x' "$BARE"
+check block Bash 'git --config-env=core.hooksPath=VAR commit -m x' "$BARE"
+check block Bash 'git --config-env core.hooksPath=VAR commit -m x' "$BARE"
+check block Bash 'git commit --no-verif -m x' "$BARE"
+check block Bash 'git push --no-veri origin main' "$BARE"
+check block Bash 'git commit -sn -m x' "$BARE"
+check block Bash 'git rebase --no-verify main' "$BARE"
+check allow Bash 'git commit -- -n' "$BARE"
+check allow Bash 'git commit --no-verbose -m x' "$BARE"
+check allow Bash 'git config core.hooksPath .githooks' "$BARE"
+check allow Bash 'git commit -m "explica por que --no-verify foi bloqueado"' "$BARE"
+check allow Bash 'git commit -mn' "$BARE"
+check allow Bash 'git commit -uno -m x' "$BARE"
+check allow Bash 'git push -n origin main' "$BARE"
+check allow Bash 'git -c core.editor=vim commit -m x' "$BARE"
 
 # Mensagem de commit é texto: não dispara os bloqueios de comando
 check allow Bash 'git commit -m "docs: explica por que rm -rf foi bloqueado"' "$BARE"

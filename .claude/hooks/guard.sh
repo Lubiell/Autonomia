@@ -74,7 +74,7 @@ scan_secrets() {
       # Arquivo novo até 1 MB; maior que isso não é configuração nem código-fonte típico.
       [ -f "$f" ] && [ "$(wc -c <"$f")" -le 1048576 ] && cat -- "$f"
     done
-  } | grep -Eq -- '-----BEGIN ([A-Z]+ )*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|(^|[^A-Za-z0-9])(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{22,}|sk-ant-[A-Za-z0-9_-]{20,}|sk-(proj-)?[A-Za-z0-9_-]{32,}|xox[baprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|glpat-[A-Za-z0-9_-]{20})'; then
+  } | grep -Eq -- '-----BEGIN ([A-Z]+ )*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|(^|[^A-Za-z0-9])(gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{22,}|sk-ant-[A-Za-z0-9_-]{20,}|sk-(proj-)?[A-Za-z0-9_-]{32,}|xox[baprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|glpat-[A-Za-z0-9_-]{20}|[sr]k_live_[A-Za-z0-9]{24,})'; then
     block "chave, token ou chave privada no conteúdo do commit"
   fi
 }
@@ -245,8 +245,14 @@ while IFS= read -r seg && IFS= read -r oseg <&3; do
             case "$t" in
               -c | --git-dir | --work-tree | --namespace)
                 [ "${ow[j]}" = -C ] && gdir="${ow[j + 1]}"
+                [ "${ow[j]}" = -c ] && [[ "${w[j + 1]}" == core.hookspath* ]] && block "git com core.hooksPath (desliga os hooks do Git)"
                 j=$((j + 1))
                 ;;
+              --config-env)
+                [[ "${w[j + 1]}" == core.hookspath* ]] && block "git com core.hooksPath (desliga os hooks do Git)"
+                j=$((j + 1))
+                ;;
+              *core.hookspath*) block "git com core.hooksPath (desliga os hooks do Git)" ;;
               -*) ;;
               *) sub="$t" ;;
             esac
@@ -259,6 +265,7 @@ while IFS= read -r seg && IFS= read -r oseg <&3; do
             for t in "${rest[@]}"; do
               case "$t" in
                 --force) block "git push forçado" ;;
+                --no-veri*) block "git push --no-verify (pula os hooks do Git)" ;;
                 --*) ;;
                 -*f*) block "git push forçado" ;;
                 +*) block "git push forçado (refspec com +)" ;;
@@ -275,13 +282,31 @@ while IFS= read -r seg && IFS= read -r oseg <&3; do
               /*) commit_dir="$gdir" ;;
               *) commit_dir="${wd:+$wd/}$gdir" ;;
             esac
+            endopt=0
             for t in "${rest[@]}"; do
+              [ "$endopt" = 1 ] && continue
               case "$t" in
+                --) endopt=1 ;;
                 --all) commit_all=1 ;;
+                --no-veri*) block "git commit --no-verify (pula os hooks do Git)" ;;
                 --*) ;;
-                -*a*) commit_all=1 ;;
+                -*)
+                  [[ "$t" == *a* ]] && commit_all=1
+                  # -n = --no-verify; letras depois de m/F/C/c/t/u são o valor da opção
+                  o="${t#-}"
+                  while [ -n "$o" ]; do
+                    case "${o:0:1}" in
+                      n) block "git commit -n (--no-verify, pula os hooks do Git)" ;;
+                      m | f | c | t | u) break ;;
+                    esac
+                    o="${o:1}"
+                  done
+                  ;;
               esac
             done
+            ;;
+          merge | rebase)
+            for t in "${rest[@]}"; do [[ "$t" == --no-veri* ]] && block "git $sub --no-verify (pula os hooks do Git)"; done
             ;;
           reset)
             for t in "${rest[@]}"; do [ "$t" = "--hard" ] && block "git reset --hard"; done
