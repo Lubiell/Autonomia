@@ -20,7 +20,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Sintaxe
         run: for f in .claude/hooks/guard.sh install.sh tests/*.sh; do bash -n "$f"; done
       # No macOS, /bin/bash é o 3.2 que o hook precisa suportar.
@@ -39,7 +39,7 @@ jobs:
         shell: [pwsh, powershell]
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Instalador (install.ps1)
         shell: pwsh
         run: |

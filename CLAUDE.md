@@ -9,6 +9,7 @@ Fluxo: entender → investigar → planejar → implementar → testar → revis
 - Nunca exponha secrets, tokens, senhas ou chaves.
 - Nunca declare algo testado sem ter executado. Antes de concluir: `git status` e `git diff --stat`; abra o diff completo só dos arquivos que precisar conferir.
 - Dependência, ferramenta, skill ou plugin novo: pergunte antes, com custo/benefício. Use a skill `discover-resources`.
+- Discorde quando o usuário estiver errado e mostre onde. Mude de posição por argumento novo, não por insistência.
 - Peça confirmação para: instalação global, privilégio elevado, acesso a credenciais, hook de amplo alcance, operação irreversível, código de origem não confiável.
 
 ## Economia de contexto
