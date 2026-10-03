@@ -74,6 +74,9 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `hesreallyhim/awesome-claude-code`, `karanb192/awesome-claude-code-mods` | catálogos, não instaláveis; fonte de consulta. O dos mods mostra o que cada mod acessa, útil para a auditoria (2026-10-03) |
 | `JuliusBrussee/caveman` | resposta telegráfica para cortar tokens; prejudica a clareza em português e o `CLAUDE.md` já pede resposta curta. 28 skills, proxy e MCP próprios (2026-10-03) |
 | `nextlevelbuilder/ui-ux-pro-max-skill` | 13 skills de design com CLI e base de busca em Python; sobrepõe a `frontend-design` e cobraria 13 descrições por turno (2026-10-03) |
+| `anand-kamble/mcp-instagram` | entra com usuário e senha do Instagram pela API privada (`instagram-private-api`): viola os termos do Instagram, arrisca bloqueio da conta e deixa a senha no arquivo de configuração do cliente (2026-10-03) |
+| `mcpware/instagram-mcp` | API oficial (Graph API), mas com escrita sem confirmação (enviar DM, publicar, apagar e responder comentário) sob o mesmo token; o `business_discovery`, única ferramenta para ler outro perfil, ignora o usuário pedido e não traz posts; dependências pesadas (redis, sqlalchemy). Reavaliar se corrigirem (2026-10-03) |
+| `BilalTariq01/instagram-analytics-mcp` | candidato se for preciso analisar a **própria** conta: API oficial, só leitura, 3 dependências, MIT. Exige conta profissional ligada a página do Facebook, app na Meta e token que expira. Não lê perfis de terceiros. Não instalado: nenhuma tarefa pediu (2026-10-03) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
