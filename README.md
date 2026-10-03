@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 8 agents especializados, 1 skill, permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 8 agents especializados, 4 skills (dados, sites, teste no navegador e avaliação de recursos), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
