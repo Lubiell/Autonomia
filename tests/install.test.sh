@@ -48,6 +48,12 @@ for mode in $modes; do
   assert "[$mode] existente: ask sem duplicata" '.permissions.ask | (length == (unique | length))' "$S"
   ls "$H"/backup-orquestrador-*/settings.json >/dev/null 2>&1 && ok || ko "[$mode] existente: backup do settings"
 
+  # settings.json vazio (só espaços) conta como configuração vazia
+  HV="$TMP/$mode-vazio"
+  mkdir -p "$HV" && printf '  \n' > "$HV/settings.json"
+  run "$HV" >/dev/null 2>&1 || ko "[$mode] install.sh falhou (settings vazio)"
+  assert "[$mode] vazio: vira configuração completa" '.sandbox.enabled == true and (.hooks.PreToolUse | length) == 1' "$HV/settings.json"
+
   # Reexecução não muda nada
   cp "$S" "$TMP/antes.json"
   out="$(run "$H")"

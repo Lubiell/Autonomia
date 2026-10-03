@@ -2,9 +2,13 @@
 # Hook PreToolUse (Bash e PowerShell): bloqueia comandos destrutivos que escapam do
 # bloqueio por prefixo do settings.json (ex.: "rm -r -f", "sudo rm -fr", "git push origin main -f"),
 # segredo em commit, DELETE/UPDATE sem WHERE e escrita pelo shell na configuração do Claude Code.
+# Nos agents architect, reviewer e security (agent_type no JSON, ou --readonly), bloqueia também
+# qualquer escrita pelo shell.
 # Entrada: JSON do Claude Code no stdin. Saída: exit 2 + motivo no stderr bloqueia; exit 0 libera.
 # Sem dependências obrigatórias: usa jq ou python3 se houver; senão analisa o JSON bruto.
 
+readonly_mode=0
+[ "$1" = --readonly ] && readonly_mode=1
 input="$(cat)"
 
 # Lê um campo de tool_input ou do primeiro nível: extract command | extract cwd.
@@ -24,11 +28,21 @@ extract() {
 
 cmd="$(extract command)"
 [ -z "$cmd" ] && exit 0
+# Dentro de um subagent o Claude Code envia agent_type: os somente leitura ligam o modo sozinhos.
+case "$(extract agent_type)" in architect | reviewer | security) readonly_mode=1 ;; esac
 
 block() {
   echo "Bloqueado pelo hook guard.sh: $1. Se for mesmo necessário, peça ao usuário para rodar o comando manualmente." >&2
   exit 2
 }
+
+# Texto de mensagem de commit (-m "...", --message '...') é dado, não comando: sai da análise
+# estrutural abaixo. Aspas duplas com $ ou crase ficam, porque o shell executaria o $(...) ali dentro.
+# Os checks de curl | sh e de SQL continuam olhando o comando inteiro.
+scmd="$cmd"
+for _ in 1 2 3; do
+  scmd="$(printf '%s' "$scmd" | sed -E "s/(commit[^;&|]*[[:space:]](-[a-zA-Z]*m|--message)[= ]?[[:space:]]*)(\"[^\"\$\`;&|]*\"|'[^';&|]*')/\\1MSG/")"
+done
 
 # Baixar e executar direto (curl ... | sh).
 dl='(curl|wget|iwr|irm|invoke-webrequest|invoke-restmethod)'
@@ -95,13 +109,93 @@ while IFS= read -r seg; do
         ;;
     esac
   done
-done <<<"$(printf '%s\n' "$cmd" | sed 's/\\n/\
+done <<<"$(printf '%s\n' "$scmd" | sed 's/\\n/\
 /g' | tr ';|&()`' '\n\n\n\n\n\n' | tr -d "\"'\\\\" | tr '[:upper:]' '[:lower:]')"
+
+# Modo somente leitura: nenhum comando que grave arquivo ou mude o Git. É melhor esforço, não sandbox:
+# script que grava por dentro (python -c, node -e) não é visto.
+# Olha o comando na posição de comando (depois de sudo, env, xargs, timeout, {, if...), não qualquer palavra.
+if [ "$readonly_mode" = 1 ]; then
+  ro() { block "agent somente leitura não grava arquivo nem altera o Git pelo shell ($1)"; }
+  # Redirecionamento para arquivo, procurado fora das aspas (grep "a>b" passa); /dev/* passa.
+  # >| vira >, e & separa 2>&1 antes da busca.
+  for t in $(printf '%s\n' "$scmd" | sed -E "s/\"[^\"]*\"//g; s/'[^']*'//g; s/>\\|/>/g" | tr '&;|()`' '\n\n\n\n\n\n' |
+    grep -oE '>>?[[:space:]]*[^[:space:]>]+' | sed -E 's/^>>?[[:space:]]*//'); do
+    case "$t" in /dev/*) ;; *) ro "redirecionamento para $t" ;; esac
+  done
+  while IFS= read -r seg; do
+    read -ra w <<<"$seg"
+    n=${#w[@]} i=0
+    while [ "$i" -lt "$n" ]; do
+      case "${w[i]}" in
+        sudo | env | nohup | time | command | exec | xargs | timeout | nice | ionice | stdbuf | \
+          '{' | '}' | '!' | if | then | else | elif | do | while | until | *=*) i=$((i + 1)) ;;
+        -u | -g | -n | -c | -k | -s) [ "$i" -gt 0 ] && i=$((i + 2)) || break ;;
+        -* | [0-9]*) [ "$i" -gt 0 ] && i=$((i + 1)) || break ;;
+        *) break ;;
+      esac
+    done
+    [ "$i" -ge "$n" ] && continue
+    c="${w[i]##*/}"
+    rest=("${w[@]:i+1}")
+    for t in "${rest[@]}"; do case "$t" in --output*) ro "$c $t" ;; esac; done
+    case "$c" in
+      rm | rmdir | unlink | mv | cp | touch | mkdir | ln | chmod | chown | truncate | dd | tee | install | patch | wget | eval | \
+        set-content | add-content | out-file | new-item | remove-item | move-item | copy-item | rename-item | \
+        ni | ri | mi | cpi | rni | del | erase | rd | md) ro "$c" ;;
+      bash | sh | zsh | dash | ksh)
+        for t in "${rest[@]}"; do case "$t" in -c | -*c*) [ "${t#--}" = "$t" ] && ro "$c -c" ;; esac; done
+        ;;
+      sed | perl)
+        for t in "${rest[@]}"; do
+          case "$t" in --in-place*) ro "$c --in-place" ;; -*i*) [ "${t#--}" = "$t" ] && ro "$c -i" ;; esac
+        done
+        ;;
+      sort | curl)
+        # Os trechos estão em minúsculas: -O do curl chega como -o.
+        for t in "${rest[@]}"; do case "$t" in -*o*) [ "${t#--}" = "$t" ] && ro "$c $t" ;; esac; done
+        ;;
+      find)
+        for t in "${rest[@]}"; do
+          case "$t" in -delete | -exec | -execdir | -ok | -okdir | -fprint* | -fls) ro "find $t" ;; esac
+        done
+        ;;
+      git)
+        sub="" j=$((i + 1))
+        while [ "$j" -lt "$n" ]; do
+          case "${w[j]}" in
+            -c | --git-dir | --work-tree | --namespace) j=$((j + 2)) ;;
+            -*) j=$((j + 1)) ;;
+            *) sub="${w[j]}"; break ;;
+          esac
+        done
+        args=("${w[@]:j+1}")
+        case "$sub" in
+          add | commit | push | pull | reset | checkout | switch | merge | rebase | cherry-pick | revert | restore | \
+            clean | rm | mv | apply | am | init | clone | update-ref | symbolic-ref | gc | prune | bisect | notes | replace) ro "git $sub" ;;
+          stash) case "${args[0]}" in list | show) ;; *) ro "git stash" ;; esac ;;
+          worktree | submodule) case "${args[0]}" in list | status) ;; *) ro "git $sub" ;; esac ;;
+          remote) case "${args[0]}" in "" | -v | --verbose | show | get-url) ;; *) ro "git remote ${args[0]}" ;; esac ;;
+          config) case "${args[*]}" in *--get* | *--list* | *-l*) ;; *) ro "git config" ;; esac ;;
+          branch | tag)
+            for t in "${args[@]}"; do
+              case "$t" in
+                -a | -r | -v | -vv | --all | --remotes | --list | -l | --show-current | --contains* | --merged* | --no-merged* | --sort*) ;;
+                *) ro "git $sub $t" ;;
+              esac
+            done
+            ;;
+        esac
+        ;;
+    esac
+  done <<<"$(printf '%s\n' "$scmd" | sed 's/\\n/\
+/g' | tr ';|&()`' '\n\n\n\n\n\n' | tr -d "\"'\\\\" | tr '[:upper:]' '[:lower:]')"
+fi
 
 # Separa em trechos por ; | & && || ( ) $( ` e quebras de linha; tira aspas e escapes.
 # Só tr e sed com quebra de linha literal: o sed do macOS não entende \n na substituição.
 # osegments mantém maiúsculas (caminhos); segments vai em minúsculas (comandos e flags).
-osegments="$(printf '%s\n' "$cmd" | sed 's/\\n/\
+osegments="$(printf '%s\n' "$scmd" | sed 's/\\n/\
 /g' | tr ';|&()`$' '\n\n\n\n\n\n\n' | tr -d "\"'\\\\")"
 segments="$(printf '%s\n' "$osegments" | tr '[:upper:]' '[:lower:]')"
 

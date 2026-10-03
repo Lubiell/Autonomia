@@ -48,7 +48,9 @@ dst_path, src_path, out_path, dest = sys.argv[1:5]
 dst = {}
 if dst_path:
     with open(dst_path, encoding="utf-8") as f:
-        dst = json.load(f)
+        txt = f.read()
+    # Arquivo vazio ou só com espaços conta como configuração vazia.
+    dst = json.loads(txt) if txt.strip() else {}
 with open(src_path, encoding="utf-8") as f:
     src = json.load(f)
 perms = dst.setdefault("permissions", {})
@@ -69,7 +71,7 @@ with open(out_path, "w", encoding="utf-8") as f:
     f.write("\n")
 EOF
 elif command -v jq >/dev/null 2>&1; then
-  { if [ -n "$cur" ]; then cat "$cur"; else echo '{}'; fi; } |
+  { if [ -n "$cur" ] && grep -q '[^[:space:]]' "$cur"; then cat "$cur"; else echo '{}'; fi; } |
     jq --slurpfile src "$SRC/.claude/settings.json" --arg dest "$DEST/" '
       $src[0] as $s |
       .permissions.deny = ((.permissions.deny // []) + ($s.permissions.deny - (.permissions.deny // []))) |
