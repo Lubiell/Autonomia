@@ -12,6 +12,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Passos de teste primeiro e hipótese com evidência (agents `tester` e `debugger`) — ideia de `obra/superpowers` (MIT), sem instalar — 2026-10-02
 - Checklist de auditoria, registro de decisões e regra de evidência — adaptados da skill `protocolo-dev` — 2026-10-02
 - Regra contra concordar por insistência (`CLAUDE.md`) e causa raiz por categorias, pontos cegos e 5 porquês (agent `debugger`) — ideias do material "Agente de Diagnóstico" (ExStart), adaptadas sem copiar — 2026-10-03
+- Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
 
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |
@@ -46,6 +47,10 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `karanb192/claude-code-hooks` | exige Node ≥18; coberto pelo `guard.sh` (2026-10-02) |
 | `security-guidance` | trocado pelo `claude-security`: faz uma chamada de LLM ao fim de todo turno e em `git commit`/`push` e exige Python; o `claude-security` roda só quando chamado (2026-10-03) |
 | `caveman` (JuliusBrussee/caveman) | o modo proxy intercepta o tráfego da API; a skill só encurta a prosa, que o `CLAUDE.md` já pede curta, e é feita para inglês. Ganho real citado no próprio repositório (estudo JetBrains): ~8,5% menos tokens de saída, não os 65% anunciados (2026-10-03) |
+| `impeccable` (pbakaus/impeccable) | instala hooks no `~/.claude` e baixa um binário na primeira execução; para UI, `frontend-design` e a skill `web-design-guidelines` já cobrem. Reavaliar só se houver trabalho de interface constante (2026-10-03) |
+| `last30days` (mvanhorn/last30days-skill) | pesquisa de tendências em redes sociais; fora do escopo de desenvolvimento (2026-10-03) |
+| `wshobson/agents` | coleção de 199 agents, 161 skills e 90 plugins: gatilhos sobrepostos aos agents daqui (2026-10-03) |
+| `ai-berkshire` (xbtlin/ai-berkshire) | análise de investimentos, fora do escopo; instala por script (`install-claude-commands.sh`) (2026-10-03) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
