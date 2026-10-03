@@ -17,6 +17,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Regra "pedido com duas leituras: apresente as duas" no `CLAUDE.md` — princípio 1 de `multica-ai/andrej-karpathy-skills` (MIT); os outros três já estavam cobertos — 2026-10-03
 - Skills `frontend-design` e `webapp-testing` — `anthropics/skills` (Apache-2.0), cópia sem alteração do commit `8a1541c` com o `LICENSE.txt`; auditadas: só instruções, o script `with_server.py` sobe o servidor indicado e testa a porta em localhost. Para sites: direção visual que não parece template e teste no navegador real com Playwright (instalar `playwright` no projeto quando for usar) — 2026-10-03
 - Bloqueio de `--no-verify`, `git commit -n` e `core.hooksPath` no `guard.sh`, e "corrija o código, não a configuração de lint/teste" nos agents `developer` e `tester` — ideias de `block-no-verify.js` e `config-protection.js` de `affaan-m/everything-claude-code` (MIT), reescritas em bash sem copiar código; chave Stripe (`sk_live_`/`rk_live_`) na varredura de segredo, de `rohitg00/awesome-claude-code-toolkit` — 2026-10-03
+- Escada "precisa existir? já existe? biblioteca padrão? recurso nativo? dependência instalada?" no `developer` e "procure todos os chamadores e corrija no ponto comum" no `debugger` — ideias da skill `DietrichGebert/ponytail` (MIT), sem instalar: a skill pede para ficar ativa em toda resposta e o resto já está no `CLAUDE.md` ("menor alteração adequada") — 2026-10-03
 - Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
 
 ## Instalar — fila, em ordem de valor
@@ -70,6 +71,8 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `yamadashy/repomix` | empacota o repositório inteiro num arquivo para colar no modelo, o oposto de ler só o trecho certo; o `scout` cobre a localização. Útil só para mandar código a um modelo fora do Claude Code (2026-10-03) |
 | `ComposioHQ/awesome-claude-skills` | as skills de documento e design são cópias das da `anthropics/skills`; as `composio-skills` dependem de conta e chave no serviço Composio (2026-10-03) |
 | `hesreallyhim/awesome-claude-code`, `karanb192/awesome-claude-code-mods` | catálogos, não instaláveis; fonte de consulta. O dos mods mostra o que cada mod acessa, útil para a auditoria (2026-10-03) |
+| `JuliusBrussee/caveman` | resposta telegráfica para cortar tokens; prejudica a clareza em português e o `CLAUDE.md` já pede resposta curta. 28 skills, proxy e MCP próprios (2026-10-03) |
+| `nextlevelbuilder/ui-ux-pro-max-skill` | 13 skills de design com CLI e base de busca em Python; sobrepõe a `frontend-design` e cobraria 13 descrições por turno (2026-10-03) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
