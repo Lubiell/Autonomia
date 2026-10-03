@@ -20,7 +20,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Sintaxe
         run: for f in .claude/hooks/guard.sh install.sh tests/*.sh; do bash -n "$f"; done
       # shellcheck já vem nos runners Ubuntu do GitHub.
@@ -43,7 +43,7 @@ jobs:
         shell: [pwsh, powershell]
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Instalador (install.ps1)
         shell: pwsh
         run: |
