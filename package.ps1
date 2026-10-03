@@ -14,6 +14,7 @@ New-Item -ItemType Directory -Force $Out | Out-Null
 $Out = (Resolve-Path -LiteralPath $Out).ProviderPath
 
 $Names = if ($args.Count -gt 0) { @($args) } else { @(Get-ChildItem -LiteralPath $Src -Directory | ForEach-Object { $_.Name }) }
+if ($Names.Count -eq 0) { Write-Host "ERRO: nenhuma skill em $Src"; exit 1 }
 
 $Failed = $false
 foreach ($Name in $Names) {
@@ -51,3 +52,4 @@ foreach ($Name in $Names) {
 
 if ($Failed) { exit 1 }
 Write-Host 'Envie em claude.ai > Personalizar > Skills > enviar skill, e ative cada uma.'
+exit 0

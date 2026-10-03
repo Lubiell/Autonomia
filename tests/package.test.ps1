@@ -43,6 +43,38 @@ try {
 
     $Code = Run-Package (Join-Path $Tmp 'x') @('nao-existe')
     Check 'skill inexistente da erro' ($Code -ne 0)
+    $Code = Run-Package (Join-Path $Tmp 'ok') @('analise-dados')
+    Check 'sucesso sai com 0' ($Code -eq 0)
+
+    # Copia do repositorio: lixo fora do zip, SKILL.md com BOM, name diferente da pasta
+    $Repo = Join-Path $Tmp 'repo'
+    New-Item -ItemType Directory -Force $Repo | Out-Null
+    Copy-Item -Recurse (Join-Path $Root '.claude') $Repo
+    Copy-Item $Packager $Repo
+    $Copy = Join-Path $Repo 'package.ps1'
+    $Sk = Join-Path $Repo '.claude\skills\analise-dados'
+    New-Item -ItemType Directory -Force (Join-Path $Sk '__pycache__'), (Join-Path $Sk 'sub') | Out-Null
+    foreach ($F in '__pycache__\a.pyc', 'x.pyc', '.DS_Store', 'sub\.DS_Store', 'sub\ok.md') { Set-Content -LiteralPath (Join-Path $Sk $F) 'x' }
+    $SkillMd = Join-Path $Sk 'SKILL.md'
+    $Text = [IO.File]::ReadAllText($SkillMd)
+    [IO.File]::WriteAllText($SkillMd, $Text, (New-Object Text.UTF8Encoding $true))
+
+    $Out = Join-Path $Tmp 'lixo'
+    $env:OUT = $Out
+    try { & $Copy 'analise-dados' *>&1 | Out-Null } finally { Remove-Item Env:OUT }
+    $Zip = Join-Path $Out 'analise-dados.zip'
+    if (Test-Path $Zip) {
+        $E = Get-Entries $Zip
+        Check 'lixo fora do zip' (@($E | Where-Object { $_ -match 'pycache|\.pyc$|DS_Store' }).Count -eq 0)
+        Check 'arquivo comum em subpasta entra' ($E -contains 'analise-dados/sub/ok.md')
+    } else { Check 'SKILL.md com BOM aceito' $false }
+
+    [IO.File]::WriteAllText($SkillMd, ($Text -replace '(?m)^name: analise-dados', 'name: outro-nome'))
+    $Out = Join-Path $Tmp 'errado'
+    $env:OUT = $Out
+    try { $Msg = & $Copy 'analise-dados' *>&1 | Out-String; $Code = $LASTEXITCODE } finally { Remove-Item Env:OUT }
+    Check 'name diferente da pasta da erro' ($Code -ne 0 -and $Msg -match "declara name 'outro-nome'")
+    Check 'name errado nao cria zip' (-not (Test-Path (Join-Path $Out 'analise-dados.zip')))
 }
 finally {
     Remove-Item -Recurse -Force $Tmp

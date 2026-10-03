@@ -29,12 +29,13 @@ if [ $# -gt 0 ]; then names=("$@"); else
   names=()
   for d in "$SRC"/*/; do [ -d "$d" ] && names+=("$(basename "$d")"); done
 fi
+if [ "${#names[@]}" = 0 ]; then echo "ERRO: nenhuma skill em $SRC" >&2; exit 1; fi
 
 status=0
 for name in "${names[@]}"; do
   skill="$SRC/$name/SKILL.md"
   if [ ! -f "$skill" ]; then echo "ERRO: $name: não existe $skill" >&2; status=1; continue; fi
-  declared="$(awk '/^---[[:space:]]*$/ { n++; if (n > 1) exit; next } n == 1 && /^name:/ { sub(/^name:[[:space:]]*/, ""); sub(/[[:space:]\r]+$/, ""); print; exit }' "$skill")"
+  declared="$(awk 'NR == 1 { sub(/^[^-]*/, "") } /^---[[:space:]]*$/ { n++; if (n > 1) exit; next } n == 1 && /^name:/ { sub(/^name:[[:space:]]*/, ""); sub(/[[:space:]\r]+$/, ""); print; exit }' "$skill")"
   if [ "$declared" != "$name" ]; then
     echo "ERRO: $name: o SKILL.md declara name '$declared'; o claude.ai recusa nome diferente da pasta" >&2
     status=1; continue

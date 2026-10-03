@@ -51,16 +51,45 @@ for mode in $modes; do
   entries "$out/webapp-testing.zip" | grep -qx 'webapp-testing/scripts/with_server.py' && ok || ko "[$mode] webapp-testing sem scripts"
 done
 
-# Uma skill só, e skill inexistente
+# Uma skill só, e skill inexistente (erro com mensagem, não queda do script)
 OUT="$T/um" bash "$ROOT/package.sh" analise-dados >/dev/null
 [ -f "$T/um/analise-dados.zip" ] && [ "$(ls "$T/um" | wc -l | tr -d ' ')" = 1 ] && ok || ko "argumento não limitou a uma skill"
-OUT="$T/x" bash "$ROOT/package.sh" nao-existe >/dev/null 2>&1 && ko "skill inexistente não deu erro" || ok
+err="$(OUT="$T/x" bash "$ROOT/package.sh" nao-existe 2>&1 >/dev/null)" && ko "skill inexistente não deu erro" || ok
+printf '%s' "$err" | grep -q 'ERRO: nao-existe' && ok || ko "skill inexistente sem mensagem ERRO: $err"
 
-# name diferente da pasta: recusa (cópia do repositório com o name trocado)
-cp -r "$ROOT/.claude" "$ROOT/package.sh" "$T/" && mkdir -p "$T/repo" && mv "$T/.claude" "$T/package.sh" "$T/repo/"
-sed 's/^name: analise-dados/name: outro-nome/' "$T/repo/.claude/skills/analise-dados/SKILL.md" > "$T/s" && mv "$T/s" "$T/repo/.claude/skills/analise-dados/SKILL.md"
-OUT="$T/y" bash "$T/repo/package.sh" analise-dados >/dev/null 2>&1 && ko "name diferente da pasta não deu erro" || ok
+# Cópia do repositório para os casos que mexem em arquivos
+REPO="$T/repo"; mkdir -p "$REPO"
+cp -r "$ROOT/.claude" "$REPO/" && cp "$ROOT/package.sh" "$REPO/"
+SK="$REPO/.claude/skills/analise-dados"
+
+# Lixo não entra no zip; SKILL.md com BOM (comum no Windows) ainda é lido
+mkdir -p "$SK/__pycache__" "$SK/sub"
+for f in __pycache__/a.pyc x.pyc .DS_Store sub/.DS_Store sub/ok.md; do echo x > "$SK/$f"; done
+{ printf '\357\273\277'; cat "$SK/SKILL.md"; } > "$T/s" && mv "$T/s" "$SK/SKILL.md"
+for mode in $modes; do
+  out="$T/lixo-$mode"
+  if [ "$mode" = python ] && command -v zip >/dev/null 2>&1; then OUT="$out" PATH="$NOZIP" "$NOZIP/bash" "$REPO/package.sh" analise-dados >/dev/null 2>&1
+  else OUT="$out" bash "$REPO/package.sh" analise-dados >/dev/null 2>&1
+  fi
+  if [ -f "$out/analise-dados.zip" ]; then
+    list="$(entries "$out/analise-dados.zip")"
+    printf '%s\n' "$list" | grep -q 'pycache\|\.pyc$\|DS_Store' && ko "[$mode] lixo no zip: $(printf '%s ' $list)" || ok
+    printf '%s\n' "$list" | grep -qx 'analise-dados/sub/ok.md' && ok || ko "[$mode] arquivo comum em subpasta ficou de fora"
+  else
+    ko "[$mode] SKILL.md com BOM foi recusado"
+  fi
+done
+
+# name diferente da pasta: recusa com mensagem e não cria zip
+sed 's/^name: analise-dados/name: outro-nome/' "$SK/SKILL.md" > "$T/s" && mv "$T/s" "$SK/SKILL.md"
+err="$(OUT="$T/y" bash "$REPO/package.sh" analise-dados 2>&1 >/dev/null)" && ko "name diferente da pasta não deu erro" || ok
+printf '%s' "$err" | grep -q "declara name 'outro-nome'" && ok || ko "name errado sem mensagem: $err"
 [ -f "$T/y/analise-dados.zip" ] && ko "zip criado mesmo com name errado" || ok
+
+# Pasta de skills vazia: erro claro (bash 3.2 com set -u quebrava em array vazio)
+mkdir -p "$T/vazio/.claude/skills" && cp "$ROOT/package.sh" "$T/vazio/"
+err="$(OUT="$T/z" bash "$T/vazio/package.sh" 2>&1 >/dev/null)" && ko "sem skills não deu erro" || ok
+printf '%s' "$err" | grep -q 'nenhuma skill' && ok || ko "sem skills sem mensagem clara: $err"
 
 echo "passou: $pass  falhou: $fail"
 [ "$fail" = 0 ]
