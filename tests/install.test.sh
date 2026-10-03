@@ -32,6 +32,7 @@ for mode in $modes; do
   assert "[$mode] novo: hook aponta para a instalação" ".hooks.PreToolUse[0].hooks[0].command == \"bash \\\"$H/hooks/guard.sh\\\"\"" "$S"
   assert "[$mode] novo: sandbox ligado" '.sandbox.enabled == true' "$S"
   assert "[$mode] novo: ask inclui retry fora do sandbox" '.permissions.ask | index("Bash(dangerouslyDisableSandbox:true)")' "$S"
+  assert "[$mode] novo: deny inclui leitura de ~/.ssh" '.permissions.deny | index("Read(~/.ssh/**)")' "$S"
   [ -x "$H/hooks/guard.sh" ] && ok || ko "[$mode] novo: guard.sh executável"
   [ -f "$H/skills/discover-resources/decisoes.md" ] && ok || ko "[$mode] novo: skill copiada"
   [ -f "$H/skills/analise-dados/SKILL.md" ] && ok || ko "[$mode] novo: skill analise-dados copiada"

@@ -16,6 +16,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - `shellcheck` no CI (nível warning, só Linux, já vem no runner) e Dependabot para as GitHub Actions, com `actions/checkout` fixado por hash — recursos nativos do GitHub; o hash fixado segue a recomendação do `agentic-actions-auditor` (`trailofbits/skills`) — 2026-10-03
 - Regra "pedido com duas leituras: apresente as duas" no `CLAUDE.md` — princípio 1 de `multica-ai/andrej-karpathy-skills` (MIT); os outros três já estavam cobertos — 2026-10-03
 - Skills `frontend-design` e `webapp-testing` — `anthropics/skills` (Apache-2.0), cópia sem alteração do commit `8a1541c` com o `LICENSE.txt`; auditadas: só instruções, o script `with_server.py` sobe o servidor indicado e testa a porta em localhost. Para sites: direção visual que não parece template e teste no navegador real com Playwright (instalar `playwright` no projeto quando for usar) — 2026-10-03
+- Bloqueio de `--no-verify`, `git commit -n` e `core.hooksPath` no `guard.sh`, e "corrija o código, não a configuração de lint/teste" nos agents `developer` e `tester` — ideias de `block-no-verify.js` e `config-protection.js` de `affaan-m/everything-claude-code` (MIT), reescritas em bash sem copiar código; chave Stripe (`sk_live_`/`rk_live_`) na varredura de segredo, de `rohitg00/awesome-claude-code-toolkit` — 2026-10-03
 - Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
 
 ## Instalar — fila, em ordem de valor
@@ -64,6 +65,11 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `nimrodfisher/data-analytics-skills` (MIT, 31 skills) | sobrepõe a skill `analise-dados` e cobraria 31 descrições de contexto em todo turno; a ideia útil (processar por script, trazer só o resultado) entrou na `analise-dados` (2026-10-03) |
 | `danielrosehill/Claude-Data-Analyst-plugin` | 12 estrelas; exige DuckDB, csvkit, Miller e `uv` no PATH (2026-10-03) |
 | `vercel-labs/agent-skills` (react-best-practices) | stack é HTML/CSS/JS puro; o `web-design-guidelines` da mesma coleção já está ativo na conta (2026-10-03) |
+| `affaan-m/everything-claude-code` | "sistema operacional" de agents com mais de 4 mil arquivos, hooks em Node em todo evento e injeção de contexto no início da sessão; seria substituição, não complemento (2026-10-03) |
+| `rohitg00/awesome-claude-code-toolkit` | 135 agents e 20 hooks em Node que repetem os agents e o `guard.sh`; os padrões de segredo genéricos (URL de banco, JWT) dariam falso positivo em exemplo e teste (2026-10-03) |
+| `yamadashy/repomix` | empacota o repositório inteiro num arquivo para colar no modelo, o oposto de ler só o trecho certo; o `scout` cobre a localização. Útil só para mandar código a um modelo fora do Claude Code (2026-10-03) |
+| `ComposioHQ/awesome-claude-skills` | as skills de documento e design são cópias das da `anthropics/skills`; as `composio-skills` dependem de conta e chave no serviço Composio (2026-10-03) |
+| `hesreallyhim/awesome-claude-code`, `karanb192/awesome-claude-code-mods` | catálogos, não instaláveis; fonte de consulta. O dos mods mostra o que cada mod acessa, útil para a auditoria (2026-10-03) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |

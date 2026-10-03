@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 8 agents especializados, 1 skill, permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 8 agents especializados, 4 skills (dados, sites, teste no navegador e avaliação de recursos), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -52,10 +52,11 @@ Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e tamb
 - `settings.json` nega leitura de `node_modules`, `.venv`, `venv`, `__pycache__` e `coverage` para o Claude não carregar arquivos gerados no contexto.
 
 ## Segurança em camadas
-- **Permissões (`deny`/`ask`)**: bloqueio por prefixo de comando e leitura de arquivos sensíveis.
+- **Permissões (`deny`/`ask`)**: bloqueio por prefixo de comando e leitura de arquivos sensíveis, inclusive `~/.ssh`, `~/.aws/credentials` e `~/.gnupg` pela ferramenta Read, que não passa pelo sandbox. Pergunta antes de `git push`, `curl`/`wget`, `pip install` (também `pip3` e `python -m pip`), `npm install -g` e `npm publish`.
 - **Hook `guard.sh`** (PreToolUse em Bash e PowerShell): analisa o comando inteiro, separado por `;`, `|`, `&&`, `$( )` etc., e bloqueia:
   - `rm` recursivo forçado (`-rf`, `-r -f`, `-fr`, `sudo`, `xargs`, `bash -c`), `Remove-Item -Recurse`, `git push --force`/`-f`/`+ref`, `git reset --hard`, `git clean -f` sem `-n` e `curl … | sh`; `--force-with-lease` passa;
-  - `git commit` (inclusive `-a`) com `.env`, `*.pem`, `*.key`, `id_rsa` ou chave conhecida (AWS, GitHub, Anthropic, OpenAI, Slack, Google, GitLab, chave privada) nas linhas adicionadas; `.env.example` passa. Com `git add` no mesmo comando, examina a árvore de trabalho inteira, inclusive arquivos novos (pode bloquear por um arquivo não rastreado que não ia entrar); segue `cd dir` e `git -C dir`;
+  - pular os hooks do Git: `--no-verify` (ou abreviado) em `commit`, `push`, `merge` e `rebase`, `git commit -n` e `core.hooksPath` passado ao `git` (`-c`, `--config-env`);
+  - `git commit` (inclusive `-a`) com `.env`, `*.pem`, `*.key`, `id_rsa` ou chave conhecida (AWS, GitHub, Anthropic, OpenAI, Slack, Google, GitLab, Stripe, chave privada) nas linhas adicionadas; `.env.example` passa. Com `git add` no mesmo comando, examina a árvore de trabalho inteira, inclusive arquivos novos (pode bloquear por um arquivo não rastreado que não ia entrar); segue `cd dir` e `git -C dir`;
   - `DELETE`/`UPDATE` sem `WHERE` quando o comando chama `sqlite3`, `psql`, `mysql`, `wrangler` etc.;
   - escrita pelo shell em `.claude/settings*` ou `.claude/hooks/` (`>`, `sed -i`, `cp`, `mv`, `tee`, `Set-Content`…). As ferramentas Edit/Write já são protegidas pelo Claude Code, que nunca aprova sozinho escrita em `.claude/`;
   - **agents somente leitura:** quando quem chama é o `architect`, o `reviewer` ou o `security` (campo `agent_type` que o Claude Code envia ao hook), bloqueia qualquer escrita pelo shell: redirecionamento para arquivo, `rm`, `mv`, `cp`, `touch`, `sed -i`, `tee`, `find -delete`, `git add/commit/push/checkout/reset` e afins. Leitura, `git diff/log/status` e testes passam. É melhor esforço, não sandbox: script que grava por dentro (`python -c`, `node -e`) não é visto.
