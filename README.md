@@ -75,6 +75,7 @@ Não vêm instalados; avalie com a skill `discover-resources`.
 ```bash
 bash tests/guard.test.sh      # hook
 bash tests/install.test.sh    # install.sh, em pastas temporárias
+bash tests/skills.test.sh     # cabeçalho de skills e agents (name igual à pasta, description presente)
 pwsh -NoProfile -File tests/install.test.ps1   # install.ps1 (Windows)
 ```
 O CI (`.github/workflows/test.yml`) roda tudo em todo PR, mais o `shellcheck` nos scripts. O Dependabot (`.github/dependabot.yml`) abre PR quando sai versão nova das actions. Na reinstalação, `decisoes.md` é substituído pelo do repositório; a versão anterior fica no backup.

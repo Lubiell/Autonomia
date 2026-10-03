@@ -31,6 +31,9 @@ jobs:
       - name: Hook
         run: |
           if [ "$RUNNER_OS" = macOS ]; then /bin/bash tests/guard.test.sh; else bash tests/guard.test.sh; fi
+      - name: Skills e agents (frontmatter)
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then /bin/bash tests/skills.test.sh; else bash tests/skills.test.sh; fi
       - name: Instalador (install.sh)
         if: runner.os != 'Windows'
         run: bash tests/install.test.sh
