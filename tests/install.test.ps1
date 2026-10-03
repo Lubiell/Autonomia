@@ -53,6 +53,14 @@ try {
     $Raw = [IO.File]::ReadAllBytes($SPath)
     Check 'existente: UTF-8 sem BOM' (-not ($Raw.Length -ge 3 -and $Raw[0] -eq 0xEF -and $Raw[1] -eq 0xBB -and $Raw[2] -eq 0xBF))
 
+    # settings.json vazio (so espacos) conta como configuracao vazia
+    $HV = Join-Path $Tmp 'vazio'
+    New-Item -ItemType Directory -Force $HV | Out-Null
+    [IO.File]::WriteAllText((Join-Path $HV 'settings.json'), "  `n", $Utf8)
+    Run-Install $HV | Out-Null
+    $SV = Read-Json (Join-Path $HV 'settings.json')
+    Check 'vazio: vira configuracao completa' ($SV.sandbox.enabled -eq $true -and @($SV.hooks.PreToolUse).Count -eq 1)
+
     # Reexecucao nao muda nada
     $Before = [IO.File]::ReadAllText($SPath, $Utf8)
     $Out = Run-Install $H

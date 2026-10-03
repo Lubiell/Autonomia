@@ -34,6 +34,7 @@ for mode in $modes; do
   assert "[$mode] novo: ask inclui retry fora do sandbox" '.permissions.ask | index("Bash(dangerouslyDisableSandbox:true)")' "$S"
   [ -x "$H/hooks/guard.sh" ] && ok || ko "[$mode] novo: guard.sh executável"
   [ -f "$H/skills/discover-resources/decisoes.md" ] && ok || ko "[$mode] novo: skill copiada"
+  [ -f "$H/skills/analise-dados/SKILL.md" ] && ok || ko "[$mode] novo: skill analise-dados copiada"
   echo '{"tool_input":{"command":"rm -r -f x"}}' | bash -c "$(jq -r '.hooks.PreToolUse[0].hooks[0].command' "$S")" 2>/dev/null
   [ $? = 2 ] && ok || ko "[$mode] novo: hook instalado bloqueia"
 
@@ -47,6 +48,12 @@ for mode in $modes; do
   assert "[$mode] existente: mantém hook do usuário e acrescenta o guard" '[.hooks.PreToolUse[].hooks[0].command] | (.[0] == "echo meu") and (.[1] | endswith("/hooks/guard.sh\""))' "$S"
   assert "[$mode] existente: ask sem duplicata" '.permissions.ask | (length == (unique | length))' "$S"
   ls "$H"/backup-orquestrador-*/settings.json >/dev/null 2>&1 && ok || ko "[$mode] existente: backup do settings"
+
+  # settings.json vazio (só espaços) conta como configuração vazia
+  HV="$TMP/$mode-vazio"
+  mkdir -p "$HV" && printf '  \n' > "$HV/settings.json"
+  run "$HV" >/dev/null 2>&1 || ko "[$mode] install.sh falhou (settings vazio)"
+  assert "[$mode] vazio: vira configuração completa" '.sandbox.enabled == true and (.hooks.PreToolUse | length) == 1' "$HV/settings.json"
 
   # Reexecução não muda nada
   cp "$S" "$TMP/antes.json"

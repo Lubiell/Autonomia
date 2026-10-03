@@ -19,27 +19,34 @@ if ! echo x | PATH="$BARE" cat >/dev/null 2>&1; then
 fi
 
 # Monta o JSON com escape correto de aspas, barras e quebras de linha.
+# AGENT_TYPE preenchido simula a chamada vinda de um subagent (campo agent_type do Claude Code).
+AGENT_TYPE=""
 payload() {
-  local tool="$1" cmd="$2" cwd="${3:-$PWD}"
+  local tool="$1" cmd="$2" cwd="${3:-$PWD}" agent=""
   cmd="${cmd//\\/\\\\}"; cmd="${cmd//\"/\\\"}"; cmd="${cmd//$'\n'/\\n}"
-  printf '{"hook_event_name":"PreToolUse","cwd":"%s","tool_name":"%s","tool_input":{"command":"%s","description":"x"}}' "$cwd" "$tool" "$cmd"
+  [ -n "$AGENT_TYPE" ] && agent=",\"agent_id\":\"a1\",\"agent_type\":\"$AGENT_TYPE\""
+  printf '{"hook_event_name":"PreToolUse","cwd":"%s"%s,"tool_name":"%s","tool_input":{"command":"%s","description":"x"}}' "$cwd" "$agent" "$tool" "$cmd"
 }
 
+# HOOK_ARGS vazio = modo normal; check_ro roda com --readonly (agents somente leitura).
+HOOK_ARGS=""
 check() {
   local want="$1" tool="$2" cmd="$3" cwd="${4:-$PWD}" mode code
   for mode in $modes; do
     if [ "$mode" = full ]; then
-      payload "$tool" "$cmd" "$cwd" | "$BASH_BIN" "$HOOK" 2>/dev/null; code=$?
+      payload "$tool" "$cmd" "$cwd" | "$BASH_BIN" "$HOOK" $HOOK_ARGS 2>/dev/null; code=$?
     else
-      payload "$tool" "$cmd" "$cwd" | PATH="$BARE" "$BASH_BIN" "$HOOK" 2>/dev/null; code=$?
+      payload "$tool" "$cmd" "$cwd" | PATH="$BARE" "$BASH_BIN" "$HOOK" $HOOK_ARGS 2>/dev/null; code=$?
     fi
     if { [ "$want" = block ] && [ "$code" = 2 ]; } || { [ "$want" = allow ] && [ "$code" = 0 ]; }; then
       pass=$((pass + 1))
     else
-      fail=$((fail + 1)); echo "FALHOU [$mode] esperado=$want código=$code  $tool: $cmd"
+      fail=$((fail + 1)); echo "FALHOU [$mode${HOOK_ARGS:+ $HOOK_ARGS}] esperado=$want código=$code  $tool: $cmd"
     fi
   done
 }
+check_ro() { HOOK_ARGS="--readonly"; check "$@"; HOOK_ARGS=""; }
+check_agent() { AGENT_TYPE="$1"; shift; check "$@"; AGENT_TYPE=""; }
 
 # Devem bloquear
 check block Bash 'rm -rf /tmp/x'
@@ -145,6 +152,76 @@ check block Bash "git -C $REPO commit -m x" "$BARE"
 check block Bash 'cd repo && git commit -m x' "$BARE"
 check allow Bash 'git commit -m x' "$BARE"
 reset_repo
+
+# Mensagem de commit é texto: não dispara os bloqueios de comando
+check allow Bash 'git commit -m "docs: explica por que rm -rf foi bloqueado"' "$BARE"
+check allow Bash "git commit -am 'evita git push --force no README'" "$BARE"
+check allow Bash 'git commit --message "copia para .claude/hooks com cp"' "$BARE"
+check block Bash 'git commit -m "x" && rm -rf build' "$BARE"
+check block Bash 'git commit -m "$(rm -rf build)"' "$BARE"
+check block Bash 'git commit -m "`rm -rf build`"' "$BARE"
+
+# Modo somente leitura (--readonly): agents architect, reviewer e security
+check_ro allow Bash 'ls -la && cat README.md'
+check_ro allow Bash 'git status && git diff --stat && git log --oneline -5'
+check_ro allow Bash 'grep -rn "mkdir" src'
+check_ro allow Bash 'bash tests/guard.test.sh 2>&1 | tail -3'
+check_ro allow Bash 'npm test > /dev/null'
+check_ro allow Bash 'sed -n 1,20p arquivo.txt'
+check_ro allow Bash 'find . -name "*.md"'
+check_ro allow Bash 'git stash list'
+check_ro allow Bash 'git fetch origin main'
+check_ro block Bash 'echo x > arquivo.txt'
+check_ro block Bash 'cat a >> b.log'
+check_ro block Bash 'rm arquivo.txt'
+check_ro block Bash 'sudo mv a b'
+check_ro block Bash 'touch novo.txt'
+check_ro block Bash 'sed -i s/a/b/ arquivo.txt'
+check_ro block Bash 'perl -pi -e s/a/b/ arquivo.txt'
+check_ro block Bash 'echo x | tee saida.txt'
+check_ro block Bash 'find . -name x -delete'
+check_ro block Bash 'git add . && git commit -m x'
+check_ro block Bash 'git -C repo checkout main'
+check_ro block Bash 'git stash'
+check_ro block Bash 'ls; cp a b'
+check_ro block PowerShell 'Set-Content arquivo.txt "x"'
+check_ro block PowerShell 'Remove-Item arquivo.txt'
+check_ro block Bash 'echo x >| f.txt'
+check_ro block Bash 'sudo -u root rm f'
+check_ro block Bash 'timeout 5 rm f'
+check_ro block Bash 'nice -n 10 touch f'
+check_ro block Bash '{ rm f; }'
+check_ro block Bash 'if true; then rm f; fi'
+check_ro block Bash 'bash -c "touch f"'
+check_ro block Bash 'sh -lc "rm f"'
+check_ro block Bash 'eval "rm f"'
+check_ro block Bash 'git diff --output=f.patch'
+check_ro block Bash 'find . -fprint lista.txt'
+check_ro block Bash 'sort -o saida.txt entrada.txt'
+check_ro block Bash 'curl -sSO https://x/arquivo'
+check_ro block Bash 'wget https://x/arquivo'
+check_ro block Bash 'git branch -D antiga'
+check_ro block Bash 'git branch nova'
+check_ro block Bash 'git tag v1'
+check_ro block Bash 'git config --global user.name x'
+check_ro block Bash 'git remote add origem https://x'
+check_ro block Bash 'git worktree add ../wt'
+check_ro allow Bash 'grep -n "a>b" arquivo.txt'
+check_ro allow Bash "grep -rn '->' src"
+check_ro allow Bash 'git branch -a && git branch --show-current'
+check_ro allow Bash 'git tag -l && git remote -v && git worktree list'
+check_ro allow Bash 'git config --get user.name'
+check_ro allow Bash 'curl -s https://x | jq .'
+check_ro allow Bash 'bash tests/guard.test.sh'
+check block Bash $'echo "commit -m \'" ; rm -rf x; echo "\'"' "$BARE"
+
+# Modo somente leitura ligado pelo agent_type que o Claude Code envia dentro de subagents
+check_agent reviewer block Bash 'touch novo.txt'
+check_agent architect block Bash 'git commit -m x'
+check_agent security block Bash 'echo x > a.txt'
+check_agent reviewer allow Bash 'git diff --stat'
+check_agent developer allow Bash 'touch novo.txt'
+check_agent debugger allow Bash 'echo x > a.txt'
 
 # Devem passar
 check allow Bash 'ls -la'

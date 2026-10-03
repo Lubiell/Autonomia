@@ -47,7 +47,9 @@ $SrcSettings = Join-Path $Src '.claude\settings.json'
 $JsonArgs = @{}
 if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $JsonArgs.DateKind = 'String' }
 $IsNew = -not (Test-Path -LiteralPath $Settings)
-$DstJson = if ($IsNew) { [pscustomobject]@{} } else { [IO.File]::ReadAllText($Settings, $Utf8) | ConvertFrom-Json @JsonArgs }
+$DstText = if ($IsNew) { '' } else { [IO.File]::ReadAllText($Settings, $Utf8) }
+# Arquivo vazio ou só com espaços conta como configuração vazia (ConvertFrom-Json devolveria $null).
+$DstJson = if ([string]::IsNullOrWhiteSpace($DstText)) { [pscustomobject]@{} } else { $DstText | ConvertFrom-Json @JsonArgs }
 $SrcJson = [IO.File]::ReadAllText($SrcSettings, $Utf8) | ConvertFrom-Json @JsonArgs
 if (-not $DstJson.permissions) {
     $DstJson | Add-Member -NotePropertyName permissions -NotePropertyValue ([pscustomobject]@{})

@@ -12,6 +12,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Passos de teste primeiro e hipótese com evidência (agents `tester` e `debugger`) — ideia de `obra/superpowers` (MIT), sem instalar — 2026-10-02
 - Checklist de auditoria, registro de decisões e regra de evidência — adaptados da skill `protocolo-dev` — 2026-10-02
 - Regra contra concordar por insistência (`CLAUDE.md`) e causa raiz por categorias, pontos cegos e 5 porquês (agent `debugger`) — ideias do material "Agente de Diagnóstico" (ExStart), adaptadas sem copiar — 2026-10-03
+- Skill `analise-dados` (definir → validar → investigar → priorizar → entregar, checklist de dashboard) — método dos materiais "Agente de Diagnóstico", "Kit Claude Dash" e "25 prompts de dashboard" (ExStart), reescrito sem copiar — 2026-10-03
 - Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
 
 ## Instalar — fila, em ordem de valor
