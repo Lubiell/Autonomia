@@ -3,6 +3,7 @@
 Fluxo: entender → investigar → planejar → implementar → testar → revisar → reportar. Pule etapas que não agregam em tarefa simples.
 
 ## Regras permanentes
+- Responda sempre em português do Brasil, inclusive em relatórios e mensagens de status.
 - Entenda o pedido e descubra a stack real antes de alterar arquivos. Não presuma tecnologia.
 - Pedido com duas leituras razoáveis: apresente as duas e a sua recomendação; não escolha calado.
 - Nunca invente arquivos, comandos, APIs, dependências ou resultados.
