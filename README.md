@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 8 agents especializados, 4 skills (dados, sites, teste no navegador e avaliação de recursos), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 11 agents especializados, 9 skills (dados, sites, SEO, teste no navegador, deploy, conteúdo para redes, sabatina de requisitos, passagem de sessão e avaliação de recursos), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -18,11 +18,19 @@ package.sh / package.ps1  empacota as skills em zip para o claude.ai
 │   ├── reviewer.md       revisão do diff, somente leitura (sonnet)
 │   ├── security.md       auditoria, somente leitura (sonnet)
 │   ├── devops.md         Git, CI/CD, deploy (haiku)
-│   └── scout.md          localiza código, somente leitura (sonnet)
+│   ├── scout.md          localiza código, somente leitura (sonnet)
+│   ├── data-analyst.md   processa base de dados e traz só o resultado (sonnet)
+│   ├── qa-web.md         testa o site no navegador real, não edita (sonnet)
+│   └── docs-writer.md    README, guias e CHANGELOG a partir do código real (sonnet)
 └── skills/
     ├── analise-dados/        diagnóstico de dados e dashboard, etapa por etapa
     ├── frontend-design/      direção visual de sites (oficial Anthropic, Apache-2.0)
     ├── webapp-testing/       teste de site no navegador com Playwright (oficial Anthropic, Apache-2.0)
+    ├── deploy-web/           checklist de publicação: GitHub Pages, Cloudflare, Firebase
+    ├── seo/                  título, meta, headings, sitemap, dados estruturados, Core Web Vitals
+    ├── conteudo/             post, legenda, carrossel, roteiro de vídeo e anúncio, no tom do usuário
+    ├── handoff/              /handoff: documento para outra sessão continuar (só por comando)
+    ├── grill-me/             /grill-me: entrevista até o plano não ter pontas soltas (só por comando)
     └── discover-resources/   avaliar recurso externo antes de instalar
         ├── auditoria.md      checklist de segurança antes de instalar
         └── decisoes.md       registro do que foi adotado ou recusado
@@ -58,7 +66,7 @@ Sai um `dist/<skill>.zip` por skill, com a pasta da skill no topo, como o claude
 ## Economia de tokens
 - `CLAUDE.md` entra em todo turno: mantenha-o curto. Instrução longa e rara vai para uma skill (só a `description` fica no contexto até ela ser usada).
 - A `description` dos agents decide quando o Claude delega. Cada subagent começa do zero e relê contexto, então architect e reviewer só disparam em mudança não trivial.
-- Modelo por custo: `haiku` para execução (tester, devops), `sonnet` onde a qualidade pesa (scout, developer, debugger, reviewer, security) e `opus` só no architect, que é raro.
+- Modelo por custo: `haiku` para execução (tester, devops), `sonnet` onde a qualidade pesa (scout, developer, debugger, reviewer, security, data-analyst, qa-web, docs-writer) e `opus` só no architect, que é raro.
 - O `scout` localiza código e devolve só `arquivo:linha`, para a sessão principal ler apenas os trechos certos. Ele roda com `omitClaudeMd: true` (Claude Code v2.1.271+), sem carregar o `CLAUDE.md`.
 - `settings.json` nega leitura de `node_modules`, `.venv`, `venv`, `__pycache__` e `coverage` para o Claude não carregar arquivos gerados no contexto.
 
