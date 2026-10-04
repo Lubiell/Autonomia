@@ -33,3 +33,5 @@ description: Use ao criar ou revisar API, endpoint, rota de servidor, Worker, Cl
 
 ## Testes por rota
 Caminho feliz, entrada inválida (400/422), sem login (401), recurso de outro usuário (403/404). Use o agent `tester`.
+
+Referência para aprofundar: OWASP Cheat Sheet Series (cheatsheetseries.owasp.org) e OWASP API Security Top 10. Antes de publicar, peça a auditoria do agent `security`.
