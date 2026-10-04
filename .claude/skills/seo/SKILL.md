@@ -33,7 +33,7 @@ Revise no HTML real (arquivo ou página no ar), não de memória. Aponte cada pr
 - Valide no Teste de Pesquisa Aprimorada do Google ou no validator.schema.org.
 
 ## Desempenho (Core Web Vitals)
-- Metas do Google: LCP ≤ 2,5 s, INP ≤ 200 ms, CLS ≤ 0,1.
+- Metas do Google: LCP ≤ 2,5 s, INP ≤ 200 ms, CLS ≤ 0,1, medidas no percentil 75 das visitas reais, celular e desktop separados.
 - Comuns: imagem grande sem compressão, fonte e script bloqueando a renderização, elemento sem tamanho que empurra o layout.
 - Meça com o Lighthouse do Chrome (DevTools) ou o PageSpeed Insights na URL publicada.
 

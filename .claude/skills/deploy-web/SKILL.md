@@ -17,7 +17,7 @@ Publicar é ação externa: confirme com o usuário antes do comando que publica
 ## Por plataforma
 - **GitHub Pages:** confira a origem (branch ou GitHub Actions). Em site de projeto o endereço tem `/<repo>/`: caminhos absolutos (`/css/x.css`) quebram; use relativos ou a base certa. Página 404 própria, se houver.
 - **Cloudflare Pages:** `npx wrangler pages deploy <pasta>`; teste antes na URL de preview que o deploy devolve.
-- **Cloudflare Workers:** `npx wrangler deploy`; segredos com `npx wrangler secret put NOME`, nunca no `wrangler.toml`. Para voltar: `npx wrangler rollback`.
+- **Cloudflare Workers:** `npx wrangler deploy`; segredos com `npx wrangler secret put NOME`, nunca no `wrangler.toml`. Para voltar: `npx wrangler rollback` (volta o código; dados de D1/KV não voltam junto).
 - **Cloudflare D1:** backup com `npx wrangler d1 export <banco> --remote --output=backup.sql`; migração com `npx wrangler d1 migrations apply <banco> --remote`, depois de aplicar em `--local` e conferir.
 - **Firebase Hosting:** preview com `firebase hosting:channel:deploy <nome>`; produção com `firebase deploy --only hosting`. Regras do Firestore/Storage revisadas se mudaram: regra aberta é dado exposto.
 

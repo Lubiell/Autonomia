@@ -4,6 +4,7 @@
 # no upload para o claude.ai sem dizer por quê.
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 pass=0 fail=0
+BUDGET=400
 ko() { fail=$((fail + 1)); echo "FALHOU: $1"; }
 
 # Valor de uma chave no primeiro bloco ---; junta as linhas recuadas de "key: >" ou "key: |".
@@ -32,6 +33,8 @@ check() {
     && pass=$((pass + 1)) || ko "$file: name '$name' fora do padrão (minúsculas, números e hífen; até 64)"
   [ -n "$desc" ] && pass=$((pass + 1)) || ko "$file: sem description"
   [ ${#desc} -le 1024 ] && pass=$((pass + 1)) || ko "$file: description com ${#desc} caracteres (máximo 1024)"
+  # Orçamento do Autonomia: a description entra no contexto em todo turno
+  [ ${#desc} -le "$BUDGET" ] && pass=$((pass + 1)) || ko "$file: description com ${#desc} caracteres (orçamento $BUDGET; encurte)"
 }
 
 n=0
