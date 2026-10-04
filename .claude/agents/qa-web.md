@@ -23,3 +23,4 @@ Retorno (página — problema — como reproduzir):
 - **CORRIGIR:**
 - **OPCIONAL:**
 - **Não testado:** o que ficou de fora e por quê
+- **Veredito:** PRONTO só com evidência de cada fluxo da alteração; sem evidência ou na dúvida, NÃO PRONTO
