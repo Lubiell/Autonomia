@@ -100,6 +100,37 @@ check allow Bash $'sqlite3 app.db <<EOF\nDELETE FROM t\nWHERE id = 1;\nEOF'
 check allow Bash 'sqlite3 app.db "SELECT * FROM users"'
 check allow Bash 'grep -rn "DELETE FROM" src'
 check block Bash 'sqlite3 app.db "delete from t" && echo where'
+# DROP e TRUNCATE em cliente de banco
+check block Bash 'sqlite3 app.db "DROP TABLE users"'
+check block Bash 'npx wrangler d1 execute db --remote --command "drop table if exists pedidos"'
+check block Bash 'psql -c "TRUNCATE pedidos"'
+check block Bash 'mysql -e "DROP DATABASE loja"'
+check allow Bash 'sqlite3 app.db "SELECT * FROM drop_log"'
+check allow Bash 'grep -rn "DROP TABLE" migrations'
+
+# Exclusão irreversível na nuvem
+check block Bash 'npx wrangler delete'
+check block Bash 'wrangler d1 delete meu-banco'
+check block Bash 'npx wrangler kv namespace delete --binding CACHE'
+check block Bash 'wrangler r2 bucket delete fotos'
+check block Bash 'firebase firestore:delete --all-collections'
+check block Bash 'firebase functions:delete enviarEmail'
+check block Bash 'gh repo delete usuario/projeto --yes'
+check block Bash 'npx wrangler@latest delete'
+check block Bash 'wrangler --config w.toml delete'
+check block Bash 'wrangler -c w.toml d1 delete db'
+check block Bash 'gh -R dono/repo repo delete --yes'
+check block Bash 'npx firebase-tools@13 --project p firestore:delete --all-collections'
+check block Bash 'wrangler pages project delete site'
+check block Bash 'wrangler queues delete fila'
+check allow Bash 'wrangler tail --format pretty'
+check allow Bash 'wrangler versions list'
+check allow Bash 'npx wrangler@latest deploy --env prod'
+check allow Bash 'wrangler d1 list'
+check allow Bash 'wrangler deploy'
+check allow Bash 'firebase deploy --only hosting'
+check allow Bash 'gh repo view usuario/projeto'
+check allow Bash 'git commit -m "remove o passo wrangler delete do README"'
 
 # Escrita pelo shell na configuração do Claude Code
 check block Bash 'echo {} > .claude/settings.json'
@@ -133,6 +164,8 @@ check block Bash 'git commit -m "feat: app"' "$REPO"
 reset_repo; echo "$PEM" > "$REPO/chave.txt"; git -C "$REPO" add chave.txt
 check block Bash 'git add . && git commit -m x' "$REPO"
 reset_repo; echo "TOKEN=abc" > "$REPO/.env"; git -C "$REPO" add -f .env
+check block Bash 'git commit -m x' "$REPO"
+reset_repo; echo "API_TOKEN=abc" > "$REPO/.dev.vars"; git -C "$REPO" add -f .dev.vars
 check block Bash 'git commit -m x' "$REPO"
 reset_repo; echo "TOKEN=" > "$REPO/.env.example"; git -C "$REPO" add .env.example
 check allow Bash 'git commit -m x' "$REPO"
