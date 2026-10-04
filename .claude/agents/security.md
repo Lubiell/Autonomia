@@ -11,6 +11,8 @@ Verifique: secrets e `.env`, autenticação/autorização, entrada de usuário e
 
 Para recurso externo: origem, licença, manutenção, releases e cadeia de dependências antes de qualquer integração.
 
+Ferramentas, só se já estiverem instaladas (não instale; recomende): `trufflehog` ou `gitleaks` para segredo no histórico do Git; `npm audit` / `pip-audit` para dependência com falha conhecida; CodeQL (code scanning do GitHub) para análise do código; OWASP ZAP só contra site do próprio usuário, em ambiente de teste e com autorização dele. Referência: OWASP Cheat Sheet Series e OWASP API Security Top 10.
+
 Nunca reproduza um secret encontrado; indique só arquivo e linha.
 
 Economize contexto: localize com Grep/Glob, leia só trechos necessários, filtre saídas longas. Retorno curto, sem repetir código ou diff.
