@@ -50,6 +50,13 @@ if printf '%s' "$cmd" | grep -Eiq "${dl}[^|]*\\|[[:space:]]*(sudo([[:space:]]+-[
   block "download executado direto no shell (curl | sh)"
 fi
 
+# Exclusão irreversível de recurso na nuvem: Worker, banco D1, KV, R2, Firestore, função, repositório.
+# Aceita versão no binário (wrangler@3) e opções antes do subcomando (--config x, -R dono/repo).
+bo='(@[^[:space:]]*)?([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+'
+if printf '%s' "$scmd" | tr '[:upper:]' '[:lower:]' | grep -Eq "(^|[^a-z0-9_-])(wrangler${bo}(delete|d1[[:space:]]+delete|kv[[:space:]:]+namespace[[:space:]]+delete|r2[[:space:]]+bucket[[:space:]]+delete|pages[[:space:]]+project[[:space:]]+delete|queues[[:space:]]+delete|vectorize[[:space:]]+delete)|firebase(-tools)?${bo}(firestore:delete|database:remove|functions:delete|hosting:disable)|gh${bo}repo[[:space:]]+delete)([^a-z0-9_-]|\$)"; then
+  block "exclusão irreversível de recurso na nuvem (wrangler/firebase/gh delete)"
+fi
+
 # Segredo no commit: arquivo sensível ou chave conhecida no que vai ser commitado.
 # Usa $commit_dir, $commit_all (git commit -a) e $add_any (git add no mesmo comando, que
 # roda depois deste hook: aí vale a árvore de trabalho inteira, inclusive arquivos novos).
@@ -65,7 +72,7 @@ scan_secrets() {
   fi
   [ "$add_any" = 1 ] && untracked="$(git ls-files -o --exclude-standard 2>/dev/null)"
   bad="$({ git diff $range --name-only --diff-filter=ACMR 2>/dev/null; printf '%s\n' "$untracked"; } |
-    grep -Ei '(^|/)(\.env(\.[^/]*)?|id_(rsa|dsa|ecdsa|ed25519)|[^/]*\.(pem|key|p12|pfx)|credentials\.json|service[-_]?account[^/]*\.json)$' |
+    grep -Ei '(^|/)(\.env(\.[^/]*)?|\.dev\.vars|id_(rsa|dsa|ecdsa|ed25519)|[^/]*\.(pem|key|p12|pfx)|credentials\.json|service[-_]?account[^/]*\.json)$' |
     grep -Eiv '\.(example|sample|template|dist)$' | head -3 | tr '\n' ' ')"
   [ -n "$bad" ] && block "arquivo sensível no commit: $bad"
   if {
@@ -79,12 +86,15 @@ scan_secrets() {
   fi
 }
 
-# DELETE/UPDATE sem WHERE, quando o comando chama um cliente de banco.
+# DELETE/UPDATE sem WHERE, DROP e TRUNCATE, quando o comando chama um cliente de banco.
 if printf '%s' "$cmd" | grep -Eiq '(^|[^a-z0-9_])(sqlite3|psql|mysql|mariadb|wrangler|turso|duckdb|sqlcmd|clickhouse-client)([^a-z0-9_]|$)'; then
   while IFS= read -r st; do
     if printf '%s' "$st" | grep -Eq '(^|[^a-z0-9_])(delete[[:space:]]+from|update[[:space:]]+[^[:space:]]+[[:space:]]+set)([^a-z0-9_]|$)' &&
       ! printf '%s' "$st" | grep -Eq '(^|[^a-z0-9_])where([^a-z0-9_]|$)'; then
       block "DELETE ou UPDATE sem WHERE"
+    fi
+    if printf '%s' "$st" | grep -Eq '(^|[^a-z0-9_])(drop[[:space:]]+(table|database|schema)|truncate)([^a-z0-9_]|$)'; then
+      block "DROP TABLE/DATABASE ou TRUNCATE (apaga dados sem volta)"
     fi
   done <<<"$(printf '%s\n' "$cmd" | tr '\n' ' ' | sed 's/\\n/ /g' | tr ';&|' '\n\n\n' | tr '[:upper:]' '[:lower:]')"
 fi
