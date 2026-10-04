@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 10 agents especializados, 6 skills (dados, sites, teste no navegador, deploy, passagem de sessão e avaliação de recursos), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 10 agents especializados, 8 skills (dados, sites, SEO, teste no navegador, deploy, conteúdo para redes, passagem de sessão e avaliação de recursos), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -26,6 +26,8 @@ package.sh / package.ps1  empacota as skills em zip para o claude.ai
     ├── frontend-design/      direção visual de sites (oficial Anthropic, Apache-2.0)
     ├── webapp-testing/       teste de site no navegador com Playwright (oficial Anthropic, Apache-2.0)
     ├── deploy-web/           checklist de publicação: GitHub Pages, Cloudflare, Firebase
+    ├── seo/                  título, meta, headings, sitemap, dados estruturados, Core Web Vitals
+    ├── conteudo/             post, legenda, carrossel, roteiro de vídeo e anúncio, no tom do usuário
     ├── handoff/              /handoff: documento para outra sessão continuar (só por comando)
     └── discover-resources/   avaliar recurso externo antes de instalar
         ├── auditoria.md      checklist de segurança antes de instalar
