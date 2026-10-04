@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 13 skills (dados, banco de dados, API e backend, sites, SEO, teste no navegador, deploy, automação, conteúdo para redes, tráfego pago, sabatina de requisitos, passagem de sessão e avaliação de recursos), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 19 skills (desenvolvimento, dados, marketing, negócios, projetos, atendimento, segurança, mídia e LGPD), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -34,6 +34,12 @@ package.sh / package.ps1  empacota as skills em zip para o claude.ai
     ├── seo/                  título, meta, headings, sitemap, dados estruturados, Core Web Vitals
     ├── conteudo/             post, legenda, carrossel, roteiro de vídeo e anúncio, no tom do usuário
     ├── trafego-pago/         Meta, Google e TikTok Ads: rastreamento, estrutura, métricas, relatório
+    ├── negocios/             preço, margem, ponto de equilíbrio, fluxo de caixa, proposta, plano
+    ├── projetos/             escopo, cronograma, prioridades, riscos, status semanal
+    ├── atendimento-vendas/   WhatsApp, FAQ, objeções, follow-up, CRM simples, NPS
+    ├── seguranca-digital/    senhas, duas etapas, backup, golpes, conta invadida, estudo em laboratório
+    ├── midia/                vídeo, áudio e imagem com ffmpeg e ImageMagick
+    ├── lgpd/                 dado pessoal: base legal, cookies, política, direitos, incidente
     ├── handoff/              /handoff: documento para outra sessão continuar (só por comando)
     ├── grill-me/             /grill-me: entrevista até o plano não ter pontas soltas (só por comando)
     └── discover-resources/   avaliar recurso externo antes de instalar
@@ -42,6 +48,20 @@ package.sh / package.ps1  empacota as skills em zip para o claude.ai
 tests/                    testes do hook e dos instaladores
 .github/workflows/test.yml  CI: Linux, macOS (bash 3.2) e Windows (Git Bash, PowerShell 7 e 5.1)
 ```
+
+## Áreas cobertas
+| Área | Agents | Skills |
+|---|---|---|
+| Desenvolvimento | architect, developer, debugger, tester, reviewer, devops, scout, docs-writer | api-backend, banco-dados, automacao, deploy-web |
+| Sites | qa-web | frontend-design, seo, webapp-testing |
+| Dados | data-analyst | analise-dados |
+| Marketing | — | conteudo, trafego-pago |
+| Negócios e gestão | — | negocios, projetos, atendimento-vendas |
+| Segurança e privacidade | security | seguranca-digital, lgpd |
+| Mídia | — | midia |
+| Pesquisa e processo | researcher | discover-resources, grill-me, handoff |
+
+Documentos Word, planilhas, PDF e apresentações ficam com as skills da conta (`docx`, `xlsx`, `pdf`, `pptx`).
 
 ## Instalação
 
