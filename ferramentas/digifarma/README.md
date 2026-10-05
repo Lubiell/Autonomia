@@ -27,7 +27,7 @@ A marcação é o que faz o Digifarma escriturar o produto no SNGPC.
 Coloque `desmarcar-controlados.bat` na mesma pasta do `desmarcar-controlados.ps1`, por exemplo `C:\Ferramentas\digifarma`, e dê dois cliques nele. Aparece um menu:
 
 1. **Ver os controlados com estoque e escolher**: simulação, não altera nada.
-2. **Escolher e DESMARCAR**: abre a janela de escolha, pede para digitar `DESMARCAR` e faz backup antes.
+2. **DESMARCAR**: abre a janela com a lista. A janela não tem botão "Desmarcar": clique nos produtos (Ctrl+clique para vários, Shift+clique para uma sequência) e depois em **OK**. Em seguida, digite `DESMARCAR` na janela preta. O programa faz backup antes de alterar.
 3. **Desfazer a última vez que desmarcou**: usa o `desfazer.sql` mais recente da pasta `registros`.
 
 O banco (`localhost:C:\Digifarma\Dados\Digifarma6.FDB`) e a coluna de estoque (`PROD_SALDO`) ficam nas primeiras linhas do `.bat`. Se mudarem, abra o arquivo no Bloco de Notas e ajuste.
@@ -111,6 +111,7 @@ Os nomes das tabelas e colunas do Digifarma não são públicos. O programa proc
 | `-CampoPsicotropico X` / `-CampoAntimicrobiano Y` | colunas das marcações |
 | `-ValorMarcado S -ValorDesmarcado N` | quando os valores não são os reconhecidos acima; `-ValorDesmarcado NULL` deixa a coluna vazia |
 | `-CampoEstoque ESTOQUE` | coluna do saldo na tabela de produtos |
+| `-CampoDescricao PROD_NOME` | coluna com o nome do produto, se a lista aparecer sem descrição (o log mostra as colunas de texto) |
 | `-TabelaEstoque T -CampoEstoque QTD -ChaveEstoque PRODUTO` | saldo em outra tabela (por loja, lote...): soma `QTD` por produto; os três são obrigatórios juntos |
 | `-Isql 'C:\...\isql.exe'` | quando o Firebird não está na pasta padrão |
 | `-PastaSaida D:\registros` | onde gravar log, lista e backup |

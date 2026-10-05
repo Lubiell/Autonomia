@@ -20,8 +20,9 @@ echo.
 echo   DESMARCAR PSICOTROPICO / ANTIMICROBIANO - DIGIFARMA
 echo   Banco: %BANCO%
 echo.
-echo   1 - Ver os controlados com estoque e escolher (simulacao, NAO altera nada)
-echo   2 - Escolher e DESMARCAR (faz backup do banco antes)
+echo   1 - Somente VER os controlados com estoque (simulacao, NAO altera nada)
+echo   2 - DESMARCAR: na janela, clique nos produtos (Ctrl+clique para varios),
+echo       clique OK e depois digite DESMARCAR aqui. Faz backup do banco antes.
 echo   3 - Desfazer a ultima vez que desmarcou
 echo   4 - Sair
 echo.

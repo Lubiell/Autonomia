@@ -29,6 +29,7 @@ param(
     [string]$ValorDesmarcado,
     [ValidateSet('Todos', 'ComEstoque', 'SemEstoque')][string]$Estoque = 'Todos',
     [string]$CampoEstoque,
+    [string]$CampoDescricao,
     [string]$TabelaEstoque,
     [string]$ChaveEstoque,
     [switch]$Escolher,
@@ -359,7 +360,12 @@ function Select-Products($Lista) {
                 for ($k = 0; $k -lt $alvo.Alvos.Count; $k++) { $o[$alvo.Alvos[$k].Col.Campo] = $Lista[$i].Flags[$k] }
                 [pscustomobject]$o
             }
-            $esc = @($itens | Out-GridView -Title 'Selecione os produtos a DESMARCAR (Ctrl ou Shift para vários) e clique OK' -PassThru)
+            $titulo = if ($Aplicar) {
+                'DESMARCAR: clique nos produtos (Ctrl+clique para vários, Shift+clique para uma sequência) e depois em OK. Em seguida confirme na janela preta.'
+            } else {
+                'SIMULAÇÃO (não altera nada): clique nos produtos (Ctrl+clique para vários) e em OK. Para desmarcar de verdade, use a opção 2 do menu.'
+            }
+            $esc = @($itens | Out-GridView -Title $titulo -PassThru)
             return @($esc | ForEach-Object { $Lista[$_.Item - 1] })
         } catch {
             Write-Host "Janela de seleção indisponível ($($_.Exception.Message)); usando a lista no console."
@@ -379,7 +385,7 @@ function Select-Products($Lista) {
 }
 
 # ---------- validação dos parâmetros ----------
-foreach ($n in @($Tabela, $CampoPsicotropico, $CampoAntimicrobiano, $CampoEstoque, $TabelaEstoque, $ChaveEstoque)) {
+foreach ($n in @($Tabela, $CampoPsicotropico, $CampoAntimicrobiano, $CampoEstoque, $TabelaEstoque, $ChaveEstoque, $CampoDescricao)) {
     if ($n -and $n -notmatch '^[A-Za-z_][A-Za-z0-9_$]*$') { Stop-Script "nome inválido: '$n'." }
 }
 foreach ($v in @($ValorMarcado, $ValorDesmarcado)) {
@@ -511,10 +517,24 @@ $antes = Get-Counts
 for ($i = 0; $i -lt $alvo.Alvos.Count; $i++) { Write-Log "  Marcados como $($alvo.Alvos[$i].Kind) (todos): $($antes[$i])" }
 
 # Lista dos produtos marcados (com o filtro de estoque): chave, descrição, estoque e valores atuais.
+$textos = @($alvo.Colunas | Where-Object { $TiposTexto -contains $_.Tipo })
 $desc = $null
-foreach ($padrao in @('^DESCRICAO$', '^DESCRICAO_?PRODUTO$', '^NOME$', '^NOME_?PRODUTO$', '^DESCR', 'DESCRI', '^NOME')) {
-    $desc = $alvo.Colunas | Where-Object { $TiposTexto -contains $_.Tipo -and $_.Campo -match $padrao } | Select-Object -First 1
-    if ($desc) { break }
+if ($CampoDescricao) {
+    $desc = $textos | Where-Object { $_.Campo -eq $CampoDescricao } | Select-Object -First 1
+    if (-not $desc) { Stop-Script "não há coluna de texto '$CampoDescricao' em $T. Colunas de texto: $(($textos | ForEach-Object { $_.Campo }) -join ', ')" }
+} else {
+    # No Digifarma as colunas de PRODUTOS começam com PROD_ (PROD_SALDO): PROD_NOME, PROD_DESC...
+    $padroes = @('^(PROD_?)?DESCRICAO$', '^(PROD_?)?NOME$', '^(PROD_?)?DESCR$', '^(PROD_?)?DESC$',
+        '^DESCRICAO_?PRODUTO$', '^NOME_?PRODUTO$', 'DESCRICAO', 'DESCRI', '^NOME', 'NOME$', '^PRODUTO$')
+    foreach ($padrao in $padroes) {
+        $desc = $textos | Where-Object { $_.Campo -match $padrao } | Select-Object -First 1
+        if ($desc) { break }
+    }
+}
+if ($desc) {
+    Write-Log "  Descrição: $T.$($desc.Campo)"
+} else {
+    Write-Log "  Descrição: não encontrada. Informe -CampoDescricao com uma destas colunas de texto: $(($textos | ForEach-Object { $_.Campo }) -join ', ')"
 }
 $expr = @($pk | ForEach-Object { "COALESCE(CAST(P.$(Q $_.Campo) AS VARCHAR(100)), '')" })
 $expr += if ($desc) {

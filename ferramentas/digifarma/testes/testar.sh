@@ -147,6 +147,10 @@ INSERT INTO MEDTXT VALUES ('A', 'S');
 INSERT INTO MEDTXT VALUES ('A|B', 'S');
 INSERT INTO MEDTXT VALUES ('C', 'N');
 CREATE TABLE MEDBULK (ID INTEGER NOT NULL PRIMARY KEY, CONTROLADO CHAR(1));
+CREATE TABLE MEDPN (ID INTEGER NOT NULL PRIMARY KEY, PROD_DESCONTO VARCHAR(5), PROD_NOME VARCHAR(30), CONTROLADO CHAR(1));
+COMMIT;
+INSERT INTO MEDPN VALUES (1, 'X', 'RIVOTRIL 2MG', 'S');
+INSERT INTO MEDPN VALUES (2, 'X', 'OUTRO', 'N');
 COMMIT;
 SET TERM ^ ;
 EXECUTE BLOCK AS DECLARE I INTEGER = 1; BEGIN WHILE (I <= 300) DO BEGIN
@@ -183,6 +187,12 @@ ok '[ "$(mednull)" = "1:S 2:- " ]' "desfazer NULL: $(mednull)"
 # Código com '|' desalinharia a chave: para antes de alterar
 rodar -Banco "$B2" -Tabela MEDTXT -Desmarcar Psicotropico -Codigos A -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a9" >/dev/null; rc=$?
 ok '[ $rc -eq 1 ] && [ "$(sql "$DB2" "SELECT COUNT(*) FROM MEDTXT WHERE CONTROLADO = '"'S'"';")" -eq 2 ]' "código com |: código $rc"
+
+# Coluna de nome no estilo do Digifarma (PROD_NOME), sem confundir com PROD_DESCONTO; -CampoDescricao manda
+out="$(rodar -Banco "$B2" -Tabela MEDPN -Desmarcar Psicotropico -PastaSaida "$TMP/s8")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -q "Descrição: MEDPN.PROD_NOME" <<<"$out" && grep -q "1 | RIVOTRIL 2MG | S" <<<"$out"' "PROD_NOME: $out"
+out="$(rodar -Banco "$B2" -Tabela MEDPN -Desmarcar Psicotropico -CampoDescricao PROD_DESCONTO -PastaSaida "$TMP/s9")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -q "Descrição: MEDPN.PROD_DESCONTO" <<<"$out"' "-CampoDescricao: $out"
 
 # Muitos produtos (vários blocos de gravação)
 out="$(rodar -Banco "$B2" -Tabela MEDBULK -Desmarcar Psicotropico -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a11")"; rc=$?
