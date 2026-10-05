@@ -85,7 +85,7 @@ out="$(printf '1,3\nDESMARCAR\n' | rodar -Banco "$B" -Estoque ComEstoque -Escolh
 esperado="${ORIGINAL/2:S:N/2:N:N}"; esperado="${esperado/12:S:N/12:N:N}"
 ok '[ $rc -eq 0 ]' "escolher: código $rc"
 ok '[ "$(estado "$DB")" = "$esperado" ]' "escolher: estado $(estado "$DB")"
-ok 'grep -q "Psicotropico: 2 desmarcado(s) de 2 previsto(s)" <<<"$out"' "escolher: conferência"
+ok 'grep -q "Desmarcadas: 2 de 2" <<<"$out"' "escolher: conferência"
 "$ISQL" -q -i "$TMP/a2/desfazer.sql" "$B" >/dev/null 2>&1
 
 # Cancelar na confirmação não altera nada
@@ -103,15 +103,24 @@ ok '[ $rc -eq 0 ] && grep -q "Produtos marcados sem estoque: 2" <<<"$out"' "sem 
 rodar -Banco "$B" -Estoque ComEstoque -TabelaEstoque ESTOQUE_LOJA -CampoEstoque QTD -PastaSaida "$TMP/s5" >/dev/null; rc=$?
 ok '[ $rc -eq 2 ]' "tabela de estoque sem -ChaveEstoque: código $rc"
 
-# Bloqueio no meio da alteração (outra sessão editando o 21): nada pode ficar gravado
-( printf 'SET TRANSACTION NO WAIT;\nUPDATE PRODUTOS SET PRECO = PRECO WHERE CODIGO = 21;\n'; sleep 20 ) | "$ISQL" -q "$B" >/dev/null 2>&1 &
+# Digifarma aberto, produto 21 preso o tempo todo por outra sessão: grava o 2, tenta de novo, lista o 21
+( printf 'SET TRANSACTION NO WAIT;\nUPDATE PRODUTOS SET PRECO = PRECO WHERE CODIGO = 21;\n'; sleep 30 ) | "$ISQL" -q "$B" >/dev/null 2>&1 &
 TRAVA=$!
 sleep 2
-out="$(rodar -Banco "$B" -Codigos 2,21 -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a7")"; rc=$?
-kill "$TRAVA" 2>/dev/null
-ok '[ $rc -eq 1 ] && [ "$(estado "$DB")" = "$ORIGINAL" ]' "bloqueio: código $rc, estado $(estado "$DB")"
-ok 'grep -Eq "lock conflict|deadlock|concurrent update" <<<"$out" && grep -q "nada foi alterado" <<<"$out"' "bloqueio: mensagem $out"
-sleep 1
+out="$(rodar -Banco "$B" -Codigos 2,21 -Tentativas 2 -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a7")"; rc=$?
+wait "$TRAVA" 2>/dev/null   # a sessão que prendia o 21 termina (30 s) e o banco solta o produto
+ok '[ $rc -eq 3 ] && [ "$(estado "$DB")" = "${ORIGINAL/2:S:N/2:N:N}" ]' "em uso: código $rc, estado $(estado "$DB")"
+ok 'grep -q "tentando de novo" <<<"$out" && grep -q "Desmarcadas: 1 de 2" <<<"$out" && grep -q "Rode de novo mais tarde com: -Aplicar -Codigos 21" <<<"$out"' "em uso: mensagens $out"
+rodar -Banco "$B" -Desfazer "$TMP/a7/desfazer.sql" >/dev/null
+ok '[ "$(estado "$DB")" = "$ORIGINAL" ]' "em uso: desfazer $(estado "$DB")"
+
+# Produto 21 preso só por 2 s (venda terminando): espera e grava, sem perder o que a venda gravou
+( printf 'UPDATE PRODUTOS SET PRECO = 99 WHERE CODIGO = 21;\n'; sleep 2; printf 'COMMIT;\n' ) | "$ISQL" -q "$B" >/dev/null 2>&1 &
+sleep 0.5
+rodar -Banco "$B" -Codigos 21 -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a10" >/dev/null; rc=$?
+wait
+ok '[ $rc -eq 0 ] && [ "$(estado "$DB")" = "${ORIGINAL/21:N:S/21:N:N}" ] && [ "$(sql "$DB" "SELECT CAST(PRECO AS INTEGER) FROM PRODUTOS WHERE CODIGO = 21;")" -eq 99 ]' "espera: código $rc, estado $(estado "$DB"), preço [$(sql "$DB" "SELECT CAST(PRECO AS INTEGER) FROM PRODUTOS WHERE CODIGO = 21;")]"
+rodar -Banco "$B" -Desfazer "$TMP/a10/desfazer.sql" >/dev/null
 
 # Só psicotrópico, todos: antimicrobiano fica intacto
 rodar -Banco "$B" -Desmarcar Psicotropico -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a4" >/dev/null; rc=$?
@@ -137,6 +146,12 @@ INSERT INTO MEDNULL VALUES (2, NULL);
 INSERT INTO MEDTXT VALUES ('A', 'S');
 INSERT INTO MEDTXT VALUES ('A|B', 'S');
 INSERT INTO MEDTXT VALUES ('C', 'N');
+CREATE TABLE MEDBULK (ID INTEGER NOT NULL PRIMARY KEY, CONTROLADO CHAR(1));
+COMMIT;
+SET TERM ^ ;
+EXECUTE BLOCK AS DECLARE I INTEGER = 1; BEGIN WHILE (I <= 300) DO BEGIN
+  INSERT INTO MEDBULK VALUES (:I, IIF(MOD(:I, 2) = 0, 'S', 'N')); I = I + 1; END END^
+SET TERM ; ^
 INSERT INTO MEDS VALUES (1, 'A', 1, FALSE, 3);
 INSERT INTO MEDS VALUES (2, 'B', 0, TRUE, 0);
 INSERT INTO MEDS VALUES (3, 'C', 1, TRUE, 1);
@@ -168,6 +183,12 @@ ok '[ "$(mednull)" = "1:S 2:- " ]' "desfazer NULL: $(mednull)"
 # Código com '|' desalinharia a chave: para antes de alterar
 rodar -Banco "$B2" -Tabela MEDTXT -Desmarcar Psicotropico -Codigos A -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a9" >/dev/null; rc=$?
 ok '[ $rc -eq 1 ] && [ "$(sql "$DB2" "SELECT COUNT(*) FROM MEDTXT WHERE CONTROLADO = '"'S'"';")" -eq 2 ]' "código com |: código $rc"
+
+# Muitos produtos (vários blocos de gravação)
+out="$(rodar -Banco "$B2" -Tabela MEDBULK -Desmarcar Psicotropico -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a11")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -q "Desmarcadas: 150 de 150" <<<"$out" && [ "$(sql "$DB2" "SELECT COUNT(*) FROM MEDBULK WHERE CONTROLADO = '"'S'"';")" -eq 0 ]' "300 produtos: código $rc"
+rodar -Banco "$B2" -Desfazer "$TMP/a11/desfazer.sql" >/dev/null
+ok '[ "$(sql "$DB2" "SELECT COUNT(*) FROM MEDBULK WHERE CONTROLADO = '"'S'"';")" -eq 150 ]' "300 produtos: desfazer"
 
 echo "passou: $PASS  falhou: $FAIL"
 [ "$FAIL" -eq 0 ]

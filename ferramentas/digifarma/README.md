@@ -22,9 +22,34 @@ A marcação é o que faz o Digifarma escriturar o produto no SNGPC.
 - O Firebird instalado no servidor do Digifarma. O programa usa o `isql.exe` e o `gbak.exe` que vêm com ele e os procura em `C:\Program Files\Firebird\...`. Se não achar, informe o caminho com `-Isql`.
 - Usuário e senha do Firebird (padrão `SYSDBA`). A senha é pedida na hora e não fica gravada em lugar nenhum.
 
-## Passo a passo
+## Jeito mais fácil: o atalho `desmarcar-controlados.bat`
 
-Rode no servidor, com o Digifarma **fechado em todos os computadores** (ou fora do horário de atendimento). Abra o PowerShell na pasta do programa.
+Coloque `desmarcar-controlados.bat` na mesma pasta do `desmarcar-controlados.ps1`, por exemplo `C:\Ferramentas\digifarma`, e dê dois cliques nele. Aparece um menu:
+
+1. **Ver os controlados com estoque e escolher**: simulação, não altera nada.
+2. **Escolher e DESMARCAR**: abre a janela de escolha, pede para digitar `DESMARCAR` e faz backup antes.
+3. **Desfazer a última vez que desmarcou**: usa o `desfazer.sql` mais recente da pasta `registros`.
+
+O banco (`localhost:C:\Digifarma\Dados\Digifarma6.FDB`) e a coluna de estoque (`PROD_SALDO`) ficam nas primeiras linhas do `.bat`. Se mudarem, abra o arquivo no Bloco de Notas e ajuste.
+
+## Com o Digifarma aberto
+
+Pode usar com o Digifarma aberto nos outros computadores:
+
+- Ler, simular e fazer o backup funcionam normalmente.
+- Na hora de gravar, se um produto estiver em uso naquele instante (por exemplo, uma venda baixando o estoque), o programa espera até 5 segundos por ele.
+- Se o produto continuar em uso, ele grava os outros e tenta de novo depois (`-Tentativas`, padrão 3, com 10 segundos entre as tentativas).
+- O que continuar em uso fica marcado e aparece no final, com o comando para rodar de novo só para esses produtos (código de saída `3`).
+
+Cuidados:
+
+- Ninguém deve estar com a **tela de cadastro** de um desses produtos aberta. Se a pessoa salvar essa tela depois, o Digifarma pode gravar a marcação de volta. Para conferir, rode a simulação de novo mais tarde com os mesmos `-Codigos`.
+- Um computador que estava com o produto na tela pode precisar fechar e abrir a tela para ver a mudança.
+- Em caso raro, uma venda desse mesmo produto no mesmo segundo pode dar aviso de conflito no caixa e precisar ser repetida.
+
+## Passo a passo pelo PowerShell
+
+Rode no servidor. Abra o PowerShell na pasta do programa.
 
 1. **Descobrir** onde estão as marcações e o estoque. Só lê, não altera nada:
 
@@ -48,7 +73,7 @@ Rode no servidor, com o Digifarma **fechado em todos os computadores** (ou fora 
    powershell -ExecutionPolicy Bypass -File .\desmarcar-controlados.ps1 -Banco 'localhost:C:\CAMINHO\Digifarma6.FDB' -Estoque ComEstoque -Escolher -Aplicar
    ```
 
-4. Abra o Digifarma e confira alguns produtos da lista.
+4. Confira alguns produtos da lista no Digifarma.
 
 Para desmarcar **todos** os marcados de uma vez, sem escolher, rode sem `-Escolher` e sem `-Codigos`.
 
@@ -91,15 +116,16 @@ Os nomes das tabelas e colunas do Digifarma não são públicos. O programa proc
 | `-PastaSaida D:\registros` | onde gravar log, lista e backup |
 | `-SemBackup` | não fazer o backup (só se já tiver um recente) |
 | `-SemPerguntar` | não pedir para digitar DESMARCAR (uso em lote) |
+| `-Tentativas 3` | quantas vezes tentar os produtos que estavam em uso em outro computador (1 a 10) |
 | `-Desfazer arquivo.sql` | remarca o que uma execução anterior desmarcou (veja "Como desfazer") |
 
-Códigos de saída: `0` ok, `1` erro ou cancelado, `2` faltam informações (rode `-Descobrir`).
+Códigos de saída: `0` ok, `1` erro ou cancelado, `2` faltam informações (rode `-Descobrir`), `3` alguns produtos estavam em uso e continuam marcados.
 
 ## Problemas comuns
 
 - **"isql do Firebird não encontrado"**: informe `-Isql` com o caminho do `isql.exe` da pasta do Firebird.
 - **"Your user name and password are not defined"**: usuário ou senha errados.
-- **"lock conflict", "deadlock" ou "concurrent update"**: algum computador está com o Digifarma aberto editando um produto da lista. Feche e rode de novo. O banco desfaz a transação inteira, e o programa confere e avisa "nada foi alterado".
+- **"continuaram em uso em outro computador e seguem marcados"**: algum computador estava usando esses produtos durante todas as tentativas. Rode de novo mais tarde com o comando `-Aplicar -Codigos ...` mostrado no final.
 - **"I/O error ... open"**: caminho do banco errado. Rodando no servidor, use `localhost:` antes do caminho.
 - **O Windows não deixa rodar o script**: use `powershell -ExecutionPolicy Bypass -File ...` como nos exemplos, ou `Unblock-File .\desmarcar-controlados.ps1`.
 

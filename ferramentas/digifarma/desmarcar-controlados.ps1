@@ -35,6 +35,7 @@ param(
     [string[]]$Codigos,
     [switch]$Aplicar,
     [switch]$SemPerguntar,
+    [ValidateRange(1, 10)][int]$Tentativas = 3,
     [string]$Desfazer,
     [switch]$SemBackup,
     [string]$Isql,
@@ -55,6 +56,8 @@ $ParesTexto = @(@('S', 'N'), @('T', 'F'), @('Y', 'N'), @('V', 'F'), @('1', '0'),
 $ParesNumero = @(@('1', '0'), @('-1', '0'))
 # Colunas de estoque que não são o saldo (mínimo, máximo, datas, valores).
 $NaoESaldo = 'MIN|MAX|IDEAL|SEGUR|REPOS|PEDID|ULT|DATA|DT_|VALOR|VLR|CUSTO|PRECO'
+$EsperaTrava = 5       # segundos que cada produto espera se estiver em uso em outro computador
+$PausaTentativa = 10   # segundos entre uma tentativa e outra para os produtos que ficaram em uso
 $script:LogFile = $null
 $script:Senha = $null
 
@@ -114,7 +117,7 @@ function Invoke-Isql([string]$Sql, [switch]$PodeFalhar) {
     # "Rolling back work." sai ao fechar a transação padrão do isql depois do COMMIT; não é erro.
     $msg = (($r.Erro -split "`r?`n") | Where-Object { $_.Trim() -and $_.Trim() -ne 'Rolling back work.' }) -join "`n"
     if ($r.Codigo -ne 0 -or $msg) {
-        if ($msg -match 'lock conflict|deadlock|concurrent update') { $msg += "`nFeche o Digifarma em todos os computadores e rode de novo." }
+        if ($msg -match 'lock conflict|deadlock|concurrent update') { $msg += "`nAlgum computador está usando estes produtos; rode de novo em instantes." }
         if ($PodeFalhar) { Write-Log "ERRO: o isql falhou (código $($r.Codigo)): $msg"; return $null }
         Stop-Script "o isql falhou (código $($r.Codigo)): $msg"
     }
@@ -583,7 +586,8 @@ if (-not $Aplicar) {
 
 Write-Host ''
 Write-Host 'ATENÇÃO: produto que já foi enviado ao SNGPC como controlado/antimicrobiano e for desmarcado'
-Write-Host 'gera divergência na ANVISA (veja o README). Feche o Digifarma em todos os computadores.'
+Write-Host 'gera divergência na ANVISA (veja o README). Pode deixar o Digifarma aberto, mas ninguém deve'
+Write-Host 'estar com o cadastro destes produtos aberto: ao salvar, o Digifarma pode gravar a marcação de volta.'
 if (-not $SemPerguntar) {
     $resp = Read-Host "Digite DESMARCAR para alterar $total marcação(ões) em $($sel.Count) produto(s) de $T"
     if ($resp -cne 'DESMARCAR') { Write-Log 'Cancelado pelo usuário. Nada foi alterado.'; exit 1 }
@@ -604,7 +608,7 @@ if ($SemBackup) {
 }
 
 # Comandos de alteração: um por produto e coluna (com chave primária) ou um por coluna (sem chave).
-$upd = New-Object Collections.Generic.List[string]
+$itens = New-Object Collections.Generic.List[object]
 $volta = New-Object Collections.Generic.List[string]
 if ($pk) {
     foreach ($row in $sel) {
@@ -613,14 +617,9 @@ if ($pk) {
             $a = $alvo.Alvos[$i]
             if ($row.Flags[$i] -cne $a.TextoMarcado) { continue }
             $c = Q $a.Col.Campo
-            $upd.Add("UPDATE $(Q $T) SET $c = $($a.Desmarcado) WHERE $cond AND $c = $($a.Marcado);")
+            $itens.Add([pscustomobject]@{ Sql = "UPDATE $(Q $T) SET $c = $($a.Desmarcado) WHERE $cond AND $c = $($a.Marcado);"; Codigo = ($row.Chave -join '/') })
             $volta.Add("UPDATE $(Q $T) SET $c = $($a.Marcado) WHERE $cond AND $(Format-Equals $c $a.Desmarcado);")
         }
-    }
-} else {
-    foreach ($a in $alvo.Alvos) {
-        $filtro = @{ Todos = ''; ComEstoque = " AND $($est.Expr) > 0"; SemEstoque = " AND $($est.Expr) <= 0" }[$Estoque]
-        $upd.Add("UPDATE $(Q $T) P SET $(Q $a.Col.Campo) = $($a.Desmarcado) WHERE P.$(Q $a.Col.Campo) = $($a.Marcado)$filtro;")
     }
 }
 if ($volta.Count) {
@@ -634,19 +633,85 @@ if ($volta.Count) {
     Write-Log "Sem chave primária em ${T}: não gerei desfazer.sql (use o backup para voltar)."
 }
 
-$res = Invoke-Isql ("SET TRANSACTION READ WRITE NO WAIT ISOLATION LEVEL READ COMMITTED;`n" + ($upd -join "`n") + "`nCOMMIT;") -PodeFalhar
-$depois = Get-Counts
-if ($null -eq $res) {
-    if (-not @(for ($i = 0; $i -lt $alvo.Alvos.Count; $i++) { if ($antes[$i] -ne $depois[$i]) { $i } })) {
-        Stop-Script 'o banco desfez a transação inteira; nada foi alterado.'
+# Com o Digifarma aberto, um produto pode estar em uso (venda baixando estoque, cadastro sendo salvo):
+# a transação espera até $EsperaTrava s por ele em vez de falhar na hora.
+$Transacao = "SET TRANSACTION READ WRITE WAIT ISOLATION LEVEL READ COMMITTED LOCK TIMEOUT $EsperaTrava"
+
+if (-not $pk) {
+    $upd = foreach ($a in $alvo.Alvos) {
+        $filtro = @{ Todos = ''; ComEstoque = " AND $($est.Expr) > 0"; SemEstoque = " AND $($est.Expr) <= 0" }[$Estoque]
+        "UPDATE $(Q $T) P SET $(Q $a.Col.Campo) = $($a.Desmarcado) WHERE P.$(Q $a.Col.Campo) = $($a.Marcado)$filtro;"
     }
-    Stop-Script "as contagens mudaram apesar do erro (antes: $($antes -join '/'); depois: $($depois -join '/')). Confira no Digifarma; para voltar, use -Desfazer com o desfazer.sql ou o backup."
+    $res = Invoke-Isql ("$Transacao;`n" + ($upd -join "`n") + "`nCOMMIT;") -PodeFalhar
+    $depois = Get-Counts
+    if ($null -eq $res) {
+        if (-not @(for ($i = 0; $i -lt $alvo.Alvos.Count; $i++) { if ($antes[$i] -ne $depois[$i]) { $i } })) {
+            Stop-Script 'o banco desfez a transação inteira; nada foi alterado.'
+        }
+        Stop-Script "as contagens mudaram apesar do erro (antes: $($antes -join '/'); depois: $($depois -join '/')). Confira no Digifarma; para voltar, use o backup."
+    }
+    for ($i = 0; $i -lt $alvo.Alvos.Count; $i++) {
+        Write-Log "  $($alvo.Alvos[$i].Kind): $($antes[$i] - $depois[$i]) desmarcado(s) de $($esperado[$i]) previsto(s); ainda marcados (todos): $($depois[$i])"
+    }
+    Write-Log 'Concluído. Confira alguns produtos no Digifarma.'
+    exit 0
 }
-$ok = $true
-for ($i = 0; $i -lt $alvo.Alvos.Count; $i++) {
-    $feito = $antes[$i] - $depois[$i]
-    Write-Log "  $($alvo.Alvos[$i].Kind): $feito desmarcado(s) de $($esperado[$i]) previsto(s); ainda marcados (todos): $($depois[$i])"
-    if ($feito -ne $esperado[$i]) { $ok = $false }
+
+# Com chave primária: blocos de produtos, cada um na sua transação. Produto que continua em uso depois
+# da espera fica de fora sem desfazer os outros (WHEN ANY) e é tentado de novo nas próximas rodadas.
+# Devolve quantas linhas foram alteradas e as posições (em $Lote) dos comandos que falharam.
+function Invoke-Updates($Lote) {
+    $sql = New-Object Text.StringBuilder
+    [void]$sql.AppendLine('SET TERM ^ ;')
+    $i = 0
+    while ($i -lt $Lote.Count) {
+        [void]$sql.AppendLine("$Transacao^")
+        [void]$sql.AppendLine("EXECUTE BLOCK RETURNS (R VARCHAR(1000)) AS DECLARE N INTEGER = 0; DECLARE F VARCHAR(900) = ''; BEGIN")
+        $inicio = $sql.Length
+        while ($i -lt $Lote.Count -and ($sql.Length - $inicio) -lt 8000) {
+            [void]$sql.AppendLine("BEGIN $($Lote[$i].Sql) N = N + ROW_COUNT; WHEN ANY DO F = F || '$i,'; END")
+            $i++
+        }
+        [void]$sql.AppendLine("R = '#U|' || N || '|' || F; SUSPEND; END^")
+        [void]$sql.AppendLine('COMMIT^')
+    }
+    [void]$sql.AppendLine('SET TERM ; ^')
+    $res = Invoke-Isql $sql.ToString() -PodeFalhar
+    if ($null -eq $res) { return $null }
+    $ok = 0
+    $falhas = @()
+    foreach ($r in @(Get-Rows $res 'U' 2)) {
+        $ok += [int]$r[0]
+        $falhas += @($r[1].Split(',') | Where-Object { $_ } | ForEach-Object { [int]$_ })
+    }
+    return @{ Ok = $ok; Falhas = $falhas }
 }
-if (-not $ok) { Stop-Script 'o número de produtos desmarcados não bate com o previsto (alguém alterou produtos ao mesmo tempo ou um gatilho do banco reverteu). Confira antes de rodar de novo.' }
-Write-Log 'Concluído. Abra o Digifarma e confira alguns produtos da lista.'
+
+$pendentes = @(0..($itens.Count - 1))
+$feitos = 0
+# (o contador não pode se chamar $t: o PowerShell não diferencia maiúsculas e ele apagaria $T, a tabela)
+for ($rodada = 1; $rodada -le $Tentativas -and $pendentes.Count; $rodada++) {
+    if ($rodada -gt 1) {
+        Write-Log "  $($pendentes.Count) marcação(ões) em produto em uso em outro computador; tentando de novo em $PausaTentativa s ($rodada de $Tentativas) ..."
+        Start-Sleep -Seconds $PausaTentativa
+    }
+    $r = Invoke-Updates @($pendentes | ForEach-Object { $itens[$_] })
+    if ($null -eq $r) {
+        Stop-Script "a gravação parou no meio; o que já foi gravado continua gravado. Rode a simulação de novo para ver o que falta; para voltar, use -Desfazer $desfazer."
+    }
+    $feitos += $r.Ok
+    $pendentes = @($r.Falhas | ForEach-Object { $pendentes[$_] })
+}
+
+$depois = Get-Counts
+for ($i = 0; $i -lt $alvo.Alvos.Count; $i++) { Write-Log "  Ainda marcados como $($alvo.Alvos[$i].Kind) (todos): $($depois[$i])" }
+Write-Log "  Desmarcadas: $feitos de $($itens.Count) marcação(ões) escolhida(s)."
+$outros = $itens.Count - $feitos - $pendentes.Count
+if ($outros -gt 0) { Write-Log "  $outros marcação(ões) já tinham sido mudadas por alguém no Digifarma durante a execução." }
+$emUso = @($pendentes | ForEach-Object { $itens[$_].Codigo } | Sort-Object -Unique)
+if ($emUso) {
+    Write-Log "ATENÇÃO: $($emUso.Count) produto(s) continuaram em uso em outro computador e seguem marcados: $($emUso -join ', ')"
+    if ($pk.Count -eq 1) { Write-Log "  Rode de novo mais tarde com: -Aplicar -Codigos $($emUso -join ',')" }
+    exit 3
+}
+Write-Log 'Concluído. Se algum computador estiver com a tela de um destes produtos aberta, feche e abra de novo; confira alguns produtos no Digifarma.'
