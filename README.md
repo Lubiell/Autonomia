@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 19 skills (desenvolvimento, dados, marketing, negócios, projetos, atendimento, segurança, mídia e LGPD), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 22 skills (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -40,6 +40,9 @@ package.sh / package.ps1  empacota as skills em zip para o claude.ai
     ├── seguranca-digital/    senhas, duas etapas, backup, golpes, conta invadida, estudo em laboratório
     ├── midia/                vídeo, áudio e imagem com ffmpeg e ImageMagick
     ├── lgpd/                 dado pessoal: base legal, cookies, política, direitos, incidente
+    ├── produto/              descoberta, feedback, PRD, priorização RICE, MVP, métricas
+    ├── prompts-ia/           prompts para imagem, vídeo, texto e assistentes em outras IAs
+    ├── cursos/               curso, aula, treinamento: objetivos, módulos, roteiro, avaliação
     ├── handoff/              /handoff: documento para outra sessão continuar (só por comando)
     ├── grill-me/             /grill-me: entrevista até o plano não ter pontas soltas (só por comando)
     └── discover-resources/   avaliar recurso externo antes de instalar
@@ -56,7 +59,9 @@ tests/                    testes do hook e dos instaladores
 | Sites | qa-web | frontend-design, seo, webapp-testing |
 | Dados | data-analyst | analise-dados |
 | Marketing | — | conteudo, trafego-pago |
-| Negócios e gestão | — | negocios, projetos, atendimento-vendas |
+| Negócios e gestão | — | negocios, projetos, atendimento-vendas, produto |
+| Educação | — | cursos |
+| IA generativa | — | prompts-ia |
 | Segurança e privacidade | security | seguranca-digital, lgpd |
 | Mídia | — | midia |
 | Pesquisa e processo | researcher | discover-resources, grill-me, handoff |
