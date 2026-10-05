@@ -4,7 +4,7 @@
 # no upload para o claude.ai sem dizer por quê.
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 pass=0 fail=0
-BUDGET=400
+BUDGET=450
 ko() { fail=$((fail + 1)); echo "FALHOU: $1"; }
 
 # Valor de uma chave no primeiro bloco ---; junta as linhas recuadas de "key: >" ou "key: |".

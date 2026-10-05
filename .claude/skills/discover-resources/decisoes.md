@@ -30,6 +30,11 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Skills `produto`, `prompts-ia` e `cursos` — áreas cobertas pelo catálogo `agency-agents` (product-manager, feedback-synthesizer, image-prompt-engineer, corporate-training-designer) e ausentes no Autonomia; escritas do zero em português, sem copiar — 2026-10-05
 - 35 atalhos de comando (`/humanizar`, `/resumir`, `/plano`, `/depurar`…) — ideia do carrossel de fabianocarvalhojr (Instagram, 2026-10-05), escritos do zero em português, com `disable-model-invocation: true` para não custar contexto nem disputar gatilho; nomes em português para não colidir com comandos internos do Claude Code — 2026-10-05
 - Skills `wrangler` e `workers-best-practices` — `cloudflare/skills` (oficial, Apache-2.0), cópia sem alteração do commit `41e0d19` com o `LICENSE.txt`; auditadas: só instruções e referências, sem script; mandam consultar a documentação atual em vez de confiar na memória. Escolhidas por ser o stack do usuário (Workers e D1) — 2026-10-05
+- Skills `firebase-hosting-basics`, `firebase-auth-basics` e `firebase-security-rules-auditor` — `firebase/agent-skills` (oficial, Apache-2.0, commit `de359da`), cópia sem alteração com `LICENSE.txt` — 2026-10-05
+- Skills `accessibility` e `performance` — `addyosmani/web-quality-skills` (MIT, commit `afa8da9`), cópia sem alteração com `LICENSE.txt`; as demais do pacote sobrepõem `seo` — 2026-10-05
+- Skills próprias `mei-impostos` (regras conferidas em fonte oficial em out/2026), `contratos`, `marca` e `rh`; seções novas em `conteudo` (acessibilidade de posts) e `midia` (áudio de podcast) — lacunas apontadas pela pesquisa aprofundada no GitHub — 2026-10-05
+- Orçamento de description no `skills.test.sh` de 400 para 450 caracteres, para caber skills oficiais sem alterá-las — 2026-10-05
+- Conectores MCP oficiais documentados no README como opcionais (Playwright, Chrome DevTools, GitHub, Cloudflare, Firebase, GA4, Meta Ads, Canva, DeepL, Context7, mcp-fiscal-brasil): exigem login ou chave do usuário, por isso não vêm instalados — 2026-10-05
 - Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
 
 ## Instalar — fila, em ordem de valor
@@ -107,6 +112,13 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `K-Dense-AI/scientific-agent-skills` (MIT) | 177 skills de pesquisa científica (biologia, química, bases acadêmicas); fora do trabalho do usuário (2026-10-05) |
 | `browser-use/browser-use` | biblioteca Python que precisa de chave de API de um modelo; para o próprio site, `webapp-testing` e `qa-web`; para rotina em site de terceiros, skill `automacao` com Playwright e respeito aos termos de uso (2026-10-05) |
 | `yenanjing/awesome-harness-engineering` | lista de links, não instalável; fonte de consulta (2026-10-05) |
+| Demais skills de `firebase/agent-skills` (basics, firestore, firestore-rules-creation, data-connect, crashlytics, remote-config, app-hosting, ai-logic, xcode) | description acima do orçamento ou recurso que os projetos não usam; regras do Firestore ficam com o auditor oficial e a `banco-dados` (2026-10-05) |
+| `docker/skills` | descrições de 300–950 caracteres e scripts; Docker não faz parte do stack do usuário (2026-10-05) |
+| `anthropics/knowledge-work-plugins` (Legal, Finance, Sales…) | conteúdo voltado aos EUA (GAAP, direito americano); `contratos`, `negocios` e `atendimento-vendas` cobrem o caso brasileiro (2026-10-05) |
+| `codespar/mcp-dev-latam`, `natanloterio/bling-mcp`, MCPs de WooCommerce, Mercado Livre e Asaas | escrevem em dados fiscais e financeiros reais com chave do usuário; instalar só o pacote do sistema que já usa, com chave somente leitura (2026-10-05) |
+| `ZeroPointRepo/youtube-skills`, `douglac/contaazul-mcp` | dependem de serviço pago de terceiros (TranscriptAPI, proxy mcp.ai) (2026-10-05) |
+| `figma/mcp-server-guide` | licença não verificada e, na prática, exige plano pago do Figma (2026-10-05) |
+| `kevinwatt/yt-dlp-mcp`, `whisper-transcribe-mcp`, `84emllc/claude-wcag-skill`, `Suganthans-GSC-MCP` | projetos de um autor, pouco uso; `midia` e `accessibility` cobrem o essencial. Reavaliar se houver necessidade (2026-10-05) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |

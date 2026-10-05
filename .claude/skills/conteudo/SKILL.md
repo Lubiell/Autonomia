@@ -27,6 +27,12 @@ description: Use para escrever ou revisar conteúdo de redes sociais e anúncios
 - LinkedIn: até 3.000 caracteres; as primeiras 2–3 linhas aparecem antes do "ver mais".
 - Hashtags: poucas e específicas do nicho valem mais que muitas genéricas.
 
+## Acessibilidade
+- Texto alternativo em toda imagem (no Instagram: Configurações avançadas > Escrever texto alternativo): descreva o que importa na imagem, não "imagem de".
+- Na legenda, descrição curta com #PraTodosVerem quando a imagem carrega informação.
+- Vídeo com legenda embutida (skill `midia`) e texto na tela legível sem som.
+- Contraste de texto sobre imagem; hashtags com iniciais maiúsculas (#MarketingDigital); emojis no fim da frase, não no meio.
+
 ## 4. Nunca
 - Inventar número, depoimento, caso, prêmio ou "estudo mostra" sem fonte do usuário.
 - Prometer resultado garantido ("ganhe R$ 10 mil em 30 dias"), antes/depois enganoso, urgência falsa: viola as políticas de anúncio da Meta e do Google e o Código de Defesa do Consumidor.
