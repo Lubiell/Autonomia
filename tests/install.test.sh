@@ -58,6 +58,11 @@ for mode in $modes; do
   run "$HV" >/dev/null 2>&1 || ko "[$mode] install.sh falhou (settings vazio)"
   assert "[$mode] vazio: vira configuração completa" '.sandbox.enabled == true and (.hooks.PreToolUse | length) == 1' "$HV/settings.json"
 
+  # AUTONOMIA_SEM_SANDBOX=1: instala tudo, menos o sandbox
+  HN="$TMP/$mode-nuvem"
+  AUTONOMIA_SEM_SANDBOX=1 run "$HN" >/dev/null || ko "[$mode] install.sh falhou (sem sandbox)"
+  assert "[$mode] sem sandbox: não liga o sandbox" '.sandbox == null and (.hooks.PreToolUse | length) == 1 and (.permissions.deny | length) > 0' "$HN/settings.json"
+
   # Reexecução não muda nada
   cp "$S" "$TMP/antes.json"
   out="$(run "$H")"

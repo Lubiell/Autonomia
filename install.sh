@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Instala o orquestrador no nível do usuário (~/.claude), valendo para todos os projetos.
 # Uso: ./install.sh            (destino: ~/.claude; ou defina CLAUDE_HOME)
+#      AUTONOMIA_SEM_SANDBOX=1 ./install.sh   não liga o sandbox (sessão na nuvem, que já roda isolada)
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -34,7 +35,8 @@ done
 
 # settings.json: junta deny/ask, hooks e sandbox aos existentes, sem apagar nada do usuário.
 # O caminho ${CLAUDE_PROJECT_DIR}/.claude/ dos hooks vira o da instalação ($DEST/).
-# A seção "sandbox" só entra se o usuário ainda não tiver uma.
+# A seção "sandbox" só entra se o usuário ainda não tiver uma e AUTONOMIA_SEM_SANDBOX não for 1.
+NOSB="${AUTONOMIA_SEM_SANDBOX:-0}"
 SETTINGS="$DEST/settings.json"
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
@@ -42,9 +44,9 @@ if [ -f "$SETTINGS" ]; then cur="$SETTINGS"; else cur=""; fi
 merged=1
 # "python3 -c ''" descarta o stub do macOS que existe sem o Python instalado.
 if command -v python3 >/dev/null 2>&1 && python3 -c '' >/dev/null 2>&1; then
-  python3 - "$cur" "$SRC/.claude/settings.json" "$tmp" "$DEST" <<'EOF'
+  python3 - "$cur" "$SRC/.claude/settings.json" "$tmp" "$DEST" "$NOSB" <<'EOF'
 import json, sys
-dst_path, src_path, out_path, dest = sys.argv[1:5]
+dst_path, src_path, out_path, dest, nosb = sys.argv[1:6]
 dst = {}
 if dst_path:
     with open(dst_path, encoding="utf-8") as f:
@@ -64,7 +66,7 @@ for event, groups in src.get("hooks", {}).items():
         g = json.loads(json.dumps(g).replace("${CLAUDE_PROJECT_DIR}/.claude/", dest + "/"))
         if not any(h.get("command") in known for h in g.get("hooks", [])):
             cur.append(g)
-if "sandbox" in src and "sandbox" not in dst:
+if nosb != "1" and "sandbox" in src and "sandbox" not in dst:
     dst["sandbox"] = src["sandbox"]
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(dst, f, indent=2, ensure_ascii=False)
@@ -72,7 +74,7 @@ with open(out_path, "w", encoding="utf-8") as f:
 EOF
 elif command -v jq >/dev/null 2>&1; then
   { if [ -n "$cur" ] && grep -q '[^[:space:]]' "$cur"; then cat "$cur"; else echo '{}'; fi; } |
-    jq --slurpfile src "$SRC/.claude/settings.json" --arg dest "$DEST/" '
+    jq --slurpfile src "$SRC/.claude/settings.json" --arg dest "$DEST/" --arg nosb "$NOSB" '
       $src[0] as $s |
       .permissions.deny = ((.permissions.deny // []) + ($s.permissions.deny - (.permissions.deny // []))) |
       .permissions.ask  = ((.permissions.ask  // []) + ($s.permissions.ask  - (.permissions.ask  // []))) |
@@ -80,7 +82,7 @@ elif command -v jq >/dev/null 2>&1; then
         reduce ($e.value[] | .hooks |= map(.command |= sub("\\$\\{CLAUDE_PROJECT_DIR\\}/\\.claude/"; $dest))) as $g (.;
           if ([.hooks[$e.key][]?.hooks[]?.command] | any(. as $c | [$g.hooks[].command] | index($c)))
           then . else .hooks[$e.key] = ((.hooks[$e.key] // []) + [$g]) end)) |
-      if ($s.sandbox != null and .sandbox == null) then .sandbox = $s.sandbox else . end
+      if ($nosb != "1" and $s.sandbox != null and .sandbox == null) then .sandbox = $s.sandbox else . end
     ' > "$tmp"
 else
   echo "  AVISO: sem python3 nem jq; junte permissões, hooks e sandbox de .claude/settings.json manualmente."

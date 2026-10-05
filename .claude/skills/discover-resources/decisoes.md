@@ -37,6 +37,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Conectores MCP oficiais documentados no README como opcionais (Playwright, Chrome DevTools, GitHub, Cloudflare, Firebase, GA4, Meta Ads, Canva, DeepL, Context7, mcp-fiscal-brasil): exigem login ou chave do usuário, por isso não vêm instalados — 2026-10-05
 - Skill roteadora `atalhos`: aciona sozinha os 37 atalhos (incluindo `grill-me` e `handoff`) com uma única description por turno, em vez de 37; os atalhos continuam por comando. Pedido do usuário: atalhos automáticos — 2026-10-05
 - Skill `melhorar-projeto` e regra no CLAUDE.md para sugerir o agent indicado (ponto fraco fora do pedido e "Próximo passo sugerido" no relatório). Pedido do usuário: o Autonomia sugerir o agente para melhorar os projetos — 2026-10-05
+- PC e celular: `install.sh` aceita `AUTONOMIA_SEM_SANDBOX=1` para o script de configuração do ambiente na nuvem (container já isolado); README com os quatro caminhos (PC, Remote Control, nuvem, chat). Pedido do usuário: valer no PC e no celular — 2026-10-05
 - Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
 
 ## Instalar — fila, em ordem de valor

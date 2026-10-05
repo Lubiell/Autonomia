@@ -127,6 +127,20 @@ Ele copia `CLAUDE.md`, os agents, as skills e os hooks para `~/.claude/` e junta
 
 Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e também na raiz do projeto, os dois são carregados em toda conversa e as regras são pagas em dobro. No projeto, deixe só o que for específico dele.
 
+## No PC e no celular
+| Onde você usa | Como o Autonomia chega lá |
+|---|---|
+| **PC** — Claude Code no terminal, VS Code ou app desktop | instalador acima (`install.sh` / `install.ps1`) |
+| **Celular controlando o PC** | no PC, rode `claude remote-control` na pasta do projeto; a sessão aparece no app Claude do celular (Code) com tudo o que está instalado no PC. O PC precisa ficar ligado. |
+| **Celular com sessão na nuvem** — app Claude > Code, sem o PC | a sessão roda num container novo, sem o seu `~/.claude`. Nas configurações do ambiente da nuvem (menu do ambiente na barra de título da sessão > Editar), em **Script de configuração**, cole a linha abaixo. Toda sessão nova instala a versão mais recente do `main`. |
+| **Chat do app Claude** — celular, web e desktop | skills por zip (seção seguinte): ficam na conta e valem em todos os aparelhos. As regras do `CLAUDE.md` entram coladas nas instruções da conta ou de um Projeto. No chat não há agents nem hook: quando uma skill indica um agent, o próprio Claude faz a tarefa seguindo a skill. |
+
+```bash
+git clone --depth 1 https://github.com/Lubiell/Autonomia.git /tmp/autonomia && AUTONOMIA_SEM_SANDBOX=1 bash /tmp/autonomia/install.sh
+```
+
+`AUTONOMIA_SEM_SANDBOX=1` instala tudo menos o sandbox, porque o container da nuvem já é isolado. A política de rede do ambiente precisa liberar o `github.com`.
+
 ## Usar as skills no claude.ai (chat, desktop e Cowork)
 As skills de `~/.claude/skills` valem só no Claude Code; no claude.ai elas entram por upload de zip. Para gerar os zips:
 

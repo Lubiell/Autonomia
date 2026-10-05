@@ -33,4 +33,5 @@ Depois: "Comece por: <item 1> com o `<agent>`." Pontos sem evidência ficam fora
 ## 3. Execute
 - Siga para os itens indicados, delegando a cada agent objetivo, arquivos, restrições e critério de sucesso.
 - Antes, peça confirmação só no que a regra exige (operação irreversível, credencial, dependência nova, mudança grande de arquitetura).
+- Sem agents (chat do claude.ai, celular): faça você mesmo, seguindo a skill indicada na tabela.
 - Um agent por arquivo de cada vez; alteração de código não trivial passa pelo `reviewer` no fim.
