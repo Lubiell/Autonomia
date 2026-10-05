@@ -69,13 +69,13 @@ ok 'grep -q "\"4\";\"PRODUTO \"\"ESTRANHO\"\" / COM; SÍMBOLOS\";\"5.5\";\"S\";\
 ok '! grep -q "^\"3\";" <<<"$csv"' "csv: produto sem estoque entrou"
 
 # -Codigos: só o 12 (não confundir com 2 nem 21), com backup e desfazer.sql
-out="$(rodar -Banco "$B" -Estoque ComEstoque -Codigos 12,99 -Aplicar -Confirmar -PastaSaida "$TMP/a1")"; rc=$?
+out="$(rodar -Banco "$B" -Estoque ComEstoque -Codigos 12,99 -Aplicar -SemPerguntar -PastaSaida "$TMP/a1")"; rc=$?
 ok '[ $rc -eq 0 ]' "códigos: código $rc"
 ok '[ "$(estado "$DB")" = "${ORIGINAL/12:S:N/12:N:N}" ]' "códigos: estado $(estado "$DB")"
 ok 'grep -q "ignorados): 99" <<<"$out"' "códigos: aviso do código inexistente"
 ok '[ -s "$TMP/a1/backup-antes.fbk" ]' "códigos: backup"
-"$ISQL" -q -i "$TMP/a1/desfazer.sql" "$B" >/dev/null 2>&1
-ok '[ "$(estado "$DB")" = "$ORIGINAL" ]' "desfazer.sql não voltou ao original"
+rodar -Banco "$B" -Desfazer "$TMP/a1/desfazer.sql" >/dev/null; rc=$?
+ok '[ $rc -eq 0 ] && [ "$(estado "$DB")" = "$ORIGINAL" ]' "-Desfazer não voltou ao original (código $rc)"
 
 # -Escolher pelo menu do console: itens 1 e 3 da lista com estoque (2 e 12), confirmação digitada
 out="$(printf '1,3\nDESMARCAR\n' | rodar -Banco "$B" -Estoque ComEstoque -Escolher -Aplicar -SemBackup -PastaSaida "$TMP/a2")"; rc=$?
@@ -94,14 +94,30 @@ out="$(rodar -Banco "$B" -Estoque ComEstoque -TabelaEstoque ESTOQUE_LOJA -CampoE
 ok '[ $rc -eq 0 ] && grep -q "Produtos marcados com estoque: 2" <<<"$out"' "tabela de estoque: $out"
 ok 'grep -q "^\"3\";.*\"5\"" "$TMP/s2/produtos-a-desmarcar.csv"' "tabela de estoque: soma das lojas"
 
+# Sem estoque: 3 e 6; estoque em outra tabela sem -ChaveEstoque é recusado
+out="$(rodar -Banco "$B" -Estoque SemEstoque -PastaSaida "$TMP/s4")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -q "Produtos marcados sem estoque: 2" <<<"$out"' "sem estoque: $out"
+rodar -Banco "$B" -Estoque ComEstoque -TabelaEstoque ESTOQUE_LOJA -CampoEstoque QTD -PastaSaida "$TMP/s5" >/dev/null; rc=$?
+ok '[ $rc -eq 2 ]' "tabela de estoque sem -ChaveEstoque: código $rc"
+
+# Bloqueio no meio da alteração (outra sessão editando o 21): nada pode ficar gravado
+( printf 'SET TRANSACTION NO WAIT;\nUPDATE PRODUTOS SET PRECO = PRECO WHERE CODIGO = 21;\n'; sleep 20 ) | "$ISQL" -q "$B" >/dev/null 2>&1 &
+TRAVA=$!
+sleep 2
+out="$(rodar -Banco "$B" -Codigos 2,21 -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a7")"; rc=$?
+kill "$TRAVA" 2>/dev/null
+ok '[ $rc -eq 1 ] && [ "$(estado "$DB")" = "$ORIGINAL" ]' "bloqueio: código $rc, estado $(estado "$DB")"
+ok 'grep -Eq "lock conflict|deadlock|concurrent update" <<<"$out" && grep -q "nada foi alterado" <<<"$out"' "bloqueio: mensagem $out"
+sleep 1
+
 # Só psicotrópico, todos: antimicrobiano fica intacto
-rodar -Banco "$B" -Desmarcar Psicotropico -Aplicar -Confirmar -SemBackup -PastaSaida "$TMP/a4" >/dev/null; rc=$?
+rodar -Banco "$B" -Desmarcar Psicotropico -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a4" >/dev/null; rc=$?
 ok '[ $rc -eq 0 ]' "só psicotrópico: código $rc"
 ok '[ "$(estado "$DB")" = "$(sed "s/:S:/:N:/g" <<<"$ORIGINAL")" ]' "só psicotrópico: estado $(estado "$DB")"
 ok '[ "$(sql "$DB" "SELECT COUNT(*) FROM ITENS_VENDA WHERE CONTROLADO = '"'S'"';")" -eq 1 ]' "tabela errada (ITENS_VENDA) alterada"
 
 # Senha errada: falha sem alterar
-ISC_PASSWORD=errada rodar -Banco "$B" -Aplicar -Confirmar -SemBackup -PastaSaida "$TMP/a5" >/dev/null; rc=$?
+ISC_PASSWORD=errada rodar -Banco "$B" -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a5" >/dev/null; rc=$?
 ok '[ $rc -eq 1 ]' "senha errada: código $rc"
 
 # Outros tipos (SMALLINT 0/1 e BOOLEAN) e mais de uma tabela possível
@@ -110,7 +126,14 @@ criar "$DB2" <<'EOF'
 CREATE TABLE MEDS (ID INTEGER NOT NULL PRIMARY KEY, NOME VARCHAR(40), PSICOTROPICO SMALLINT, ANTIMICROBIANO BOOLEAN, SALDO INTEGER);
 CREATE TABLE PRODUTOS_A (ID INTEGER NOT NULL PRIMARY KEY, CONTROLADO CHAR(1));
 CREATE TABLE PRODUTOS_B (ID INTEGER NOT NULL PRIMARY KEY, CONTROLADO CHAR(1));
+CREATE TABLE MEDNULL (ID INTEGER NOT NULL PRIMARY KEY, PSICOTROPICO CHAR(1));
+CREATE TABLE MEDTXT (COD VARCHAR(10) NOT NULL PRIMARY KEY, CONTROLADO CHAR(1));
 COMMIT;
+INSERT INTO MEDNULL VALUES (1, 'S');
+INSERT INTO MEDNULL VALUES (2, NULL);
+INSERT INTO MEDTXT VALUES ('A', 'S');
+INSERT INTO MEDTXT VALUES ('A|B', 'S');
+INSERT INTO MEDTXT VALUES ('C', 'N');
 INSERT INTO MEDS VALUES (1, 'A', 1, FALSE, 3);
 INSERT INTO MEDS VALUES (2, 'B', 0, TRUE, 0);
 INSERT INTO MEDS VALUES (3, 'C', 1, TRUE, 1);
@@ -120,11 +143,28 @@ B2="localhost:$DB2"
 tipos() { sql "$DB2" "SELECT PSICOTROPICO || '/' || CAST(ANTIMICROBIANO AS VARCHAR(5)) FROM MEDS ORDER BY ID;" | tr '\n' ' '; }
 rodar -Banco "$B2" -PastaSaida "$TMP/s3" >/dev/null; rc=$?
 ok '[ $rc -eq 2 ]' "várias tabelas: deveria pedir -Tabela (código $rc)"
-rodar -Banco "$B2" -Tabela MEDS -Aplicar -Confirmar -SemBackup -PastaSaida "$TMP/a6" >/dev/null; rc=$?
+rodar -Banco "$B2" -Tabela MEDS -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a6" >/dev/null; rc=$?
 ok '[ $rc -eq 0 ]' "tipos: código $rc"
 ok '[ "$(tipos)" = "0/FALSE 0/FALSE 0/FALSE " ]' "tipos: $(tipos)"
 "$ISQL" -q -i "$TMP/a6/desfazer.sql" "$B2" >/dev/null 2>&1
 ok '[ "$(tipos)" = "1/FALSE 0/TRUE 1/TRUE " ]' "tipos: desfazer $(tipos)"
+
+# Antimicrobiano só em tabela sem PROD no nome: não escolhe sozinho
+rodar -Banco "$B2" -Desmarcar Antimicrobiano -PastaSaida "$TMP/s6" >/dev/null; rc=$?
+ok '[ $rc -eq 2 ]' "tabela sem PROD: deveria pedir -Tabela (código $rc)"
+
+# Desmarcado = vazio: não adivinha 'N'; com -ValorDesmarcado NULL funciona e desfaz
+mednull() { sql "$DB2" "SELECT ID || ':' || COALESCE(PSICOTROPICO, '-') FROM MEDNULL ORDER BY ID;" | tr '\n' ' '; }
+rodar -Banco "$B2" -Tabela MEDNULL -Desmarcar Psicotropico -PastaSaida "$TMP/s7" >/dev/null; rc=$?
+ok '[ $rc -eq 2 ] && [ "$(mednull)" = "1:S 2:- " ]' "só S e vazio: deveria pedir -ValorDesmarcado (código $rc)"
+rodar -Banco "$B2" -Tabela MEDNULL -Desmarcar Psicotropico -ValorMarcado S -ValorDesmarcado NULL -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a8" >/dev/null; rc=$?
+ok '[ $rc -eq 0 ] && [ "$(mednull)" = "1:- 2:- " ]' "desmarcar para NULL: código $rc, $(mednull)"
+rodar -Banco "$B2" -Desfazer "$TMP/a8/desfazer.sql" >/dev/null
+ok '[ "$(mednull)" = "1:S 2:- " ]' "desfazer NULL: $(mednull)"
+
+# Código com '|' desalinharia a chave: para antes de alterar
+rodar -Banco "$B2" -Tabela MEDTXT -Desmarcar Psicotropico -Codigos A -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a9" >/dev/null; rc=$?
+ok '[ $rc -eq 1 ] && [ "$(sql "$DB2" "SELECT COUNT(*) FROM MEDTXT WHERE CONTROLADO = '"'S'"';")" -eq 2 ]' "código com |: código $rc"
 
 echo "passou: $PASS  falhou: $FAIL"
 [ "$FAIL" -eq 0 ]

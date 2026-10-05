@@ -65,28 +65,33 @@ Cada execução cria `registros\AAAAMMDD-HHMMSS\` ao lado do programa, com estes
 | `backup-antes.fbk` | backup do banco inteiro, feito antes de alterar (só com `-Aplicar`) |
 | `desfazer.sql` | comandos para remarcar exatamente o que foi desmarcado (só com `-Aplicar`) |
 
-A pasta `registros/` está no `.gitignore` e não vai para o Git.
+O `backup-antes.fbk` é uma cópia do banco inteiro, **com dados de clientes** (LGPD). Guarde a pasta só no servidor, com acesso restrito, e apague o backup quando não precisar mais dele. A pasta `registros/` está no `.gitignore` e não vai para o Git.
 
 ## Como desfazer
 
-- **Só o que o programa desmarcou** (recomendado): `"C:\Program Files\Firebird\Firebird_X_X\isql.exe" -user SYSDBA -password SUA_SENHA -i desfazer.sql localhost:C:\CAMINHO\Digifarma6.FDB`. Ele remarca apenas os produtos que continuam desmarcados.
+- **Só o que o programa desmarcou** (recomendado): rode o programa com `-Desfazer` e o `desfazer.sql` daquela execução. A senha é pedida do mesmo jeito e não aparece na tela. Ele remarca apenas os produtos que continuam desmarcados.
+
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\desmarcar-controlados.ps1 -Banco 'localhost:C:\CAMINHO\Digifarma6.FDB' -Desfazer .\registros\AAAAMMDD-HHMMSS\desfazer.sql
+  ```
 - **Voltar o banco inteiro**: restaure `backup-antes.fbk` com o `gbak` **num arquivo novo** e troque os arquivos com o Digifarma fechado. Na dúvida, peça ao suporte do Digifarma. Isso desfaz também tudo o que foi lançado depois do backup.
 
 ## Quando ele não acha sozinho
 
-Os nomes das tabelas e colunas do Digifarma não são públicos. O programa procura colunas com `PSICO`, `CONTROLAD`, `ANTIMIC` ou `ANTIBIO` no nome e reconhece os valores `S/N`, `T/F`, `1/0` e `TRUE/FALSE`. Se houver dúvida, ele para e pede os nomes; ele nunca chuta. Use o que o `-Descobrir` mostrou:
+Os nomes das tabelas e colunas do Digifarma não são públicos. O programa procura colunas com `PSICO`, `CONTROLAD`, `ANTIMIC` ou `ANTIBIO` no nome, mas só escolhe sozinho uma tabela com `PROD` no nome. Ele reconhece os valores `S/N`, `T/F`, `1/0` e `TRUE/FALSE`, desde que os dois apareçam na coluna. Por exemplo, se só existem `S` e vazio, ele não adivinha o que é "desmarcado". Se houver dúvida, ele para (código 2) e pede os nomes ou valores; ele nunca chuta. Use o que o `-Descobrir` mostrou:
 
 | Parâmetro | Para quê |
 |---|---|
 | `-Tabela PRODUTOS` | tabela do cadastro de produtos |
 | `-CampoPsicotropico X` / `-CampoAntimicrobiano Y` | colunas das marcações |
-| `-ValorMarcado S -ValorDesmarcado N` | quando os valores não são os reconhecidos acima |
+| `-ValorMarcado S -ValorDesmarcado N` | quando os valores não são os reconhecidos acima; `-ValorDesmarcado NULL` deixa a coluna vazia |
 | `-CampoEstoque ESTOQUE` | coluna do saldo na tabela de produtos |
-| `-TabelaEstoque T -CampoEstoque QTD -ChaveEstoque PRODUTO` | saldo em outra tabela (por loja, lote...): soma por produto |
+| `-TabelaEstoque T -CampoEstoque QTD -ChaveEstoque PRODUTO` | saldo em outra tabela (por loja, lote...): soma `QTD` por produto; os três são obrigatórios juntos |
 | `-Isql 'C:\...\isql.exe'` | quando o Firebird não está na pasta padrão |
 | `-PastaSaida D:\registros` | onde gravar log, lista e backup |
 | `-SemBackup` | não fazer o backup (só se já tiver um recente) |
-| `-Confirmar` | não perguntar a confirmação (uso em lote) |
+| `-SemPerguntar` | não pedir para digitar DESMARCAR (uso em lote) |
+| `-Desfazer arquivo.sql` | remarca o que uma execução anterior desmarcou (veja "Como desfazer") |
 
 Códigos de saída: `0` ok, `1` erro ou cancelado, `2` faltam informações (rode `-Descobrir`).
 
@@ -94,13 +99,23 @@ Códigos de saída: `0` ok, `1` erro ou cancelado, `2` faltam informações (rod
 
 - **"isql do Firebird não encontrado"**: informe `-Isql` com o caminho do `isql.exe` da pasta do Firebird.
 - **"Your user name and password are not defined"**: usuário ou senha errados.
-- **"lock conflict" ou "deadlock"**: algum computador está com o Digifarma aberto editando produto. Feche e rode de novo. Nada foi alterado.
+- **"lock conflict", "deadlock" ou "concurrent update"**: algum computador está com o Digifarma aberto editando um produto da lista. Feche e rode de novo. O banco desfaz a transação inteira, e o programa confere e avisa "nada foi alterado".
 - **"I/O error ... open"**: caminho do banco errado. Rodando no servidor, use `localhost:` antes do caminho.
 - **O Windows não deixa rodar o script**: use `powershell -ExecutionPolicy Bypass -File ...` como nos exemplos, ou `Unblock-File .\desmarcar-controlados.ps1`.
 
 ## Testes
 
-`testes/testar.sh` roda o programa contra um Firebird real em bancos descartáveis. Ele cobre descoberta, simulação, filtro de estoque (na própria tabela e em outra tabela), `-Codigos`, `-Escolher`, cancelamento, `desfazer.sql`, senha errada, colunas `SMALLINT`/`BOOLEAN` e tabela ambígua. Precisa de Linux com servidor Firebird, `isql-fb`, `gbak` e `pwsh`:
+`testes/testar.sh` roda o programa contra um Firebird real em bancos descartáveis. Ele cobre:
+
+- descoberta e simulação;
+- filtros de estoque (na própria tabela e em outra tabela);
+- `-Codigos`, `-Escolher` e cancelamento;
+- `-Desfazer` e `desfazer.sql`;
+- bloqueio de outra sessão no meio da alteração;
+- senha errada;
+- colunas `SMALLINT`/`BOOLEAN` e desmarcado como `NULL`;
+- tabela ambígua ou sem `PROD` no nome;
+- código com `|`. Precisa de Linux com servidor Firebird, `isql-fb`, `gbak` e `pwsh`:
 
 ```bash
 ISC_PASSWORD=senha_do_sysdba PWSH=/caminho/pwsh bash ferramentas/digifarma/testes/testar.sh

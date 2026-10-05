@@ -7,6 +7,7 @@ Sem -Aplicar, só simula: mostra os produtos marcados (com estoque) e grava a li
 Com -Escolher, abre a lista para escolher quais produtos desmarcar; com -Codigos, desmarca só os códigos informados.
 Com -Estoque ComEstoque, mostra só os produtos com saldo em estoque.
 Com -Aplicar: faz backup do banco (gbak), grava a lista e um script para desfazer, e desmarca numa única transação.
+Com -Desfazer <desfazer.sql>: remarca o que uma execução anterior desmarcou.
 Usa o isql e o gbak que vêm com o Firebird; não instala nada.
 Leia o README.md desta pasta antes de usar (há implicações no SNGPC).
 
@@ -33,7 +34,8 @@ param(
     [switch]$Escolher,
     [string[]]$Codigos,
     [switch]$Aplicar,
-    [switch]$Confirmar,
+    [switch]$SemPerguntar,
+    [string]$Desfazer,
     [switch]$SemBackup,
     [string]$Isql,
     [string]$PastaSaida
@@ -101,7 +103,7 @@ function Start-Tool([string]$Exe, [string[]]$Argumentos) {
 }
 
 # Executa SQL pelo isql (-b: para no primeiro erro e não faz commit) e devolve as linhas da saída.
-function Invoke-Isql([string]$Sql) {
+function Invoke-Isql([string]$Sql, [switch]$PodeFalhar) {
     $tmp = [IO.Path]::GetTempFileName()
     try {
         [IO.File]::WriteAllText($tmp, "SET HEADING OFF;`n$Sql`n", $Ansi)
@@ -113,18 +115,39 @@ function Invoke-Isql([string]$Sql) {
     $msg = (($r.Erro -split "`r?`n") | Where-Object { $_.Trim() -and $_.Trim() -ne 'Rolling back work.' }) -join "`n"
     if ($r.Codigo -ne 0 -or $msg) {
         if ($msg -match 'lock conflict|deadlock|concurrent update') { $msg += "`nFeche o Digifarma em todos os computadores e rode de novo." }
+        if ($PodeFalhar) { Write-Log "ERRO: o isql falhou (código $($r.Codigo)): $msg"; return $null }
         Stop-Script "o isql falhou (código $($r.Codigo)): $msg"
     }
     return $r.Saida -split "`r?`n"
 }
 
 # Linhas marcadas com '#<tag>|' viram vetores de campos; o resto da saída do isql é ignorado.
-function Get-Rows($Linhas, [string]$Tag) {
+# Número de campos diferente (código com '|' ou quebra de linha) desalinharia a chave: para tudo.
+function Get-Rows($Linhas, [string]$Tag, [int]$Campos) {
     $prefixo = "#$Tag|"
     foreach ($l in $Linhas) {
         $l = $l.Trim()
-        if ($l.StartsWith($prefixo, [StringComparison]::Ordinal)) { , ($l.Substring($prefixo.Length).Split('|')) }
+        if (-not $l.StartsWith($prefixo, [StringComparison]::Ordinal)) { continue }
+        $r = $l.Substring($prefixo.Length).Split('|')
+        if ($r.Count -ne $Campos) {
+            Stop-Script "resposta inesperada do banco (esperava $Campos campos, vieram $($r.Count)): $l`nAlgum código ou nome tem '|' ou quebra de linha; o programa parou antes de alterar."
+        }
+        , $r
     }
+}
+
+function Format-Equals([string]$Coluna, [string]$Literal) {
+    if ($Literal -eq 'NULL') { return "$Coluna IS NULL" }
+    return "$Coluna = $Literal"
+}
+
+# Estoque como o isql mostra (10.000, 1.5E+01) -> 10, 15.
+function Format-Number([string]$S) {
+    $d = 0.0
+    if ([double]::TryParse($S, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$d)) {
+        try { return ([decimal]$d).ToString([Globalization.CultureInfo]::InvariantCulture) } catch { }
+    }
+    return $S
 }
 
 # Identificador SQL: nome comum vai como está; o resto entre aspas.
@@ -189,24 +212,23 @@ function Add-Values($Cols) {
     if (-not $Cols) { return }
     $sql = for ($i = 0; $i -lt $Cols.Count; $i++) {
         $c = Q $Cols[$i].Campo
-        "SELECT FIRST 20 '#V|$i|' || CASE WHEN $c IS NULL THEN '1' ELSE '0' END || '|' || COALESCE(TRIM(CAST($c AS VARCHAR(100))), '') || '|' || CAST(COUNT(*) AS VARCHAR(20)) FROM $(Q $Cols[$i].Tabela) GROUP BY $c;"
+        "SELECT FIRST 20 '#V|$i|' || CASE WHEN $c IS NULL THEN '1' ELSE '0' END || '|' || COALESCE(REPLACE(TRIM(CAST($c AS VARCHAR(100))), '|', '/'), '') || '|' || CAST(COUNT(*) AS VARCHAR(20)) FROM $(Q $Cols[$i].Tabela) GROUP BY $c;"
     }
     $linhas = Invoke-Isql ($sql -join "`n")
     foreach ($c in $Cols) { $c.Valores = @() }
-    foreach ($r in @(Get-Rows $linhas 'V')) {
+    foreach ($r in @(Get-Rows $linhas 'V' 4)) {
         $Cols[[int]$r[0]].Valores += [pscustomobject]@{ Nulo = ($r[1] -eq '1'); Valor = $r[2]; Qtd = [long]$r[3] }
     }
 }
 
-# Descobre o par (marcado, desmarcado) pelos valores que existem na coluna.
-# Devolve: literal SQL marcado, literal SQL desmarcado, texto do valor marcado como o isql o mostra.
+# Descobre o par (marcado, desmarcado) pelos valores que existem na coluna; só aceita se os dois existirem.
+# Devolve: literal SQL marcado, literal SQL desmarcado (pode ser NULL), texto do valor marcado como o isql o mostra.
 function Resolve-Pair($Col) {
     if ($ValorMarcado) {
         $par = @($ValorMarcado, $ValorDesmarcado)
-    } elseif ($Col.Tipo -eq $TipoBoolean) {
-        $par = @('TRUE', 'FALSE')
     } else {
-        $pares = if ($TiposNumero -contains $Col.Tipo) { $ParesNumero } else { $ParesTexto }
+        # Atribuição em cada ramo: um if usado como expressão desmontaria o par único do BOOLEAN.
+        if ($Col.Tipo -eq $TipoBoolean) { $pares = @(, @('TRUE', 'FALSE')) } elseif ($TiposNumero -contains $Col.Tipo) { $pares = $ParesNumero } else { $pares = $ParesTexto }
         $vals = @($Col.Valores | Where-Object { -not $_.Nulo } | ForEach-Object { $_.Valor })
         $servem = @($pares | Where-Object { $p = $_; -not @($vals | Where-Object { $p -cnotcontains $_ }) })
         $par = @($servem | Where-Object { $vals -ccontains $_[0] }) + $servem | Select-Object -First 1
@@ -214,9 +236,13 @@ function Resolve-Pair($Col) {
             Stop-Script ("não sei qual valor significa 'marcado' em $($Col.Tabela).$($Col.Campo). Valores encontrados: $(Format-Values $Col)`n" +
                 "Rode com -Descobrir e informe -ValorMarcado e -ValorDesmarcado.") 2
         }
+        if ($vals -ccontains $par[0] -and $vals -cnotcontains $par[1]) {
+            Stop-Script ("em $($Col.Tabela).$($Col.Campo) há produtos com '$($par[0])', mas nenhum com '$($par[1])'. Valores: $(Format-Values $Col)`n" +
+                "Veja no Digifarma como fica um produto desmarcado e informe -ValorMarcado $($par[0]) -ValorDesmarcado <valor> (NULL se ficar vazio).") 2
+        }
     }
     $m = L $Col $par[0]
-    $d = L $Col $par[1]
+    $d = if ($par[1] -eq 'NULL') { 'NULL' } else { L $Col $par[1] }
     $texto = if ($Col.Tipo -eq $TipoBoolean) { $m } elseif ($TiposNumero -contains $Col.Tipo) { [string][long]$par[0] } else { $par[0] }
     return @($m, $d, $texto)
 }
@@ -231,12 +257,10 @@ function Resolve-Target($Colunas) {
 
     $tab = $Tabela
     if (-not $tab) {
-        $tabs = @($cands | ForEach-Object { $_.Tabela } | Sort-Object -Unique)
-        if ($tabs.Count -gt 1) {
-            $prod = @($tabs | Where-Object { $_ -match 'PROD' })
-            if ($prod.Count -eq 1) { $tabs = $prod }
-        }
-        if ($tabs.Count -eq 0) { return @{ Erro = 'nenhuma coluna com PSICO, CONTROLAD, ANTIMIC ou ANTIBIO no nome.' } }
+        $todas = @($cands | ForEach-Object { $_.Tabela } | Sort-Object -Unique)
+        $tabs = @($todas | Where-Object { $_ -match 'PROD' })
+        if ($todas.Count -eq 0) { return @{ Erro = 'nenhuma coluna com PSICO, CONTROLAD, ANTIMIC ou ANTIBIO no nome.' } }
+        if ($tabs.Count -eq 0) { return @{ Erro = "as colunas estão em $($todas -join ', '), sem PROD no nome; informe -Tabela com a tabela do cadastro de produtos." } }
         if ($tabs.Count -gt 1) { return @{ Erro = "mais de uma tabela possível ($($tabs -join ', ')); informe -Tabela." } }
         $tab = $tabs[0]
     }
@@ -278,20 +302,16 @@ function Resolve-Stock($Alvo) {
         return @{ Erro = $null; Expr = "COALESCE(P.$(Q $col[0].Campo), 0)"; Texto = "$($Alvo.Tabela).$($col[0].Campo)" }
     }
     if ($Alvo.Pk.Count -ne 1) { return @{ Erro = "estoque em outra tabela exige chave primária de uma coluna em $($Alvo.Tabela)." } }
+    if (-not $CampoEstoque -or -not $ChaveEstoque) { return @{ Erro = 'com -TabelaEstoque, informe também -CampoEstoque (o saldo) e -ChaveEstoque (a coluna que aponta para o produto).' } }
     $doTab = @($Colunas | Where-Object { $_.Tabela -eq $TabelaEstoque })
     if (-not $doTab) { return @{ Erro = "tabela '$TabelaEstoque' não existe no banco." } }
     $tab = $doTab[0].Tabela
-    if ($CampoEstoque) {
-        $col = @($doTab | Where-Object { $_.Campo -eq $CampoEstoque })
-        if (-not $col) { return @{ Erro = "coluna '$CampoEstoque' não existe em $tab." } }
-    } else {
-        $col = @($doTab | Where-Object $saldo | Where-Object { $_.Campo -match 'ESTOQUE|SALDO|QTD|QUANT' })
-        if ($col.Count -ne 1) { return @{ Erro = "não sei qual coluna de $tab é o saldo; informe -CampoEstoque." } }
-    }
+    $col = @($doTab | Where-Object { $_.Campo -eq $CampoEstoque })
+    if (-not $col) { return @{ Erro = "coluna '$CampoEstoque' não existe em $tab." } }
     if ($TiposQtd -notcontains $col[0].Tipo) { return @{ Erro = "coluna $tab.$($col[0].Campo) não é numérica." } }
     $nomePk = $Alvo.Pk[0].Campo
-    $chave = if ($ChaveEstoque) { @($doTab | Where-Object { $_.Campo -eq $ChaveEstoque }) } else { @($doTab | Where-Object { $_.Campo -eq $nomePk }) }
-    if (-not $chave) { return @{ Erro = "não sei qual coluna de $tab liga ao produto ($($Alvo.Tabela).$nomePk); informe -ChaveEstoque." } }
+    $chave = @($doTab | Where-Object { $_.Campo -eq $ChaveEstoque })
+    if (-not $chave) { return @{ Erro = "coluna '$ChaveEstoque' não existe em $tab." } }
     $expr = "(SELECT COALESCE(SUM(E.$(Q $col[0].Campo)), 0) FROM $(Q $tab) E WHERE E.$(Q $chave[0].Campo) = P.$(Q $nomePk))"
     return @{ Erro = $null; Expr = $expr; Texto = "soma de $tab.$($col[0].Campo) por $($chave[0].Campo)" }
 }
@@ -300,7 +320,7 @@ function Resolve-Stock($Alvo) {
 function ConvertFrom-Ranges([string]$Texto, [int]$Max) {
     $nums = New-Object Collections.Generic.List[int]
     foreach ($t in ($Texto -split '[,;\s]+' | Where-Object { $_ })) {
-        if ($t -match '^(\d+)(-(\d+))?$') {
+        if ($t -match '^(\d{1,6})(-(\d{1,6}))?$') {
             $a = [int]$Matches[1]
             $b = if ($Matches[3]) { [int]$Matches[3] } else { $a }
             if ($a -lt 1 -or $b -gt $Max -or $a -gt $b) { return $null }
@@ -329,7 +349,10 @@ function Select-Products($Lista) {
         try {
             $itens = for ($i = 0; $i -lt $Lista.Count; $i++) {
                 $o = [ordered]@{ Item = $i + 1; Codigo = ($Lista[$i].Chave -join '/'); Descricao = $Lista[$i].Descricao }
-                if ($script:TemEstoque) { $o['Estoque'] = $Lista[$i].Estoque }
+                if ($script:TemEstoque) {
+                    $o['Estoque'] = $Lista[$i].Estoque
+                    try { $o['Estoque'] = [decimal]::Parse($Lista[$i].Estoque, [Globalization.CultureInfo]::InvariantCulture) } catch { }
+                }
                 for ($k = 0; $k -lt $alvo.Alvos.Count; $k++) { $o[$alvo.Alvos[$k].Col.Campo] = $Lista[$i].Flags[$k] }
                 [pscustomobject]$o
             }
@@ -361,6 +384,7 @@ foreach ($v in @($ValorMarcado, $ValorDesmarcado)) {
 }
 if ([bool]$ValorMarcado -ne [bool]$ValorDesmarcado) { Stop-Script 'informe -ValorMarcado e -ValorDesmarcado juntos.' }
 if ($ValorMarcado -and $ValorMarcado -ceq $ValorDesmarcado) { Stop-Script '-ValorMarcado e -ValorDesmarcado não podem ser iguais.' }
+if ($ValorMarcado -eq 'NULL') { Stop-Script '-ValorMarcado não pode ser NULL (só -ValorDesmarcado).' }
 if (($CampoPsicotropico -or $CampoAntimicrobiano) -and -not $Tabela) { Stop-Script 'ao informar a coluna, informe também -Tabela.' }
 if ($ChaveEstoque -and -not $TabelaEstoque) { Stop-Script '-ChaveEstoque só vale junto com -TabelaEstoque.' }
 if ($Escolher -and $Codigos) { Stop-Script 'use -Escolher ou -Codigos, não os dois.' }
@@ -370,6 +394,17 @@ $script:IsqlExe = Find-Isql
 if (-not $env:ISC_PASSWORD) {
     $seg = Read-Host -AsSecureString "Senha do usuário $Usuario do Firebird"
     $script:Senha = (New-Object Management.Automation.PSCredential('u', $seg)).GetNetworkCredential().Password
+}
+
+# ---------- modo -Desfazer ----------
+if ($Desfazer) {
+    if (-not (Test-Path -LiteralPath $Desfazer -PathType Leaf)) { Stop-Script "arquivo '$Desfazer' não encontrado." }
+    $conteudo = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $Desfazer).Path, $Ansi)
+    if (-not $conteudo.StartsWith('/* Remarca os produtos desmarcados')) { Stop-Script "'$Desfazer' não é um desfazer.sql gerado por este programa." }
+    Write-Host "Rodando $Desfazer em $Banco ..."
+    Invoke-Isql $conteudo | Out-Null
+    Write-Host 'Pronto: os produtos desmarcados por aquela execução voltaram a ficar marcados (os que ainda estavam desmarcados).'
+    exit 0
 }
 
 # ---------- estrutura do banco ----------
@@ -388,10 +423,10 @@ JOIN RDB$INDEX_SEGMENTS s ON s.RDB$INDEX_NAME = c.RDB$INDEX_NAME
 WHERE c.RDB$CONSTRAINT_TYPE = 'PRIMARY KEY'
 ORDER BY c.RDB$RELATION_NAME, s.RDB$FIELD_POSITION;
 '@
-$Colunas = @(Get-Rows $linhas 'M' | ForEach-Object {
+$Colunas = @(Get-Rows $linhas 'M' 5 | ForEach-Object {
         [pscustomobject]@{ Tabela = $_[0]; Campo = $_[1]; Tipo = [int]$_[2]; Escala = [int]$_[3]; Calculado = ($_[4] -eq '1'); Kind = (Get-Kind $_[1]); Valores = @() }
     })
-$Chaves = @(Get-Rows $linhas 'K')
+$Chaves = @(Get-Rows $linhas 'K' 2)
 if (-not $Colunas) { Stop-Script 'o banco não tem tabelas de usuário. Confira o caminho em -Banco.' }
 
 # ---------- modo -Descobrir ----------
@@ -441,9 +476,9 @@ if ($Codigos -and $pk.Count -ne 1) { Stop-Script "-Codigos exige chave primária
 Add-Values ($alvo.Alvos | ForEach-Object { $_.Col })
 foreach ($a in $alvo.Alvos) {
     $par = Resolve-Pair $a.Col
-    $a | Add-Member Marcado $par[0]
-    $a | Add-Member Desmarcado $par[1]
-    $a | Add-Member TextoMarcado $par[2]
+    $a | Add-Member -NotePropertyName Marcado -NotePropertyValue $par[0]
+    $a | Add-Member -NotePropertyName Desmarcado -NotePropertyValue $par[1]
+    $a | Add-Member -NotePropertyName TextoMarcado -NotePropertyValue $par[2]
 }
 $est = Resolve-Stock $alvo
 if ($est.Erro -and ($Estoque -ne 'Todos' -or $CampoEstoque -or $TabelaEstoque)) { Stop-Script "estoque: $($est.Erro) Rode com -Descobrir para ver as colunas de estoque." 2 }
@@ -464,7 +499,7 @@ function Get-Counts {
         $a = $alvo.Alvos[$i]
         "SELECT '#C|$i|' || CAST(COUNT(*) AS VARCHAR(20)) FROM $(Q $T) WHERE $(Q $a.Col.Campo) = $($a.Marcado);"
     }
-    $r = @(Get-Rows (Invoke-Isql ($sql -join "`n")) 'C')
+    $r = @(Get-Rows (Invoke-Isql ($sql -join "`n")) 'C' 2)
     return @($r | Sort-Object { [int]$_[0] } | ForEach-Object { [long]$_[1] })
 }
 $antes = Get-Counts
@@ -487,14 +522,14 @@ if ($Estoque -eq 'ComEstoque') { $where += " AND $($est.Expr) > 0" }
 if ($Estoque -eq 'SemEstoque') { $where += " AND $($est.Expr) <= 0" }
 $ordem = if ($pk) { ($pk | ForEach-Object { "P.$(Q $_.Campo)" }) -join ', ' } else { '1' }
 $n = $pk.Count
-$lista = @(Get-Rows (Invoke-Isql "SELECT '#L|' || $($expr -join " || '|' || ") FROM $(Q $T) P WHERE $where ORDER BY $ordem;") 'L' | ForEach-Object {
+$lista = @(Get-Rows (Invoke-Isql "SELECT '#L|' || $($expr -join " || '|' || ") FROM $(Q $T) P WHERE $where ORDER BY $ordem;") 'L' ($n + 2 + $alvo.Alvos.Count) | ForEach-Object {
         $campos = @($_ | ForEach-Object { $_.TrimEnd() })
         $chave = @()
         if ($n) { $chave = @($campos[0..($n - 1)]) }
         [pscustomobject]@{
             Chave     = $chave
             Descricao = $campos[$n]
-            Estoque   = $(if ($campos[$n + 1] -match '^-?\d+\.\d*$') { $campos[$n + 1].TrimEnd('0').TrimEnd('.') } else { $campos[$n + 1] })
+            Estoque   = (Format-Number $campos[$n + 1])
             Flags     = @($campos[($n + 2)..($campos.Count - 1)])
         }
     })
@@ -547,7 +582,7 @@ if (-not $Aplicar) {
 Write-Host ''
 Write-Host 'ATENÇÃO: produto que já foi enviado ao SNGPC como controlado/antimicrobiano e for desmarcado'
 Write-Host 'gera divergência na ANVISA (veja o README). Feche o Digifarma em todos os computadores.'
-if (-not $Confirmar) {
+if (-not $SemPerguntar) {
     $resp = Read-Host "Digite DESMARCAR para alterar $total marcação(ões) em $($sel.Count) produto(s) de $T"
     if ($resp -cne 'DESMARCAR') { Write-Log 'Cancelado pelo usuário. Nada foi alterado.'; exit 1 }
 }
@@ -577,7 +612,7 @@ if ($pk) {
             if ($row.Flags[$i] -cne $a.TextoMarcado) { continue }
             $c = Q $a.Col.Campo
             $upd.Add("UPDATE $(Q $T) SET $c = $($a.Desmarcado) WHERE $cond AND $c = $($a.Marcado);")
-            $volta.Add("UPDATE $(Q $T) SET $c = $($a.Marcado) WHERE $cond AND $c = $($a.Desmarcado);")
+            $volta.Add("UPDATE $(Q $T) SET $c = $($a.Marcado) WHERE $cond AND $(Format-Equals $c $a.Desmarcado);")
         }
     }
 } else {
@@ -588,8 +623,8 @@ if ($pk) {
 }
 if ($volta.Count) {
     $desfazer = Join-Path $PastaSaida 'desfazer.sql'
-    $volta.Insert(0, "-- Remarca os produtos desmarcados em $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss'). Banco: $Banco")
-    $volta.Insert(1, "-- Uso: isql -user $Usuario -i desfazer.sql <banco>")
+    $volta.Insert(0, "/* Remarca os produtos desmarcados em $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss'). Banco: $Banco */")
+    $volta.Insert(1, "/* Uso: .\desmarcar-controlados.ps1 -Banco <banco> -Desfazer desfazer.sql */")
     $volta.Add('COMMIT;')
     [IO.File]::WriteAllLines($desfazer, $volta, $Ansi)
     Write-Log "Script para desfazer: $desfazer"
@@ -597,9 +632,14 @@ if ($volta.Count) {
     Write-Log "Sem chave primária em ${T}: não gerei desfazer.sql (use o backup para voltar)."
 }
 
-Invoke-Isql ("SET TRANSACTION READ WRITE NO WAIT ISOLATION LEVEL READ COMMITTED;`n" + ($upd -join "`n") + "`nCOMMIT;") | Out-Null
-
+$res = Invoke-Isql ("SET TRANSACTION READ WRITE NO WAIT ISOLATION LEVEL READ COMMITTED;`n" + ($upd -join "`n") + "`nCOMMIT;") -PodeFalhar
 $depois = Get-Counts
+if ($null -eq $res) {
+    if (-not @(for ($i = 0; $i -lt $alvo.Alvos.Count; $i++) { if ($antes[$i] -ne $depois[$i]) { $i } })) {
+        Stop-Script 'o banco desfez a transação inteira; nada foi alterado.'
+    }
+    Stop-Script "as contagens mudaram apesar do erro (antes: $($antes -join '/'); depois: $($depois -join '/')). Confira no Digifarma; para voltar, use -Desfazer com o desfazer.sql ou o backup."
+}
 $ok = $true
 for ($i = 0; $i -lt $alvo.Alvos.Count; $i++) {
     $feito = $antes[$i] - $depois[$i]
