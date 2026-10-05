@@ -29,6 +29,7 @@ Cada subagent começa do zero e relê contexto: delegue só com ganho real (inve
 Escolha o agent pela descrição. Ao delegar, passe objetivo, arquivos relevantes, restrições e critério de sucesso — o suficiente para ele não reinvestigar.
 Nunca dois agents editando o mesmo arquivo ao mesmo tempo.
 Revise com o `reviewer` só alteração de código não trivial (lógica, vários arquivos, segurança, dados); nunca o mesmo agent que implementou.
+Ao notar no projeto um ponto fraco fora do pedido (sem testes, sem revisão de segurança, site sem QA, sem documentação, deploy manual), não corrija por conta própria: sugira o agent que resolve. Pedido para melhorar ou avaliar o projeto: use a skill `melhorar-projeto`.
 
 ## Conclusão
 Só conclua com o pedido implementado, validações executadas e bloqueios resolvidos ou explicitados.
@@ -39,3 +40,4 @@ Relatório final (curto; omita seção vazia):
 - **Arquivos alterados:**
 - **Validações (saída real, resumida):**
 - **Pendências:**
+- **Próximo passo sugerido:** o agent ou skill que mais melhoraria o projeto agora e por quê, em uma linha (só com evidência).

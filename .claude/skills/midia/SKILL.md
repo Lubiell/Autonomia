@@ -17,6 +17,12 @@ Trabalhe em cópia; nunca sobrescreva o original. Confira se `ffmpeg` (ou `magic
 - Juntar vídeos do mesmo formato: lista `lista.txt` com linhas `file 'a.mp4'` e `ffmpeg -f concat -safe 0 -i lista.txt -c copy junto.mp4`
 - Legenda embutida: `ffmpeg -i in.mp4 -vf subtitles=legenda.srt saida.mp4`. Para gerar o `.srt` a partir da fala, use uma ferramenta de transcrição (ex.: Whisper) e revise o texto.
 
+## Áudio (podcast, narração)
+- Volume padrão para podcast (cerca de −16 LUFS): `ffmpeg -i in.wav -af loudnorm=I=-16:TP=-1.5:LRA=11 normalizado.wav`
+- Cortar silêncio do início: `ffmpeg -i in.wav -af silenceremove=start_periods=1:start_threshold=-50dB sem-silencio.wav`
+- MP3 para publicar: `ffmpeg -i in.wav -c:a libmp3lame -b:a 128k episodio.mp3`
+- Do episódio para as redes: transcreva, marque os trechos fortes, corte com `-ss/-to` e gere a versão vertical com legenda.
+
 ## Imagem
 - Redimensionar e comprimir para site: largura máxima pelo uso real (ex.: 1600 px), WebP ou AVIF, qualidade ~80: `magick in.jpg -resize 1600x -quality 80 out.webp`
 - Lote: rode em pasta de saída separada e confira algumas antes de apagar qualquer coisa.

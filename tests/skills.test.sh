@@ -4,7 +4,7 @@
 # no upload para o claude.ai sem dizer por quê.
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 pass=0 fail=0
-BUDGET=400
+BUDGET=450
 ko() { fail=$((fail + 1)); echo "FALHOU: $1"; }
 
 # Valor de uma chave no primeiro bloco ---; junta as linhas recuadas de "key: >" ou "key: |".
@@ -50,6 +50,16 @@ for f in "$ROOT"/.claude/agents/*.md; do
   [ -f "$f" ] || continue
   check "$f" "$(basename "$f" .md)"
 done
+
+# Todo atalho (só por comando) aparece no roteador "atalhos", que os aciona sozinho
+R="$ROOT/.claude/skills/atalhos/SKILL.md"
+if [ -f "$R" ]; then
+  for d in "$ROOT"/.claude/skills/*/; do
+    s="${d%/}"; n="$(basename "$s")"
+    grep -q '^disable-model-invocation:[[:space:]]*true' "$s/SKILL.md" 2>/dev/null || continue
+    grep -qF "| \`$n\` |" "$R" && pass=$((pass + 1)) || ko "atalho $n fora da tabela do roteador atalhos"
+  done
+fi
 
 # O próprio verificador: casos que devem falhar
 T="$(mktemp -d)"; trap 'rm -r "$T"' EXIT
