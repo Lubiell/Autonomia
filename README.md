@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 22 skills (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 24 skills, 35 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -28,6 +28,8 @@ package.sh / package.ps1  empacota as skills em zip para o claude.ai
     ├── frontend-design/      direção visual de sites (oficial Anthropic, Apache-2.0)
     ├── webapp-testing/       teste de site no navegador com Playwright (oficial Anthropic, Apache-2.0)
     ├── deploy-web/           checklist de publicação: GitHub Pages, Cloudflare, Firebase
+    ├── wrangler/             CLI da Cloudflare (oficial Cloudflare, Apache-2.0)
+    ├── workers-best-practices/ Workers em produção (oficial Cloudflare, Apache-2.0)
     ├── banco-dados/          modelagem, migração, query segura, índices, Firestore, backup, LGPD
     ├── api-backend/          contrato HTTP, validação, autenticação e autorização, CORS, webhooks
     ├── automacao/            scripts e rotinas agendadas idempotentes, robô de navegador, planilhas
@@ -43,6 +45,7 @@ package.sh / package.ps1  empacota as skills em zip para o claude.ai
     ├── produto/              descoberta, feedback, PRD, priorização RICE, MVP, métricas
     ├── prompts-ia/           prompts para imagem, vídeo, texto e assistentes em outras IAs
     ├── cursos/               curso, aula, treinamento: objetivos, módulos, roteiro, avaliação
+    ├── (35 atalhos)          /humanizar, /resumir, /email, /plano, /depurar… — ver "Atalhos"
     ├── handoff/              /handoff: documento para outra sessão continuar (só por comando)
     ├── grill-me/             /grill-me: entrevista até o plano não ter pontas soltas (só por comando)
     └── discover-resources/   avaliar recurso externo antes de instalar
@@ -55,7 +58,7 @@ tests/                    testes do hook e dos instaladores
 ## Áreas cobertas
 | Área | Agents | Skills |
 |---|---|---|
-| Desenvolvimento | architect, developer, debugger, tester, reviewer, devops, scout, docs-writer | api-backend, banco-dados, automacao, deploy-web |
+| Desenvolvimento | architect, developer, debugger, tester, reviewer, devops, scout, docs-writer | api-backend, banco-dados, automacao, deploy-web, wrangler, workers-best-practices |
 | Sites | qa-web | frontend-design, seo, webapp-testing |
 | Dados | data-analyst | analise-dados |
 | Marketing | — | conteudo, trafego-pago |
@@ -67,6 +70,19 @@ tests/                    testes do hook e dos instaladores
 | Pesquisa e processo | researcher | discover-resources, grill-me, handoff |
 
 Documentos Word, planilhas, PDF e apresentações ficam com as skills da conta (`docx`, `xlsx`, `pdf`, `pptx`).
+
+## Atalhos (comandos /)
+Só rodam quando você digita o comando, então não custam contexto por turno. Passe o texto ou o assunto depois do comando (ex.: `/humanizar <texto>`); sem nada, usam o conteúdo mais recente da conversa.
+
+| Grupo | Comandos |
+|---|---|
+| Analisar e decidir | `/advogado-do-diabo` `/critica-plano` `/pros-contras` `/tldr` `/pontos-chave` |
+| Escrever melhor | `/humanizar` `/enxugar` `/reescrever` `/tom` `/revisar-texto` |
+| Criar conteúdo | `/expandir` `/gancho` `/titulos` `/estrutura` `/historia` |
+| Resolver o trabalho | `/email` `/responder` `/resumir` `/tarefas` `/pauta` |
+| Planejar e organizar | `/ideias` `/decidir` `/plano` `/checklist` `/modelo` |
+| Programar | `/depurar` `/explicar-codigo` `/refatorar` `/otimizar` `/testes` |
+| Publicar e aprender | `/regex` `/mensagem-commit` `/documentar` `/quiz` `/comparar` |
 
 ## Instalação
 
