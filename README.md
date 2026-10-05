@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 33 skills, 35 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 34 skills, 35 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -36,6 +36,7 @@ package.sh / package.ps1  empacota as skills em zip para o claude.ai
     ├── contratos/            contrato e proposta de prestação de serviço
     ├── marca/                posicionamento, tom de voz, paleta, tipografia, guia de marca
     ├── rh/                   CLT, PJ, estágio, vaga, entrevista sem viés, onboarding
+    ├── melhorar-projeto/     diagnóstico por área e o agent ou skill indicado para cada melhoria
     ├── banco-dados/          modelagem, migração, query segura, índices, Firestore, backup, LGPD
     ├── api-backend/          contrato HTTP, validação, autenticação e autorização, CORS, webhooks
     ├── automacao/            scripts e rotinas agendadas idempotentes, robô de navegador, planilhas
@@ -75,7 +76,7 @@ tests/                    testes do hook e dos instaladores
 | IA generativa | — | prompts-ia |
 | Segurança e privacidade | security | seguranca-digital, lgpd |
 | Mídia | — | midia |
-| Pesquisa e processo | researcher | discover-resources, grill-me, handoff |
+| Pesquisa e processo | researcher | discover-resources, grill-me, handoff, melhorar-projeto |
 
 Documentos Word, planilhas, PDF e apresentações ficam com as skills da conta (`docx`, `xlsx`, `pdf`, `pptx`).
 

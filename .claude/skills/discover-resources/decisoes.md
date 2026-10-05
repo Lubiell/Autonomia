@@ -36,6 +36,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Orçamento de description no `skills.test.sh` de 400 para 450 caracteres, para caber skills oficiais sem alterá-las — 2026-10-05
 - Conectores MCP oficiais documentados no README como opcionais (Playwright, Chrome DevTools, GitHub, Cloudflare, Firebase, GA4, Meta Ads, Canva, DeepL, Context7, mcp-fiscal-brasil): exigem login ou chave do usuário, por isso não vêm instalados — 2026-10-05
 - Skill roteadora `atalhos`: aciona sozinha os 37 atalhos (incluindo `grill-me` e `handoff`) com uma única description por turno, em vez de 37; os atalhos continuam por comando. Pedido do usuário: atalhos automáticos — 2026-10-05
+- Skill `melhorar-projeto` e regra no CLAUDE.md para sugerir o agent indicado (ponto fraco fora do pedido e "Próximo passo sugerido" no relatório). Pedido do usuário: o Autonomia sugerir o agente para melhorar os projetos — 2026-10-05
 - Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
 
 ## Instalar — fila, em ordem de valor
