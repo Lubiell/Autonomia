@@ -51,6 +51,7 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 
 ## Opcionais
 - Language server da linguagem do projeto (além do `pyright-lsp`) — marketplace oficial — busca por símbolo mais barata que Grep; escolher por projeto — 2026-10-02
+- Mod `You should know` — embutido no Claude Code 2.1.287+ (`/plugin enable cc-plugin-you-should-know@builtin`) — agente paralelo que aponta o que você ou o Claude deixaram passar; liga por máquina, não pelo repositório. Exige telemetria ligada e roda um agente a mais (custo de tokens); testar uma semana e medir com o `session-report` antes de manter — 2026-10-05
 
 ## Recusados — não instalar
 | Ferramenta | Motivo |
