@@ -8,6 +8,12 @@
       "Read(**/.env.*)",
       "Read(./**/*.pem)",
       "Read(./**/*.key)",
+      "Read(./**/*.p12)",
+      "Read(./**/*.pfx)",
+      "Read(**/.dev.vars)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/credentials)",
+      "Read(~/.gnupg/**)",
       "Read(./**/node_modules/**)",
       "Read(./**/.venv/**)",
       "Read(./**/venv/**)",
@@ -28,13 +34,46 @@
       "Bash(git push:*)",
       "Bash(npm install -g:*)",
       "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python -m pip install:*)",
+      "Bash(python3 -m pip install:*)",
+      "Bash(npm publish:*)",
       "Bash(curl:*)",
       "Bash(wget:*)",
+      "Bash(dangerouslyDisableSandbox:true)",
       "PowerShell(git push *)",
       "PowerShell(npm install -g *)",
       "PowerShell(pip install *)",
+      "PowerShell(pip3 install *)",
+      "PowerShell(python -m pip install *)",
+      "PowerShell(npm publish *)",
       "PowerShell(Invoke-WebRequest *)",
       "PowerShell(Invoke-RestMethod *)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": false,
+    "credentials": {
+      "files": [
+        { "path": "~/.ssh", "mode": "deny" },
+        { "path": "~/.aws/credentials", "mode": "deny" },
+        { "path": "~/.gnupg", "mode": "deny" }
+      ]
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }

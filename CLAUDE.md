@@ -3,12 +3,15 @@
 Fluxo: entender → investigar → planejar → implementar → testar → revisar → reportar. Pule etapas que não agregam em tarefa simples.
 
 ## Regras permanentes
+- Responda sempre em português do Brasil, inclusive em relatórios e mensagens de status.
 - Entenda o pedido e descubra a stack real antes de alterar arquivos. Não presuma tecnologia.
+- Pedido com duas leituras razoáveis: apresente as duas e a sua recomendação; não escolha calado.
 - Nunca invente arquivos, comandos, APIs, dependências ou resultados.
 - Menor alteração adequada. Sem refatoração não pedida. Preserve o trabalho existente.
 - Nunca exponha secrets, tokens, senhas ou chaves.
 - Nunca declare algo testado sem ter executado. Antes de concluir: `git status` e `git diff --stat`; abra o diff completo só dos arquivos que precisar conferir.
 - Dependência, ferramenta, skill ou plugin novo: pergunte antes, com custo/benefício. Use a skill `discover-resources`.
+- Discorde quando o usuário estiver errado e mostre onde. Mude de posição por argumento novo, não por insistência.
 - Peça confirmação para: instalação global, privilégio elevado, acesso a credenciais, hook de amplo alcance, operação irreversível, código de origem não confiável.
 
 ## Economia de contexto
@@ -29,6 +32,7 @@ Revise com o `reviewer` só alteração de código não trivial (lógica, vário
 
 ## Conclusão
 Só conclua com o pedido implementado, validações executadas e bloqueios resolvidos ou explicitados.
+Evidência é saída gerada depois da última alteração; relatório de subagent é alegação: confira o `git diff` e rode a verificação você mesmo. Dizer "não verifiquei X" é aceitável; afirmar sem verificar não é.
 
 Relatório final (curto; omita seção vazia):
 - **Feito:**

@@ -30,42 +30,67 @@ Get-ChildItem (Join-Path $Src '.claude\agents\*.md') | ForEach-Object {
     Install-File $_.FullName (Join-Path 'agents' $_.Name)
 }
 $SkillsRoot = Join-Path $Src '.claude'
-Get-ChildItem -LiteralPath (Join-Path $SkillsRoot 'skills') -Recurse -File | ForEach-Object {
-    Install-File $_.FullName $_.FullName.Substring($SkillsRoot.Length + 1)
+foreach ($Dir in 'skills', 'hooks') {
+    $DirPath = Join-Path $SkillsRoot $Dir
+    if (-not (Test-Path -LiteralPath $DirPath)) { continue }
+    Get-ChildItem -LiteralPath $DirPath -Recurse -File | ForEach-Object {
+        Install-File $_.FullName $_.FullName.Substring($SkillsRoot.Length + 1)
+    }
 }
 
-# settings.json: junta deny/ask às regras existentes, sem apagar nada do usuário.
+# settings.json: junta deny/ask, hooks e sandbox aos existentes, sem apagar nada do usuário.
+# O caminho ${CLAUDE_PROJECT_DIR}/.claude/ dos hooks vira o da instalação (com /, que o Git Bash aceita).
+# A seção "sandbox" só entra se o usuário ainda não tiver uma.
 $Settings = Join-Path $Dest 'settings.json'
 $SrcSettings = Join-Path $Src '.claude\settings.json'
-if (-not (Test-Path -LiteralPath $Settings)) {
-    Copy-Item $SrcSettings $Settings
-    Write-Host "  ok: settings.json (novo)"
-} else {
-    # Lê como UTF-8 explícito (o PS 5.1 assume ANSI). No PS 7.5+, -DateKind String evita converter datas.
-    $JsonArgs = @{}
-    if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $JsonArgs.DateKind = 'String' }
-    $DstJson = [IO.File]::ReadAllText($Settings, $Utf8) | ConvertFrom-Json @JsonArgs
-    $SrcJson = [IO.File]::ReadAllText($SrcSettings, $Utf8) | ConvertFrom-Json @JsonArgs
-    if (-not $DstJson.permissions) {
-        $DstJson | Add-Member -NotePropertyName permissions -NotePropertyValue ([pscustomobject]@{})
+# Lê como UTF-8 explícito (o PS 5.1 assume ANSI). No PS 7.5+, -DateKind String evita converter datas.
+$JsonArgs = @{}
+if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) { $JsonArgs.DateKind = 'String' }
+$IsNew = -not (Test-Path -LiteralPath $Settings)
+$DstText = if ($IsNew) { '' } else { [IO.File]::ReadAllText($Settings, $Utf8) }
+# Arquivo vazio ou só com espaços conta como configuração vazia (ConvertFrom-Json devolveria $null).
+$DstJson = if ([string]::IsNullOrWhiteSpace($DstText)) { [pscustomobject]@{} } else { $DstText | ConvertFrom-Json @JsonArgs }
+$SrcJson = [IO.File]::ReadAllText($SrcSettings, $Utf8) | ConvertFrom-Json @JsonArgs
+if (-not $DstJson.permissions) {
+    $DstJson | Add-Member -NotePropertyName permissions -NotePropertyValue ([pscustomobject]@{})
+}
+$Added = 0
+foreach ($Key in 'deny', 'ask') {
+    $Cur = @($DstJson.permissions.$Key | Where-Object { $_ })
+    $New = @($SrcJson.permissions.$Key | Where-Object { $Cur -cnotcontains $_ })
+    $Added += $New.Count
+    $DstJson.permissions | Add-Member -NotePropertyName $Key -NotePropertyValue ($Cur + $New) -Force
+}
+if ($SrcJson.hooks) {
+    if (-not $DstJson.hooks) {
+        $DstJson | Add-Member -NotePropertyName hooks -NotePropertyValue ([pscustomobject]@{})
     }
-    $Added = 0
-    foreach ($Key in 'deny', 'ask') {
-        $Cur = @($DstJson.permissions.$Key | Where-Object { $_ })
-        $New = @($SrcJson.permissions.$Key | Where-Object { $Cur -cnotcontains $_ })
+    $DestFwd = $Dest -replace '\\', '/'
+    $SrcHooks = ($SrcJson.hooks | ConvertTo-Json -Depth 20).Replace('${CLAUDE_PROJECT_DIR}/.claude/', "$DestFwd/") | ConvertFrom-Json
+    foreach ($Ev in $SrcHooks.PSObject.Properties) {
+        $Cur = @($DstJson.hooks.($Ev.Name) | Where-Object { $_ })
+        $Known = @($Cur | ForEach-Object { $_.hooks } | ForEach-Object { $_.command })
+        $New = @($Ev.Value | Where-Object { @($_.hooks | Where-Object { $Known -ccontains $_.command }).Count -eq 0 })
         $Added += $New.Count
-        $DstJson.permissions | Add-Member -NotePropertyName $Key -NotePropertyValue ($Cur + $New) -Force
+        $DstJson.hooks | Add-Member -NotePropertyName $Ev.Name -NotePropertyValue ($Cur + $New) -Force
     }
-    if ($Added -eq 0) {
-        Write-Host "  ok: settings.json (já atualizado)"
-    } else {
-        New-Item -ItemType Directory -Force $Backup | Out-Null
-        Copy-Item -LiteralPath $Settings (Join-Path $Backup 'settings.json')
-        Write-Host "  backup: settings.json"
-        # UTF-8 sem BOM: o Windows PowerShell 5.1 grava BOM com -Encoding UTF8, e o JSON pode falhar ao carregar.
-        [IO.File]::WriteAllText($Settings, ($DstJson | ConvertTo-Json -Depth 20), $Utf8)
-        Write-Host "  ok: settings.json (permissões mescladas)"
-    }
+}
+if ($SrcJson.sandbox -and -not $DstJson.PSObject.Properties['sandbox']) {
+    $DstJson | Add-Member -NotePropertyName sandbox -NotePropertyValue $SrcJson.sandbox
+    $Added++
+}
+if ($IsNew) {
+    [IO.File]::WriteAllText($Settings, ($DstJson | ConvertTo-Json -Depth 20), $Utf8)
+    Write-Host "  ok: settings.json (novo)"
+} elseif ($Added -eq 0) {
+    Write-Host "  ok: settings.json (já atualizado)"
+} else {
+    New-Item -ItemType Directory -Force $Backup | Out-Null
+    Copy-Item -LiteralPath $Settings (Join-Path $Backup 'settings.json')
+    Write-Host "  backup: settings.json"
+    # UTF-8 sem BOM: o Windows PowerShell 5.1 grava BOM com -Encoding UTF8, e o JSON pode falhar ao carregar.
+    [IO.File]::WriteAllText($Settings, ($DstJson | ConvertTo-Json -Depth 20), $Utf8)
+    Write-Host "  ok: settings.json (mesclado)"
 }
 
 if (Test-Path -LiteralPath $Backup) { Write-Host "Backup dos arquivos substituídos: $Backup" }

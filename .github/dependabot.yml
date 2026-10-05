@@ -1,0 +1,7 @@
+# Abre PR quando sai versão nova das GitHub Actions usadas no CI (atualiza também o hash fixado).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
