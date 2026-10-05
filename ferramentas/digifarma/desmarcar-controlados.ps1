@@ -440,13 +440,15 @@ if ($Descobrir) {
         }
         exit 2
     }
-    Write-Host "Contando os valores de $($cands.Count) coluna(s) (pode demorar em tabelas grandes) ..."
-    Add-Values $cands
+    # Valores só das colunas de marcar: as outras (SNGPC, classe terapêutica) podem ter CPF, nomes etc.
+    $mostrar = @($cands | Where-Object { $_.Kind -ne 'Outro' -and $_.Campo -notmatch 'CPF|CNPJ|NOME|RG|FONE|EMAIL|ENDERECO' })
+    Write-Host "Contando os valores de $($mostrar.Count) coluna(s) (pode demorar em tabelas grandes) ..."
+    Add-Values $mostrar
     Write-Host ''
     Write-Host 'Colunas candidatas (tabela.coluna  tipo  provável  valores=quantidade):'
     foreach ($c in $cands) {
         Write-Host ("  {0}.{1}  {2}  {3}" -f $c.Tabela, $c.Campo, $NomesTipo[$c.Tipo], $c.Kind)
-        Write-Host ("      {0}" -f (Format-Values $c))
+        if ($mostrar -contains $c) { Write-Host ("      {0}" -f (Format-Values $c)) } else { Write-Host '      (valores não exibidos)' }
     }
     Write-Host ''
     Write-Host 'Colunas de estoque possíveis:'
