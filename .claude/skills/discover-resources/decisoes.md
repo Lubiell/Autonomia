@@ -100,6 +100,13 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `remotion-dev/skills` | repositório sem licença (não pode ser copiado); o Remotion exige licença paga para empresa com mais de 3 pessoas. Se for fazer vídeo em código, instalar sob demanda pelo comando oficial e ler antes (2026-10-05) |
 | `firecrawl/cli` | depende de conta e chave no serviço Firecrawl; para páginas públicas o `WebFetch` e o agent `researcher` bastam (2026-10-05) |
 | `github/awesome-copilot` | 452 skills num repositório só; instalar a pasta põe centenas de instruções disputando o mesmo pedido (aviso do próprio post devemdobro, 2026-10-05) |
+| `cathrynlavery/diagram-design` (MIT) | uma skill boa para diagramas, mas a description tem ~1.000 caracteres (entra em todo turno; o limite do Autonomia é 400) e o SKILL.md tem ~4.000 palavras. Opcional: instalar sob demanda quando houver trabalho de diagrama (2026-10-05) |
+| `Threesided-Studios/Agent-Memory` (fork de `rohitg00/agentmemory`) | plugin com hooks que injetam contexto em toda sessão; o fork está 94 commits atrás do original; o Claude Code já tem `CLAUDE.md`, memória automática e o `decisoes.md` (2026-10-05) |
+| `volcengine/OpenViking` | banco de memória e conhecimento como serviço próprio a manter rodando; desproporcional para uso individual (2026-10-05) |
+| `liptonj-eng/anthropic-cybersecurity-skills` | 734 skills, sem licença, e o nome sugere Anthropic sem ser (fork de terceiro); segurança fica com o agent `security` e a skill `seguranca-digital` (2026-10-05) |
+| `K-Dense-AI/scientific-agent-skills` (MIT) | 177 skills de pesquisa científica (biologia, química, bases acadêmicas); fora do trabalho do usuário (2026-10-05) |
+| `browser-use/browser-use` | biblioteca Python que precisa de chave de API de um modelo; para o próprio site, `webapp-testing` e `qa-web`; para rotina em site de terceiros, skill `automacao` com Playwright e respeito aos termos de uso (2026-10-05) |
+| `yenanjing/awesome-harness-engineering` | lista de links, não instalável; fonte de consulta (2026-10-05) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
