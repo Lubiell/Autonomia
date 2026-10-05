@@ -1,5 +1,8 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(git clone *)"
+    ],
     "deny": [
       "Read(**/.env)",
       "Read(**/.env.*)",
