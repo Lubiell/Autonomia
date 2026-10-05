@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 22 skills, 35 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 24 skills, 35 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -28,6 +28,8 @@ package.sh / package.ps1  empacota as skills em zip para o claude.ai
     ├── frontend-design/      direção visual de sites (oficial Anthropic, Apache-2.0)
     ├── webapp-testing/       teste de site no navegador com Playwright (oficial Anthropic, Apache-2.0)
     ├── deploy-web/           checklist de publicação: GitHub Pages, Cloudflare, Firebase
+    ├── wrangler/             CLI da Cloudflare (oficial Cloudflare, Apache-2.0)
+    ├── workers-best-practices/ Workers em produção (oficial Cloudflare, Apache-2.0)
     ├── banco-dados/          modelagem, migração, query segura, índices, Firestore, backup, LGPD
     ├── api-backend/          contrato HTTP, validação, autenticação e autorização, CORS, webhooks
     ├── automacao/            scripts e rotinas agendadas idempotentes, robô de navegador, planilhas
@@ -56,7 +58,7 @@ tests/                    testes do hook e dos instaladores
 ## Áreas cobertas
 | Área | Agents | Skills |
 |---|---|---|
-| Desenvolvimento | architect, developer, debugger, tester, reviewer, devops, scout, docs-writer | api-backend, banco-dados, automacao, deploy-web |
+| Desenvolvimento | architect, developer, debugger, tester, reviewer, devops, scout, docs-writer | api-backend, banco-dados, automacao, deploy-web, wrangler, workers-best-practices |
 | Sites | qa-web | frontend-design, seo, webapp-testing |
 | Dados | data-analyst | analise-dados |
 | Marketing | — | conteudo, trafego-pago |
