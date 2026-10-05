@@ -127,6 +127,7 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
 | `Repowise`, `Serena` | indexação semântica de repo grande; exigem servidor local e ~25 min de índice. Repos pequenos, trabalho pelo celular — custo sem ganho |
+| `tirth8205/code-review-graph` (MIT, v2.3.9, commit 2026-09-18) | mesma categoria do `Serena`: grafo de código via servidor MCP em Python (`fastmcp`, `tree-sitter`, `networkx`, `watchdog`), e o `install` grava MCP, hook de SessionStart, skills e regras em cada ferramenta detectada. O "60–70% menos tokens" do carrossel (@matheustilli, 2026-10-05) compara com ler o repositório inteiro, que o próprio README chama de teto que nenhum agente paga; contra busca por grep o README ainda não publicou medição. Repos pequenos + `scout` cobrem. Reavaliar só para repo grande (2026-10-05) |
 | modpack `repowise-dev` (no-ai-slop, critic, devil, deep, risk, decision) | personas de resposta; disputam gatilho com o agent `reviewer` e com `spec.md` |
 | `Strix` | pentest autônomo real, mas exige Docker, chave de LLM paga e scan de 1–4h. Cobrir com `security-review.yml` no CI em vez disso |
 | `Ralph loop` | repete o prompt sem gate de verificação; a regra de evidência já confere saída real |
