@@ -51,6 +51,7 @@ package.sh / package.ps1  empacota as skills em zip para o claude.ai
     ├── produto/              descoberta, feedback, PRD, priorização RICE, MVP, métricas
     ├── prompts-ia/           prompts para imagem, vídeo, texto e assistentes em outras IAs
     ├── cursos/               curso, aula, treinamento: objetivos, módulos, roteiro, avaliação
+    ├── atalhos/              roteador: escolhe e aplica sozinho um dos 37 atalhos abaixo
     ├── (35 atalhos)          /humanizar, /resumir, /email, /plano, /depurar… — ver "Atalhos"
     ├── handoff/              /handoff: documento para outra sessão continuar (só por comando)
     ├── grill-me/             /grill-me: entrevista até o plano não ter pontas soltas (só por comando)
@@ -79,7 +80,7 @@ tests/                    testes do hook e dos instaladores
 Documentos Word, planilhas, PDF e apresentações ficam com as skills da conta (`docx`, `xlsx`, `pdf`, `pptx`).
 
 ## Atalhos (comandos /)
-Só rodam quando você digita o comando, então não custam contexto por turno. Passe o texto ou o assunto depois do comando (ex.: `/humanizar <texto>`); sem nada, usam o conteúdo mais recente da conversa.
+Rodam sozinhos: a skill `atalhos` (uma só descrição no contexto) reconhece o pedido — resumir, revisar, mudar o tom, montar pauta, decidir… — e segue as instruções do atalho certo. Também dá para chamar direto pelo comando (ex.: `/humanizar <texto>`). Atalho novo precisa entrar na tabela do roteador; o `skills.test.sh` confere.
 
 | Grupo | Comandos |
 |---|---|

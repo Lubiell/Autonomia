@@ -51,6 +51,16 @@ for f in "$ROOT"/.claude/agents/*.md; do
   check "$f" "$(basename "$f" .md)"
 done
 
+# Todo atalho (só por comando) aparece no roteador "atalhos", que os aciona sozinho
+R="$ROOT/.claude/skills/atalhos/SKILL.md"
+if [ -f "$R" ]; then
+  for d in "$ROOT"/.claude/skills/*/; do
+    s="${d%/}"; n="$(basename "$s")"
+    grep -q '^disable-model-invocation:[[:space:]]*true' "$s/SKILL.md" 2>/dev/null || continue
+    grep -qF "| \`$n\` |" "$R" && pass=$((pass + 1)) || ko "atalho $n fora da tabela do roteador atalhos"
+  done
+fi
+
 # O próprio verificador: casos que devem falhar
 T="$(mktemp -d)"; trap 'rm -r "$T"' EXIT
 printf -- '---\nname: outro\ndescription: x\n---\n' > "$T/a.md"
