@@ -234,6 +234,7 @@ INSERT INTO VENDAS_ITENS VALUES (5, 4, 12, 1, 4);
 INSERT INTO VENDAS_ITENS VALUES (6, 5, 21, 3, 18);
 INSERT INTO VENDAS_ITENS VALUES (7, 6, 21, 1, 6);
 INSERT INTO VENDAS_ITENS VALUES (8, 7, 6, 1, 3);
+INSERT INTO VENDAS_ITENS VALUES (9, 3, 6, 1, NULL);
 COMMIT;
 SQL
 B3="localhost:$DB3"
@@ -245,6 +246,9 @@ cat > "$TMP/esquema.psd1" <<'PSD'
     ItemTabela = 'VENDAS_ITENS'; ItemVenda = 'VENDA_ID'; ItemProduto = 'PRODUTO_ID'; ItemQuantidade = 'QTD'; ItemValorTotal = 'VALOR_TOTAL'
 }
 PSD
+grep -v "VendaChave" "$TMP/esquema.psd1" > "$TMP/esquema-sem-chave.psd1"
+printf "    VendaTabela = 'VENDAS'; VendaData = 'DATA_VENDA'; VendaCancelada = 'CANCELADA'\n}\n" > "$TMP/fim.txt"
+sed -i '$d' "$TMP/esquema-sem-chave.psd1"; cat "$TMP/fim.txt" >> "$TMP/esquema-sem-chave.psd1"
 # Cotação em branco mínima: aba "Cotação" com A3:B5 vazias e um contador com resultado guardado.
 python3 - "$TMP/modelo.xlsx" <<'PY'
 import sys, zipfile
@@ -254,8 +258,8 @@ z.writestr('_rels/.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships 
 z.writestr('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="LEIA-ME" sheetId="1" r:id="rId3"/><sheet name="Cotação" sheetId="2" r:id="rId4"/></sheets><calcPr refMode="A1"/></workbook>')
 z.writestr('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>')
 z.writestr('xl/worksheets/sheet1.xml', '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>')
-linhas = ''.join('<row r="%d"><c r="A%d" s="12"/><c r="B%d" s="12"/></row>' % (r, r, r) for r in range(3, 6))
-z.writestr('xl/worksheets/sheet2.xml', '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="B1" s="5" t="n"><f aca="false">COUNTA(A3:A1002)</f><v>0</v></c></row>' + linhas + '</sheetData></worksheet>')
+linhas = ''.join('<row r="%d"><c r="A%d" s="12"/><c r="B%d" s="12"/></row>' % (r, r, r) for r in range(3, 7))
+z.writestr('xl/worksheets/sheet2.xml', '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="B1" s="5" t="n"><f aca="false">COUNTA(A3:A1002)</f><v>0</v></c><c r="C1" s="5" t="str"><f aca="false">&quot;A&quot;&amp;&quot;B&quot;</f><v>AB</v></c></row>' + linhas + '</sheetData></worksheet>')
 z.close()
 PY
 rel() { "$PWSH" -NoProfile -File "$DIR/relatorios-digifarma.ps1" -Isql "$(command -v "$ISQL")" -Banco "$B3" "$@" 2>&1; }
@@ -275,18 +279,25 @@ ok '[ $rc -eq 0 ] && grep -q "A: 2  B: 1  C: 1" <<<"$out"' "curva ABC: código $
 ok 'grep -q "^\"A\";\"1\";\"1\";\"7896004713229\";\"DIPIRONA 500MG\";\"60\";\"300,00\";\"73,89\";\"73,89\";\"50\"" <<<"$abc"' "curva ABC: linha da DIPIRONA"
 ok 'grep -q "^\"C\";\"4\";\"21\";.*\"1\";\"6,00\"" <<<"$abc" && ! grep -q "ALPRAZOLAM\|AZITROMICINA" <<<"$abc"' "curva ABC: cancelada/fora do período"
 
+# Sem VendaChave na configuração: a chave primária de VENDAS é descoberta sozinha
+out="$(rel -Esquema "$TMP/esquema-sem-chave.psd1" -Relatorio CurvaABC -DataInicio 01/09/2026 -DataFim 30/09/2026 -PastaSaida "$TMP/r4")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -q "A: 2  B: 1  C: 1" <<<"$out"' "sem VendaChave: código $rc $out"
+
 # Sugestão de compra (30 dias) preenchendo a cotação em branco
 out="$(rel -Esquema "$TMP/esquema.psd1" -Modelo "$TMP/modelo.xlsx" -Relatorio SugestaoCompra -DataInicio 01/09/2026 -DataFim 30/09/2026 -PastaSaida "$TMP/r2")"; rc=$?
 cot="$(ls "$TMP"/r2/Cotacao_*.xlsx 2>/dev/null | head -1)"
-ok '[ $rc -eq 0 ] && grep -q "Sugestão de compra: 2 produtos" <<<"$out" && [ -n "$cot" ]' "sugestão: código $rc $out"
+ok '[ $rc -eq 0 ] && grep -q "Sugestão de compra: 3 produtos" <<<"$out" && [ -n "$cot" ]' "sugestão: código $rc $out"
+ok 'grep -q "^\"6\";\"7893\";\"AZITROMICINA\";\"1\";\"0,03\";\"-2\";\"1\"" "$TMP"/r2/sugestao-compra_*.csv' "sugestão: item vendido sem valor sumiu"
 ok 'grep -q "^\"1\";\"7896004713229\";\"DIPIRONA 500MG\";\"60\";\"2,00\";\"50\";\"10\"" "$TMP"/r2/sugestao-compra_*.csv' "sugestão: DIPIRONA 10"
 ok '[ "$(celula "$cot" A3)" = "<c r=\"A3\" s=\"12\" t=\"inlineStr\"><is><t xml:space=\"preserve\">AMOXICILINA 500MG CÁPS &amp; &quot;CIA&quot;</t></is></c>" ]' "cotação A3: $(celula "$cot" A3)"
-ok '[ "$(celula "$cot" B4)" = "<c r=\"B4\" s=\"12\"><v>10</v></c>" ] && [ "$(celula "$cot" A5)" = "<c r=\"A5\" s=\"12\"/>" ]' "cotação B4/A5"
-ok '[ "$(celula "$cot" B1)" = "<c r=\"B1\" s=\"5\" t=\"n\"><f aca=\"false\">COUNTA(A3:A1002)</f></c>" ]' "cotação: resultado guardado da fórmula não foi tirado: $(celula "$cot" B1)"
+ok '[ "$(celula "$cot" B4)" = "<c r=\"B4\" s=\"12\"><v>1</v></c>" ] && [ "$(celula "$cot" B5)" = "<c r=\"B5\" s=\"12\"><v>10</v></c>" ] && [ "$(celula "$cot" A6)" = "<c r=\"A6\" s=\"12\"/>" ]' "cotação B4/B5/A6"
+ok '[ "$(celula "$cot" B1)" = "<c r=\"B1\" s=\"5\"><f aca=\"false\">COUNTA(A3:A1002)</f></c>" ]' "cotação: resultado guardado da fórmula numérica: $(celula "$cot" B1)"
+ok '[ "$(celula "$cot" C1)" = "<c r=\"C1\" s=\"5\" t=\"str\"><f aca=\"false\">&quot;A&quot;&amp;&quot;B&quot;</f><v></v></c>" ]' "cotação: resultado guardado da fórmula de texto: $(celula "$cot" C1)"
 ok 'unzip -p "$cot" xl/workbook.xml | grep -q "fullCalcOnLoad=\"1\""' "cotação: recálculo ao abrir"
 ok 'unzip -p "$TMP/modelo.xlsx" xl/worksheets/sheet2.xml | grep -q "<c r=\"A3\" s=\"12\"/>"' "o modelo em branco foi alterado"
 out="$(rel -Esquema "$TMP/esquema.psd1" -Modelo "$cot" -Relatorio SugestaoCompra -DataInicio 01/09/2026 -DataFim 30/09/2026 -PastaSaida "$TMP/r3")"; rc=$?
-ok '[ $rc -eq 1 ] && grep -q "não está em branco" <<<"$out"' "cotação já preenchida como modelo: código $rc"
+ok '[ $rc -eq 1 ] && grep -q "não está em branco" <<<"$out" && grep -q "planilha CSV com a sugestão foi gravada" <<<"$out"' "cotação já preenchida como modelo: código $rc"
+ok '! ls "$TMP"/r3/Cotacao_*.xlsx >/dev/null 2>&1 && ls "$TMP"/r3/sugestao-compra_*.csv >/dev/null 2>&1' "cotação incompleta ficou na pasta (ou o CSV sumiu)"
 
 echo "passou: $PASS  falhou: $FAIL"
 [ "$FAIL" -eq 0 ]

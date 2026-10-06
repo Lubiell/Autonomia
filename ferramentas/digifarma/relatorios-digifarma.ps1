@@ -105,6 +105,10 @@ function Start-Tool([string]$Exe, [string[]]$Argumentos) {
     $err = New-Object IO.MemoryStream
     $t1 = $p.StandardOutput.BaseStream.CopyToAsync($out)
     $t2 = $p.StandardError.BaseStream.CopyToAsync($err)
+    # Na janela, continua atendendo o Windows enquanto espera (senão ela aparece como "Não está respondendo").
+    if ($script:ModoJanela) {
+        while (-not $p.WaitForExit(100)) { [Windows.Forms.Application]::DoEvents() }
+    }
     $p.WaitForExit()
     $t1.Wait(); $t2.Wait()
     return [pscustomobject]@{ Codigo = $p.ExitCode; Saida = (Convert-Bytes $out.ToArray()); Erro = (Convert-Bytes $err.ToArray()) }
@@ -114,13 +118,17 @@ function Start-Tool([string]$Exe, [string[]]$Argumentos) {
 function Invoke-Isql([string]$Sql) {
     $tmp = [IO.Path]::GetTempFileName()
     try {
-        [IO.File]::WriteAllText($tmp, "SET HEADING OFF;`n$Sql`n", $Ansi)
+        # Transação só de leitura e sem fotografia longa do banco: não atrapalha as vendas do Digifarma.
+        [IO.File]::WriteAllText($tmp, "SET HEADING OFF;`nSET TRANSACTION READ ONLY ISOLATION LEVEL READ COMMITTED;`n$Sql`n", $Ansi)
         $r = Start-Tool $script:IsqlExe @('-b', '-q', '-ch', 'NONE', '-user', $Usuario, '-i', $tmp, $Banco)
     } finally {
         Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
     }
     $msg = (($r.Erro -split "`r?`n") | Where-Object { $_.Trim() -and $_.Trim() -ne 'Rolling back work.' }) -join "`n"
-    if ($r.Codigo -ne 0 -or $msg) { Stop-Script "o isql falhou (código $($r.Codigo)): $msg" }
+    if ($r.Codigo -ne 0 -or $msg) {
+        if (-not $msg) { $msg = (@($r.Saida -split "`r?`n" | Where-Object { $_.Trim() }) | Select-Object -Last 5) -join "`n" }
+        Stop-Script "o isql falhou (código $($r.Codigo)): $msg"
+    }
     return $r.Saida -split "`r?`n"
 }
 
@@ -147,8 +155,7 @@ function Find-Isql {
         if (-not (Test-Path -LiteralPath $Isql -PathType Leaf)) { Stop-Script "isql não encontrado em '$Isql'." }
         return (Resolve-Path -LiteralPath $Isql).Path
     }
-    $cmd = Get-Command 'isql.exe', 'isql-fb' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($cmd) { return $cmd.Source }
+    # Primeiro a pasta do Firebird: o SQL Server também instala um isql.exe que pode estar no PATH.
     foreach ($base in @($env:ProgramFiles, ${env:ProgramFiles(x86)})) {
         if (-not $base) { continue }
         foreach ($padrao in @('Firebird\*\isql.exe', 'Firebird\*\bin\isql.exe')) {
@@ -156,6 +163,8 @@ function Find-Isql {
             if ($achado) { return $achado.FullName }
         }
     }
+    $cmd = Get-Command 'isql.exe', 'isql-fb' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($cmd) { return $cmd.Source }
     Stop-Script "isql do Firebird não encontrado. Informe o caminho com -Isql 'C:\...\isql.exe' (fica na pasta do Firebird instalado no servidor do Digifarma)."
 }
 
@@ -356,8 +365,13 @@ function Resolve-Esquema {
     $faltam = @()
     foreach ($k in @('ItemTabela', 'ItemProduto', 'ItemQuantidade')) { if (-not $e[$k]) { $faltam += $k } }
     if (-not $e.ItemValorTotal -and -not $e.ItemPrecoUnitario) { $faltam += 'ItemValorTotal' }
-    $dataNaVenda = $e.VendaTabela -and $e.VendaChave -and $e.ItemVenda -and $e.VendaData
-    if (-not $dataNaVenda -and -not $e.ItemData) { $faltam += 'VendaData' }
+    if ($e.VendaTabela -and -not $e.VendaChave) {
+        $pkVenda = @($m.Chaves | Where-Object { $_[0] -eq $e.VendaTabela })
+        if ($pkVenda.Count -eq 1) { $e.VendaChave = $pkVenda[0][1] }
+    }
+    if (-not $e.ItemData) {
+        foreach ($k in @('VendaTabela', 'VendaChave', 'ItemVenda', 'VendaData')) { if (-not $e[$k]) { $faltam += $k } }
+    }
     if ($faltam) {
         Stop-Script ("ainda falta configurar onde ficam as vendas no seu Digifarma ($($faltam -join ', ')).`n" +
             'Gere o mapa do banco (botão "Gerar mapa do banco") e mande o arquivo na conversa.') 2
@@ -377,9 +391,9 @@ function Resolve-Esquema {
 function Get-Vendas([datetime]$Inicio, [datetime]$Fim) {
     $e = Resolve-Esquema
     $i = 'I.'; $p = 'P.'
-    $chave = "COALESCE(CAST($p$(Q $e.ProdChave) AS VARCHAR(40)), '')"
+    $chave = "COALESCE(REPLACE(CAST($p$(Q $e.ProdChave) AS VARCHAR(40)), '|', '/'), '')"
     $desc = "COALESCE(REPLACE(REPLACE(REPLACE(SUBSTRING($p$(Q $e.ProdDescricao) FROM 1 FOR 100), '|', '/'), ASCII_CHAR(13), ' '), ASCII_CHAR(10), ' '), '')"
-    $barras = if ($e.ProdCodBarras) { "COALESCE(TRIM(CAST($p$(Q $e.ProdCodBarras) AS VARCHAR(40))), '')" } else { "''" }
+    $barras = if ($e.ProdCodBarras) { "COALESCE(REPLACE(TRIM(CAST($p$(Q $e.ProdCodBarras) AS VARCHAR(40))), '|', '/'), '')" } else { "''" }
     $estoque = if ($e.ProdEstoque) { "COALESCE(CAST($p$(Q $e.ProdEstoque) AS VARCHAR(40)), '0')" } else { "'0'" }
     $qtd = "$i$(Q $e.ItemQuantidade)"
     $valor = if ($e.ItemValorTotal) { "$i$(Q $e.ItemValorTotal)" } else { "$qtd * $i$(Q $e.ItemPrecoUnitario)" }
@@ -387,7 +401,8 @@ function Get-Vendas([datetime]$Inicio, [datetime]$Fim) {
     $ate = "CAST('$($Fim.AddDays(1).ToString('yyyy-MM-dd', $Inv))' AS TIMESTAMP)"
 
     $from = "FROM $(Q $e.ItemTabela) I"
-    if ($e.VendaTabela -and $e.VendaChave -and $e.ItemVenda -and $e.VendaData) {
+    $usaVenda = -not $e.ItemData
+    if ($usaVenda) {
         $from += " JOIN $(Q $e.VendaTabela) V ON V.$(Q $e.VendaChave) = I.$(Q $e.ItemVenda)"
         $data = "V.$(Q $e.VendaData)"
     } else {
@@ -395,14 +410,14 @@ function Get-Vendas([datetime]$Inicio, [datetime]$Fim) {
     }
     $from += " JOIN $(Q $e.ProdTabela) P ON P.$(Q $e.ProdChave) = I.$(Q $e.ItemProduto)"
     $where = "$data >= $de AND $data < $ate"
-    if ($e.VendaTabela -and $e.VendaCancelada) { $where += " AND (V.$(Q $e.VendaCancelada) IS NULL OR V.$(Q $e.VendaCancelada) <> '$($e.VendaCanceladaValor)')" }
+    if ($usaVenda -and $e.VendaCancelada) { $where += " AND (V.$(Q $e.VendaCancelada) IS NULL OR V.$(Q $e.VendaCancelada) <> '$($e.VendaCanceladaValor)')" }
     if ($e.ItemCancelado) { $where += " AND (I.$(Q $e.ItemCancelado) IS NULL OR I.$(Q $e.ItemCancelado) <> '$($e.ItemCanceladoValor)')" }
     $grupo = @("$p$(Q $e.ProdChave)", "$p$(Q $e.ProdDescricao)")
     if ($e.ProdCodBarras) { $grupo += "$p$(Q $e.ProdCodBarras)" }
     if ($e.ProdEstoque) { $grupo += "$p$(Q $e.ProdEstoque)" }
 
-    $sql = "SELECT '#V|' || $chave || '|' || $desc || '|' || $barras || '|' || CAST(SUM($qtd) AS VARCHAR(40)) || '|' || " +
-        "CAST(SUM($valor) AS VARCHAR(40)) || '|' || $estoque $from WHERE $where GROUP BY $($grupo -join ', ');"
+    $sql = "SELECT '#V|' || $chave || '|' || $desc || '|' || $barras || '|' || COALESCE(CAST(SUM($qtd) AS VARCHAR(40)), '0') || '|' || " +
+        "COALESCE(CAST(SUM($valor) AS VARCHAR(40)), '0') || '|' || $estoque $from WHERE $where GROUP BY $($grupo -join ', ');"
     Write-Host "Somando as vendas de $($Inicio.ToString('dd/MM/yyyy')) a $($Fim.ToString('dd/MM/yyyy')) ..."
     return @(Get-Rows (Invoke-Isql $sql) 'V' 6 | ForEach-Object {
             [pscustomobject]@{
@@ -475,9 +490,18 @@ function New-SugestaoCompra([datetime]$Inicio, [datetime]$Fim, [int]$Dias) {
     $cotacao = $null
     if (Test-Path -LiteralPath $Modelo -PathType Leaf) {
         $cotacao = New-OutputPath "Cotacao_$(Get-Date -Format 'yyyy-MM-dd_HHmm').xlsx"
-        $escritos = Write-Cotacao $itens $Modelo $cotacao
-        Write-Host "Cotação preenchida ($escritos produtos): $cotacao"
-        if ($escritos -lt $itens.Count) { $texto += " A cotação tem lugar para $escritos produtos; os outros estão só na planilha CSV." }
+        try {
+            $escritos = Write-Cotacao $itens $Modelo $cotacao
+        } catch {
+            $falha = "a cotação não foi gerada: $($_.Exception.Message) A planilha CSV com a sugestão foi gravada em $arquivo."
+            if (-not $script:ModoJanela) { Stop-Script $falha }
+            $cotacao = $null
+            $texto += " ATENÇÃO: $falha"
+        }
+        if ($cotacao) {
+            Write-Host "Cotação preenchida ($escritos produtos): $cotacao"
+            if ($escritos -lt $itens.Count) { $texto += " A cotação tem lugar para $escritos produtos; os outros estão só na planilha CSV." }
+        }
     } else {
         $texto += " (Não achei a cotação em branco em $Modelo; gerei só a planilha CSV.)"
         Write-Host "Cotação em branco não encontrada em $Modelo; só o CSV foi gerado."
@@ -500,12 +524,16 @@ function Write-Cotacao($Itens, [string]$ModeloXlsx, [string]$Destino) {
         $lista = @($lista | Sort-Object Quantidade -Descending | Select-Object -First ($ultima - $primeira + 1) | Sort-Object Descricao)
     }
     Copy-Item -LiteralPath $ModeloXlsx -Destination $Destino -Force
+    # A cópia não herda "baixado da internet" (Modo Protegido não recalcula) nem "somente leitura".
+    if (Get-Command Unblock-File -ErrorAction SilentlyContinue) { try { Unblock-File -LiteralPath $Destino } catch { } }
+    (Get-Item -LiteralPath $Destino).IsReadOnly = $false
+    $ok = $false
     $zip = [IO.Compression.ZipFile]::Open($Destino, [IO.Compression.ZipArchiveMode]::Update)
     try {
         $ler = {
             param($Nome)
             $ent = $zip.GetEntry($Nome)
-            if (-not $ent) { Stop-Script "a planilha modelo não tem '$Nome'; ela é mesmo um .xlsx?" }
+            if (-not $ent) { throw "a planilha modelo não tem '$Nome'; ela é mesmo um .xlsx?" }
             $sr = New-Object IO.StreamReader($ent.Open(), $Utf8SemBom)
             try { return $sr.ReadToEnd() } finally { $sr.Dispose() }
         }
@@ -519,17 +547,18 @@ function Write-Cotacao($Itens, [string]$ModeloXlsx, [string]$Destino) {
         # Aba "Cotação" -> arquivo da aba, pelo workbook.xml e suas relações.
         $wb = & $ler 'xl/workbook.xml'
         $rid = $null
+        $abaCotacao = "Cota$([char]0xE7)$([char]0xE3)o"   # "Cotação" sem depender da codificação deste arquivo
         foreach ($s in [regex]::Matches($wb, '<sheet\b[^>]*>')) {
             $nome = [regex]::Match($s.Value, '\bname="([^"]*)"').Groups[1].Value
-            if ($nome -eq 'Cotação') { $rid = [regex]::Match($s.Value, '\br:id="([^"]*)"').Groups[1].Value }
+            if ($nome -eq $abaCotacao) { $rid = [regex]::Match($s.Value, '\br:id="([^"]*)"').Groups[1].Value }
         }
-        if (-not $rid) { Stop-Script "a planilha modelo não tem a aba 'Cotação'." }
+        if (-not $rid) { throw "a planilha modelo não tem a aba '$abaCotacao'." }
         $rels = & $ler 'xl/_rels/workbook.xml.rels'
         $alvo = $null
         foreach ($r in [regex]::Matches($rels, '<Relationship\b[^>]*>')) {
             if ([regex]::Match($r.Value, '\bId="([^"]*)"').Groups[1].Value -eq $rid) { $alvo = [regex]::Match($r.Value, '\bTarget="([^"]*)"').Groups[1].Value }
         }
-        if (-not $alvo) { Stop-Script 'a planilha modelo está com a aba Cotação sem arquivo.' }
+        if (-not $alvo) { throw 'a planilha modelo está com a aba Cotação sem arquivo.' }
         $caminho = if ($alvo.StartsWith('/')) { $alvo.TrimStart('/') } else { "xl/$alvo" }
 
         $preencher = @{}
@@ -552,25 +581,36 @@ function Write-Cotacao($Itens, [string]$ModeloXlsx, [string]$Destino) {
                 return "<c r=`"$ref`"$($m.Groups[2].Value)$tipo>$($preencher[$ref])</c>"
             })
         if ($estado.Feitos -ne $preencher.Count) {
-            Stop-Script "a aba Cotação do modelo não está em branco nas linhas $primeira a $($primeira + $lista.Count - 1) (ou mudou de formato). Use a planilha em branco."
+            throw "a aba Cotação do modelo não está em branco nas linhas $primeira a $($primeira + $lista.Count - 1) (ou mudou de formato). Use a planilha em branco."
         }
         # Tira das fórmulas o resultado guardado (feito com a planilha vazia): sem ele, Excel e LibreOffice
         # recalculam tudo ao abrir, inclusive os totais do topo e as abas de fornecedores.
-        $semCache = '(<c\b[^>]*>)(<f\b[^>]*(?:/>|>[^<]*</f>))<v>[^<]*</v>(</c>)'
-        & $gravar $caminho ([regex]::Replace($folha, $semCache, '$1$2$3'))
+        # Texto (t="str") fica com <v></v>, como no próprio modelo; número e outros perdem <v> e o tipo.
+        $semCache = '<c\b([^>]*)>(<f\b[^>]*(?:/>|>[^<]*</f>))<v>[^<]+</v></c>'
+        $tirarCache = [Text.RegularExpressions.MatchEvaluator] {
+            param($m)
+            $atr = $m.Groups[1].Value
+            if ($atr -match '\bt="str"') { return "<c$atr>$($m.Groups[2].Value)<v></v></c>" }
+            return "<c$($atr -replace '\s+t="[^"]*"', '')>$($m.Groups[2].Value)</c>"
+        }
+        & $gravar $caminho ([regex]::Replace($folha, $semCache, $tirarCache))
         $outras = @($zip.Entries | Where-Object { $_.FullName -like 'xl/worksheets/*.xml' -and $_.FullName -ne $caminho } | ForEach-Object { $_.FullName })
-        foreach ($nome in $outras) { & $gravar $nome ([regex]::Replace((& $ler $nome), $semCache, '$1$2$3')) }
+        foreach ($nome in $outras) { & $gravar $nome ([regex]::Replace((& $ler $nome), $semCache, $tirarCache)) }
         # Pede ao Excel para recalcular todas as fórmulas ao abrir.
         if ($wb -match '<calcPr\b[^>]*\bfullCalcOnLoad=') {
             $wb = $wb -replace '(<calcPr\b[^>]*\bfullCalcOnLoad=)"[^"]*"', '$1"1"'
         } elseif ($wb -match '<calcPr\b') {
             $wb = $wb -replace '<calcPr\b', '<calcPr fullCalcOnLoad="1"'
+        } elseif ($wb -match '</definedNames>') {
+            $wb = $wb -replace '</definedNames>', '</definedNames><calcPr fullCalcOnLoad="1"/>'
         } else {
             $wb = $wb -replace '</sheets>', '</sheets><calcPr fullCalcOnLoad="1"/>'
         }
         & $gravar 'xl/workbook.xml' $wb
+        $ok = $true
     } finally {
         $zip.Dispose()
+        if (-not $ok) { Remove-Item -LiteralPath $Destino -Force -ErrorAction SilentlyContinue }
     }
     return $lista.Count
 }
@@ -594,8 +634,16 @@ function Show-Janela {
     $f.FormBorderStyle = 'FixedDialog'
     $f.MaximizeBox = $false
     $f.Font = New-Object Drawing.Font('Segoe UI', 10)
-    $f.ClientSize = New-Object Drawing.Size(540, 340)
+    $f.ClientSize = New-Object Drawing.Size(580, 350)
     $script:Form = $f
+    $script:Ocupado = $false
+    $f.Add_FormClosing({
+            param($origem, $ev)
+            if ($script:Ocupado) {
+                $ev.Cancel = $true
+                [void][Windows.Forms.MessageBox]::Show('Aguarde o relatório terminar.', 'Relatório em andamento', [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Information)
+            }
+        })
 
     $novoRotulo = {
         param($Texto, $X, $Y, $L)
@@ -621,12 +669,12 @@ function Show-Janela {
     $script:DFim.Value = (Get-Date).Date
     $f.Controls.Add($script:DFim)
 
-    & $novoRotulo 'Sugestão de compra: comprar para quantos dias de estoque?' 16 86 400
+    & $novoRotulo 'Sugestão de compra: comprar para quantos dias de estoque?' 16 86 430
     $script:NDias = New-Object Windows.Forms.NumericUpDown
     $script:NDias.Minimum = 1
     $script:NDias.Maximum = 365
     $script:NDias.Value = [decimal]$DiasEstoque
-    $script:NDias.Location = New-Object Drawing.Point(420, 83)
+    $script:NDias.Location = New-Object Drawing.Point(456, 83)
     $script:NDias.Width = 70
     $f.Controls.Add($script:NDias)
 
@@ -642,13 +690,13 @@ function Show-Janela {
         $f.Controls.Add($b)
         $script:Botoes += $b
     }
-    & $novoBotao 'Gerar Curva ABC' 16 128 250 44 'CurvaABC'
-    & $novoBotao 'Gerar Sugestão de compra (cotação)' 274 128 250 44 'SugestaoCompra'
-    & $novoBotao 'Gerar mapa do banco' 16 184 250 34 'Mapa'
+    & $novoBotao 'Gerar Curva ABC' 16 128 270 44 'CurvaABC'
+    & $novoBotao 'Gerar Sugestão de compra (cotação)' 294 128 270 44 'SugestaoCompra'
+    & $novoBotao 'Gerar mapa do banco' 16 184 270 34 'Mapa'
 
     $script:Status = New-Object Windows.Forms.Label
     $script:Status.Location = New-Object Drawing.Point(16, 230)
-    $script:Status.Size = New-Object Drawing.Size(508, 96)
+    $script:Status.Size = New-Object Drawing.Size(548, 106)
     $script:Status.Text = 'Escolha o período e clique no relatório. Os arquivos vão para a pasta "registros".'
     $f.Controls.Add($script:Status)
 
@@ -662,6 +710,7 @@ function Invoke-Botao([string]$Acao) {
         [void][Windows.Forms.MessageBox]::Show('A data de início está depois da data de fim.', 'Período inválido', [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Warning)
         return
     }
+    $script:Ocupado = $true
     foreach ($b in $script:Botoes) { $b.Enabled = $false }
     $script:Form.Cursor = [Windows.Forms.Cursors]::WaitCursor
     $script:Status.Text = 'Gerando... aguarde (pode levar alguns minutos).'
@@ -679,6 +728,7 @@ function Invoke-Botao([string]$Acao) {
         $script:Status.Text = "Não deu certo: $($_.Exception.Message)"
         [void][Windows.Forms.MessageBox]::Show($_.Exception.Message, 'Não deu certo', [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Error)
     } finally {
+        $script:Ocupado = $false
         foreach ($b in $script:Botoes) { $b.Enabled = $true }
         $script:Form.Cursor = [Windows.Forms.Cursors]::Default
     }
