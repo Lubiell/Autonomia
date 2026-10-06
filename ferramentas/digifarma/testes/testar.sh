@@ -194,6 +194,12 @@ ok '[ $rc -eq 0 ] && grep -q "Descrição: MEDPN.PROD_NOME" <<<"$out" && grep -q
 out="$(rodar -Banco "$B2" -Tabela MEDPN -Desmarcar Psicotropico -CampoDescricao PROD_DESCONTO -PastaSaida "$TMP/s9")"; rc=$?
 ok '[ $rc -eq 0 ] && grep -q "Descrição: MEDPN.PROD_DESCONTO" <<<"$out"' "-CampoDescricao: $out"
 
+# Mapa do banco (relatorios-digifarma.ps1): nomes e tipos, nenhum dado
+out="$("$PWSH" -NoProfile -File "$DIR/relatorios-digifarma.ps1" -Isql "$(command -v "$ISQL")" -Banco "$B" -Mapa -ContarLinhas -PastaSaida "$TMP/m1" 2>&1)"; rc=$?
+mapa="$(cat "$TMP"/m1/mapa-do-banco-*.txt 2>/dev/null)"
+ok '[ $rc -eq 0 ] && grep -q "== PRODUTOS  \[tabela, 8 linhas\]" <<<"$mapa" && grep -q "CONTROLADO .*CHAR(1)" <<<"$mapa"' "mapa: $out"
+ok '! grep -q "CLONAZEPAM\|98765432100" <<<"$mapa"' "mapa: vazou dado"
+
 # Muitos produtos (vários blocos de gravação)
 out="$(rodar -Banco "$B2" -Tabela MEDBULK -Desmarcar Psicotropico -Aplicar -SemPerguntar -SemBackup -PastaSaida "$TMP/a11")"; rc=$?
 ok '[ $rc -eq 0 ] && grep -q "Desmarcadas: 150 de 150" <<<"$out" && [ "$(sql "$DB2" "SELECT COUNT(*) FROM MEDBULK WHERE CONTROLADO = '"'S'"';")" -eq 0 ]' "300 produtos: código $rc"

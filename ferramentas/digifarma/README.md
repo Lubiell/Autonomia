@@ -130,6 +130,12 @@ Códigos de saída: `0` ok, `1` erro ou cancelado, `2` faltam informações (rod
 - **"I/O error ... open"**: caminho do banco errado. Rodando no servidor, use `localhost:` antes do caminho.
 - **O Windows não deixa rodar o script**: use `powershell -ExecutionPolicy Bypass -File ...` como nos exemplos, ou `Unblock-File .\desmarcar-controlados.ps1`.
 
+## Relatórios (`relatorios-digifarma.ps1` e `relatorios.bat`)
+
+Programa separado que **só lê** o banco e nunca altera nada. Por enquanto ele gera o **mapa do banco**: um arquivo de texto com os nomes e tipos das tabelas e colunas, as chaves, os índices e quantas linhas cada tabela tem. O arquivo **não leva nenhum dado** de cliente, venda ou produto. Com ele é possível montar os relatórios de vencimento, produtos parados, ruptura, estoque negativo, curva ABC, margem, recompra, sugestão de compra, resumo do dia e conferência do SNGPC, sem adivinhar onde fica cada informação.
+
+Coloque os dois arquivos na mesma pasta, dê dois cliques em `relatorios.bat` e escolha **1**. A contagem de linhas leva alguns minutos num banco grande, mas é só leitura e não trava o Digifarma. O arquivo vai para `registros\mapa-do-banco-AAAAMMDD-HHMM.txt`, e a pasta abre sozinha no final.
+
 ## Testes
 
 `testes/testar.sh` roda o programa contra um Firebird real em bancos descartáveis. Ele cobre:
