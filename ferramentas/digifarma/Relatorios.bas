@@ -92,8 +92,15 @@ End Sub
 
 Private Sub MontarAba(ByVal ws As Worksheet, ByVal titulo As String, ByVal comDias As Boolean, _
                      ByVal textoBotao As String, ByVal macro As String)
-    Dim b As Object
-    If ws.Buttons.Count > 0 Then ws.Buttons.Delete   ' instalar de novo não duplica os botões
+    Dim b As Object, ini As Variant, fim As Variant, dias As Variant
+    ' Instalar de novo mantém as datas e os dias já preenchidos e não duplica os botões.
+    ini = ws.Range("B3").Value
+    fim = ws.Range("B4").Value
+    dias = ws.Range("B5").Value
+    If Not IsDate(ini) Then ini = Date - 29
+    If Not IsDate(fim) Then fim = Date
+    If VarType(dias) <> vbDouble Then dias = 30
+    If ws.Buttons.Count > 0 Then ws.Buttons.Delete
     ws.Cells.Clear
     ws.Range("A1").Value = titulo
     ws.Range("A1").Font.Bold = True
@@ -101,20 +108,21 @@ Private Sub MontarAba(ByVal ws As Worksheet, ByVal titulo As String, ByVal comDi
     ws.Range("A2").Value = "Preencha as datas (dd/mm/aaaa) e clique no botão. A senha do Firebird é pedida numa janela preta."
     ws.Range("A2").Font.Italic = True
     ws.Range("A3").Value = "Data de início:"
-    ws.Range("B3").Value = Date - 29
+    ws.Range("B3").Value = ini
     ws.Range("A4").Value = "Data de fim:"
-    ws.Range("B4").Value = Date
+    ws.Range("B4").Value = fim
     ws.Range("B3:B4").NumberFormat = "dd/mm/yyyy"
     ws.Range("B3:B4").Interior.Color = RGB(255, 255, 204)
     If comDias Then
         ws.Range("A5").Value = "Dias de estoque desejados:"
-        ws.Range("B5").Value = 30
+        ws.Range("B5").Value = dias
         ws.Range("B5").Interior.Color = RGB(255, 255, 204)
     End If
     ws.Range("A3:A5").Font.Bold = True
     ws.Columns("A").ColumnWidth = 26
     ws.Columns("B").ColumnWidth = 14
     Set b = ws.Buttons.Add(ws.Range("D3").Left, ws.Range("D3").Top, 220, 34)
+    b.Placement = xlFreeFloating   ' não estica quando o relatório muda a largura das colunas
     b.OnAction = macro
     b.Caption = textoBotao
     b.Name = "btn" & macro
@@ -163,13 +171,10 @@ Public Sub GerarCurvaABC()
     ws.Cells(LINHA_DADOS, 1).Resize(n, 10).Value = saida
     ws.Cells(LINHA_DADOS, 7).Resize(n, 1).NumberFormat = "#,##0.00"
     ws.Cells(LINHA_DADOS, 8).Resize(n, 2).NumberFormat = "0.00%"
-    For i = 1 To n
-        Select Case saida(i, 1)
-            Case "A": ws.Cells(LINHA_DADOS + i - 1, 1).Interior.Color = RGB(198, 239, 206)
-            Case "B": ws.Cells(LINHA_DADOS + i - 1, 1).Interior.Color = RGB(255, 235, 156)
-            Case Else: ws.Cells(LINHA_DADOS + i - 1, 1).Interior.Color = RGB(230, 230, 230)
-        End Select
-    Next i
+    ' O arquivo vem na ordem da posição, então as classes ficam em faixas seguidas: A, depois B, depois C.
+    If qa > 0 Then ws.Cells(LINHA_DADOS, 1).Resize(qa, 1).Interior.Color = RGB(198, 239, 206)
+    If qb > 0 Then ws.Cells(LINHA_DADOS + qa, 1).Resize(qb, 1).Interior.Color = RGB(255, 235, 156)
+    If qc > 0 Then ws.Cells(LINHA_DADOS + qa + qb, 1).Resize(qc, 1).Interior.Color = RGB(230, 230, 230)
     ws.Columns("C:D").ColumnWidth = 16
     ws.Columns("E").ColumnWidth = 50
     ws.Columns("F:J").ColumnWidth = 15
@@ -183,6 +188,7 @@ Public Sub GerarCurvaABC()
     Exit Sub
 Falha:
     Application.ScreenUpdating = True
+    If Len(arq) > 0 Then ApagarArquivo arq
     MsgBox "Não deu certo: " & Err.Description, vbCritical, "Relatórios do Digifarma"
 End Sub
 
@@ -251,6 +257,7 @@ Public Sub GerarSugestaoCompra()
     Exit Sub
 Falha:
     Application.ScreenUpdating = True
+    If Len(arq) > 0 Then ApagarArquivo arq
     MsgBox "Não deu certo: " & Err.Description, vbCritical, "Relatórios do Digifarma"
 End Sub
 
@@ -345,13 +352,21 @@ Private Function ValorCfg(ByVal nome As String) As String
 End Function
 
 Private Function ArquivoTemporario(ByVal prefixo As String) As String
-    ArquivoTemporario = Environ$("TEMP") & "\digifarma-" & prefixo & "-" & Format$(Now, "yyyymmdd-hhnnss") & ".tsv"
-    ApagarArquivo ArquivoTemporario
+    Dim arq As String
+    arq = Environ$("TEMP") & "\digifarma-" & prefixo & "-" & Format$(Now, "yyyymmdd-hhnnss") & ".tsv"
+    ApagarArquivo arq
+    ArquivoTemporario = arq
+End Function
+
+' Dir$ dá erro com caminho inválido (por exemplo, endereço do OneDrive); aí conta como "não existe".
+Private Function Existe(ByVal arq As String) As Boolean
+    On Error Resume Next
+    Existe = Len(Dir$(arq)) > 0
 End Function
 
 Private Sub ApagarArquivo(ByVal arq As String)
     On Error Resume Next
-    If Len(Dir$(arq)) > 0 Then Kill arq
+    If Existe(arq) Then Kill arq
     On Error GoTo 0
 End Sub
 
@@ -364,7 +379,13 @@ Private Function RodarPrograma(ByVal relatorio As String, ByVal ini As Date, ByV
     If pasta = "" Then pasta = ThisWorkbook.Path
     If Right$(pasta, 1) = "\" Then pasta = Left$(pasta, Len(pasta) - 1)
     ps1 = pasta & "\relatorios-digifarma.ps1"
-    If pasta = "" Or Len(Dir$(ps1)) = 0 Then
+    If InStr(pasta, "://") > 0 Then
+        MsgBox "A pasta """ & pasta & """ é um endereço da internet (OneDrive/SharePoint)." & vbLf & _
+               "Informe a pasta do computador onde está o relatorios-digifarma.ps1 na aba """ & ABA_CFG & """ (célula B4).", _
+               vbExclamation, "Relatórios do Digifarma"
+        Exit Function
+    End If
+    If pasta = "" Or Not Existe(ps1) Then
         MsgBox "Não achei o relatorios-digifarma.ps1 na pasta """ & pasta & """." & vbLf & _
                "Informe a pasta certa na aba """ & ABA_CFG & """ (célula B4).", vbExclamation, "Relatórios do Digifarma"
         Exit Function
@@ -376,12 +397,17 @@ Private Function RodarPrograma(ByVal relatorio As String, ByVal ini As Date, ByV
         MsgBox "Informe o banco do Digifarma na aba """ & ABA_CFG & """ (célula B3).", vbExclamation, "Relatórios do Digifarma"
         Exit Function
     End If
+    If InStr(pasta & banco & usuario & arq, """") > 0 Or InStr(pasta & banco & usuario & arq, "%") > 0 Then
+        MsgBox "O banco, a pasta e o usuário (aba """ & ABA_CFG & """) não podem ter aspas ("") nem o sinal %.", _
+               vbExclamation, "Relatórios do Digifarma"
+        Exit Function
+    End If
     cmd = "cmd.exe /c powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & ps1 & """" & _
           " -Banco """ & banco & """ -Usuario """ & usuario & """ -Relatorio " & relatorio & _
           " -DataInicio " & Format$(ini, "dd\/mm\/yyyy") & " -DataFim " & Format$(fim, "dd\/mm\/yyyy") & _
           " -DiasEstoque " & dias & " -ArquivoSaida """ & arq & """ || pause"
     CreateObject("WScript.Shell").Run cmd, 1, True
-    If Len(Dir$(arq)) = 0 Then
+    If Not Existe(arq) Then
         MsgBox "O relatório não foi gerado. O motivo apareceu na janela preta.", vbExclamation, "Relatórios do Digifarma"
         Exit Function
     End If

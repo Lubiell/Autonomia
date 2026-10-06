@@ -169,7 +169,7 @@ Os mesmos dois relatórios podem ficar **dentro da sua planilha de cotação**, 
 4. Aperte **Alt+F8**, escolha **InstalarRelatorios** e clique em **Executar**. Ele cria estas abas:
    - **Sugestão de compra** e **Curva ABC**, logo depois da aba Cotação;
    - **Config relatórios**, no fim. Nela ficam o banco, a pasta do `.ps1` e o usuário do Firebird.
-5. Use **Arquivo > Salvar como > Pasta de Trabalho Habilitada para Macro do Excel (\*.xlsm)**. Guarde esse `.xlsm` como a sua cotação em branco, e o `.xlsx` antigo pode ficar de reserva.
+5. Use **Arquivo > Salvar como > Pasta de Trabalho Habilitada para Macro do Excel (\*.xlsm)**. Guarde esse `.xlsm` como a sua cotação em branco. Mantenha também o `.xlsx` na pasta: a janela do `relatorios.bat` ainda usa esse arquivo.
 
 **Uso:**
 
@@ -178,14 +178,15 @@ Os mesmos dois relatórios podem ficar **dentro da sua planilha de cotação**, 
    - a **data de início** (B3);
    - a **data de fim** (B4);
    - na sugestão, os **dias de estoque** (B5).
-3. Clique no botão. Abre uma janela preta pedindo a **senha do Firebird**, que não fica gravada em lugar nenhum. Quando ela fecha, o resultado aparece na aba, a partir da linha 8.
+3. Clique no botão. Abre uma janela preta pedindo a **senha do Firebird**, que não fica gravada em lugar nenhum. Enquanto ela está aberta, o Excel fica parado ("Não respondendo"); é normal. Quando ela fecha, o resultado aparece na aba, a partir da linha 8.
 4. A sugestão também preenche **PRODUTO e QUANT** na aba Cotação, até 1000 produtos. Se passar disso, entram os 1000 mais vendidos, e o resto fica só na aba da sugestão. Se a Cotação já estiver preenchida, ele pergunta antes. Ao substituir, apaga também os preços, desempates e condições já digitados (colunas E a P e R a AD), porque não valeriam para os produtos novos. A proteção da aba Cotação volta como estava.
 5. Se der erro, a janela preta fica aberta mostrando o motivo. Aperte uma tecla para fechar.
 
 Observações:
 
 - Se o Excel avisar **"a Microsoft bloqueou macros porque a origem deste arquivo não é confiável"**, feche o Excel. Clique com o botão direito no `.xlsm` > **Propriedades**, marque **Desbloquear** e clique em **OK**.
-- Instalar de novo (Alt+F8 > InstalarRelatorios) refaz as abas dos relatórios e mantém o que estiver na aba Config relatórios.
+- Se a planilha estiver numa pasta do **OneDrive**, o Excel pode informar um endereço da internet como pasta. Nesse caso, escreva em **B4** da aba Config relatórios a pasta do computador onde está o `relatorios-digifarma.ps1` (por exemplo `C:\Digifarma\Relatorios`).
+- Instalar de novo (Alt+F8 > InstalarRelatorios) refaz as abas dos relatórios. Mantém as datas, os dias e o que estiver na aba Config relatórios.
 - A configuração das vendas (item anterior) vale para a planilha também. Enquanto ela não for feita, a janela preta avisa "ainda falta configurar onde ficam as vendas".
 
 ## Testes
