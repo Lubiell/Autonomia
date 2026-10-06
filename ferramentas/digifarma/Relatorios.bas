@@ -1,8 +1,8 @@
 Attribute VB_Name = "Relatorios"
 ' Relatórios do Digifarma dentro da planilha de cotação (Excel).
-' Os botões das abas "Curva ABC" e "Sugestão de compra" chamam o relatorios-digifarma.ps1, que só lê o
-' banco do Digifarma, esperam o resultado e escrevem na aba. A sugestão também preenche PRODUTO e QUANT da
-' aba "Cotação".
+' Os botões das abas "Curva ABC", "Sugestão de compra", "Lotes vencendo", "Estoque negativo" e
+' "Conferência SNGPC" chamam o relatorios-digifarma.ps1, que só lê o banco do Digifarma, esperam o resultado
+' e escrevem na aba. A sugestão também preenche PRODUTO e QUANT da aba "Cotação".
 ' Instalação (uma vez): Alt+F11 > Arquivo > Importar arquivo > Relatorios.bas; depois Alt+F8 >
 ' InstalarRelatorios > Executar; por fim salve como "Pasta de Trabalho Habilitada para Macro (*.xlsm)".
 Option Explicit
@@ -11,6 +11,10 @@ Private Const ABA_ABC As String = "Curva ABC"
 Private Const ABA_SUG As String = "Sugestão de compra"
 Private Const ABA_CFG As String = "Config relatórios"
 Private Const ABA_COT As String = "Cotação"
+Private Const ABA_LOT As String = "Lotes vencendo"
+Private Const ABA_NEG As String = "Estoque negativo"
+Private Const ABA_SNG As String = "Conferência SNGPC"
+Private Const TXT_SENHA As String = " A senha do Firebird é pedida numa janela preta."
 Private Const LINHA_CAB As Long = 8      ' cabeçalho do resultado
 Private Const LINHA_DADOS As Long = 9    ' primeira linha do resultado
 Private Const COT_PRIMEIRA As Long = 3   ' aba Cotação: PRODUTO e QUANT de A3 a B1002
@@ -20,10 +24,14 @@ Private Const BANCO_PADRAO As String = "localhost:C:\Digifarma\Dados\Digifarma6.
 ' ---------- instalação: cria as abas, os campos e os botões ----------
 Public Sub InstalarRelatorios()
     Dim cfg As Worksheet, abc As Worksheet, sug As Worksheet, banco As String, pasta As String, usuario As String
+    Dim lot As Worksheet, neg As Worksheet, sng As Worksheet
     On Error GoTo Falha
     Application.ScreenUpdating = False
     Set sug = PegarOuCriarAba(ABA_SUG, ABA_COT)
     Set abc = PegarOuCriarAba(ABA_ABC, ABA_SUG)
+    Set lot = PegarOuCriarAba(ABA_LOT, ABA_ABC)
+    Set neg = PegarOuCriarAba(ABA_NEG, ABA_LOT)
+    Set sng = PegarOuCriarAba(ABA_SNG, ABA_NEG)
     Set cfg = PegarOuCriarAba(ABA_CFG, "")
 
     ' Instalar de novo mantém o que já foi configurado.
@@ -55,12 +63,23 @@ Public Sub InstalarRelatorios()
     DefinirNome "CfgPasta", cfg.Range("B4")
     DefinirNome "CfgUsuario", cfg.Range("B5")
 
-    MontarAba abc, "CURVA ABC", False, "Gerar Curva ABC", "GerarCurvaABC"
-    MontarAba sug, "SUGESTÃO DE COMPRA", True, "Gerar sugestão de compra", "GerarSugestaoCompra"
+    MontarAba abc, "CURVA ABC", "Preencha as datas (dd/mm/aaaa) e clique no botão." & TXT_SENHA, _
+              "Gerar Curva ABC", "GerarCurvaABC", True, False
+    MontarAba sug, "SUGESTÃO DE COMPRA", "Preencha as datas (dd/mm/aaaa) e os dias e clique no botão." & TXT_SENHA, _
+              "Gerar sugestão de compra", "GerarSugestaoCompra", True, True
+    MontarAba lot, "LOTES VENCENDO", "Lotes com saldo que vencem entre as duas datas; com o início no passado, " & _
+              "aparecem também os já vencidos." & TXT_SENHA, "Gerar lotes vencendo", "GerarLotesVencendo", True, False, _
+              "Vencimento de:", "Vencimento até:", -30, 90
+    MontarAba neg, "ESTOQUE NEGATIVO", "Produtos com estoque abaixo de zero. Clique no botão." & TXT_SENHA, _
+              "Gerar estoque negativo", "GerarEstoqueNegativo", False, False
+    MontarAba sng, "CONFERÊNCIA SNGPC", "Psicotrópicos e antimicrobianos com estoque diferente da soma dos lotes, " & _
+              "estoque negativo, lote vencido com saldo ou lote negativo. Clique no botão." & TXT_SENHA, _
+              "Gerar conferência SNGPC", "GerarConferenciaSNGPC", False, False
 
     Application.ScreenUpdating = True
     abc.Activate
-    MsgBox "Pronto: abas """ & ABA_ABC & """, """ & ABA_SUG & """ e """ & ABA_CFG & """ criadas." & vbLf & vbLf & _
+    MsgBox "Pronto: abas """ & ABA_SUG & """, """ & ABA_ABC & """, """ & ABA_LOT & """, """ & ABA_NEG & """, """ & _
+           ABA_SNG & """ e """ & ABA_CFG & """ criadas." & vbLf & vbLf & _
            "Agora salve como ""Pasta de Trabalho Habilitada para Macro do Excel (*.xlsm)"".", vbInformation, "Relatórios do Digifarma"
     Exit Sub
 Falha:
@@ -90,29 +109,34 @@ Private Sub DefinirNome(ByVal nome As String, ByVal alvo As Range)
     ThisWorkbook.Names.Add Name:=nome, RefersTo:="='" & alvo.Worksheet.Name & "'!" & alvo.Address
 End Sub
 
-Private Sub MontarAba(ByVal ws As Worksheet, ByVal titulo As String, ByVal comDias As Boolean, _
-                     ByVal textoBotao As String, ByVal macro As String)
+Private Sub MontarAba(ByVal ws As Worksheet, ByVal titulo As String, ByVal instrucao As String, _
+                     ByVal textoBotao As String, ByVal macro As String, ByVal comDatas As Boolean, _
+                     ByVal comDias As Boolean, Optional ByVal rotuloIni As String = "Data de início:", _
+                     Optional ByVal rotuloFim As String = "Data de fim:", Optional ByVal iniPadrao As Long = -29, _
+                     Optional ByVal fimPadrao As Long = 0)
     Dim b As Object, ini As Variant, fim As Variant, dias As Variant
     ' Instalar de novo mantém as datas e os dias já preenchidos e não duplica os botões.
     ini = ws.Range("B3").Value
     fim = ws.Range("B4").Value
     dias = ws.Range("B5").Value
-    If Not IsDate(ini) Then ini = Date - 29
-    If Not IsDate(fim) Then fim = Date
+    If Not IsDate(ini) Then ini = Date + iniPadrao
+    If Not IsDate(fim) Then fim = Date + fimPadrao
     If VarType(dias) <> vbDouble Then dias = 30
     If ws.Buttons.Count > 0 Then ws.Buttons.Delete
     ws.Cells.Clear
     ws.Range("A1").Value = titulo
     ws.Range("A1").Font.Bold = True
     ws.Range("A1").Font.Size = 14
-    ws.Range("A2").Value = "Preencha as datas (dd/mm/aaaa) e clique no botão. A senha do Firebird é pedida numa janela preta."
+    ws.Range("A2").Value = instrucao
     ws.Range("A2").Font.Italic = True
-    ws.Range("A3").Value = "Data de início:"
-    ws.Range("B3").Value = ini
-    ws.Range("A4").Value = "Data de fim:"
-    ws.Range("B4").Value = fim
-    ws.Range("B3:B4").NumberFormat = "dd/mm/yyyy"
-    ws.Range("B3:B4").Interior.Color = RGB(255, 255, 204)
+    If comDatas Then
+        ws.Range("A3").Value = rotuloIni
+        ws.Range("B3").Value = ini
+        ws.Range("A4").Value = rotuloFim
+        ws.Range("B4").Value = fim
+        ws.Range("B3:B4").NumberFormat = "dd/mm/yyyy"
+        ws.Range("B3:B4").Interior.Color = RGB(255, 255, 204)
+    End If
     If comDias Then
         ws.Range("A5").Value = "Dias de estoque desejados:"
         ws.Range("B5").Value = dias
@@ -329,6 +353,131 @@ Private Sub ProtegerCotacao(ByVal wc As Worksheet)
                AllowFormattingColumns:=True, AllowFormattingRows:=True
 End Sub
 
+' ---------- Lotes vencendo ----------
+Public Sub GerarLotesVencendo()
+    Dim ws As Worksheet, ini As Date, fim As Date, arq As String, d As Variant
+    Dim n As Long, i As Long, nv As Long, n30 As Long, resumo As String
+    On Error GoTo Falha
+    Set ws = ThisWorkbook.Worksheets(ABA_LOT)
+    If Not LerPeriodo(ws, ini, fim) Then Exit Sub
+    arq = ArquivoTemporario("lotes")
+    If Not RodarPrograma("LotesVencendo", ini, fim, 30, arq) Then Exit Sub
+    d = LerTabela(arq, True)
+    ApagarArquivo arq
+    If IsEmpty(d) Then Exit Sub
+
+    ' Arquivo: Vencimento, Dias, Codigo, CodBarras, Descricao, Lote, QtdLote, Estoque, Controle (do mais antigo ao mais novo)
+    n = UBound(d, 1) - 1
+    For i = 2 To n + 1
+        If Val(d(i, 2)) < 0 Then
+            nv = nv + 1
+        ElseIf Val(d(i, 2)) <= 30 Then
+            n30 = n30 + 1
+        End If
+    Next i
+    Application.ScreenUpdating = False
+    EscreverDados ws, d, Array("Vencimento", "Dias para vencer", "Código", "Código de barras", "Descrição", "Lote", _
+                               "Saldo do lote", "Estoque do produto", "Controle"), "DITTTTNNT"
+    ' Na ordem do vencimento: primeiro os vencidos (vermelho), depois os que vencem em até 30 dias (amarelo).
+    If nv > 0 Then ws.Cells(LINHA_DADOS, 1).Resize(nv, 9).Interior.Color = RGB(255, 199, 206)
+    If n30 > 0 Then ws.Cells(LINHA_DADOS + nv, 1).Resize(n30, 9).Interior.Color = RGB(255, 235, 156)
+    ws.Columns("C:D").ColumnWidth = 16
+    ws.Columns("E").ColumnWidth = 50
+    ws.Columns("F:I").ColumnWidth = 16
+    If n = 0 Then
+        resumo = "Nenhum lote com saldo vence de " & Format$(ini, "dd\/mm\/yyyy") & " a " & Format$(fim, "dd\/mm\/yyyy") & "."
+    Else
+        resumo = "Vencimento de " & Format$(ini, "dd\/mm\/yyyy") & " a " & Format$(fim, "dd\/mm\/yyyy") & _
+                 "   |   Lotes: " & n & "   |   Já vencidos: " & nv & "   |   Vencem em até 30 dias: " & n30
+    End If
+    ws.Range("A6").Value = resumo
+    ws.Range("A6").Font.Bold = True
+    Application.ScreenUpdating = True
+    ws.Activate
+    MsgBox resumo, vbInformation, "Relatórios do Digifarma"
+    Exit Sub
+Falha:
+    Application.ScreenUpdating = True
+    If Len(arq) > 0 Then ApagarArquivo arq
+    MsgBox "Não deu certo: " & Err.Description, vbCritical, "Relatórios do Digifarma"
+End Sub
+
+' ---------- Estoque negativo ----------
+Public Sub GerarEstoqueNegativo()
+    Dim ws As Worksheet, arq As String, d As Variant, n As Long, i As Long, nc As Long, resumo As String
+    On Error GoTo Falha
+    Set ws = ThisWorkbook.Worksheets(ABA_NEG)
+    arq = ArquivoTemporario("negativo")
+    If Not RodarPrograma("EstoqueNegativo", Date, Date, 30, arq, False) Then Exit Sub
+    d = LerTabela(arq, True)
+    ApagarArquivo arq
+    If IsEmpty(d) Then Exit Sub
+
+    ' Arquivo: Codigo, CodBarras, Descricao, Estoque, Controle (do mais negativo ao menos negativo)
+    n = UBound(d, 1) - 1
+    For i = 2 To n + 1
+        If Len(d(i, 5)) > 0 Then nc = nc + 1
+    Next i
+    Application.ScreenUpdating = False
+    EscreverDados ws, d, Array("Código", "Código de barras", "Descrição", "Estoque atual", "Controle"), "TTTNT"
+    ws.Columns("A:B").ColumnWidth = 16
+    ws.Columns("C").ColumnWidth = 50
+    ws.Columns("D:E").ColumnWidth = 18
+    If n = 0 Then
+        resumo = "Nenhum produto com estoque negativo."
+    Else
+        resumo = "Produtos com estoque negativo: " & n & "   |   Controlados (SNGPC): " & nc
+    End If
+    ws.Range("A6").Value = resumo & "   |   Consultado em " & Format$(Now, "dd\/mm\/yyyy hh:nn")
+    ws.Range("A6").Font.Bold = True
+    Application.ScreenUpdating = True
+    ws.Activate
+    MsgBox resumo, vbInformation, "Relatórios do Digifarma"
+    Exit Sub
+Falha:
+    Application.ScreenUpdating = True
+    If Len(arq) > 0 Then ApagarArquivo arq
+    MsgBox "Não deu certo: " & Err.Description, vbCritical, "Relatórios do Digifarma"
+End Sub
+
+' ---------- Conferência SNGPC ----------
+Public Sub GerarConferenciaSNGPC()
+    Dim ws As Worksheet, arq As String, d As Variant, n As Long, resumo As String
+    On Error GoTo Falha
+    Set ws = ThisWorkbook.Worksheets(ABA_SNG)
+    arq = ArquivoTemporario("sngpc")
+    If Not RodarPrograma("ConferenciaSNGPC", Date, Date, 30, arq, False) Then Exit Sub
+    d = LerTabela(arq, True)
+    ApagarArquivo arq
+    If IsEmpty(d) Then Exit Sub
+
+    ' Arquivo: Codigo, CodBarras, Descricao, Controle, Estoque, SomaLotes, Diferenca, QtdVencida, LotesNegativos, Situacao
+    n = UBound(d, 1) - 1
+    Application.ScreenUpdating = False
+    EscreverDados ws, d, Array("Código", "Código de barras", "Descrição", "Controle", "Estoque do produto", "Soma dos lotes", _
+                               "Diferença", "Saldo em lotes vencidos", "Lotes com saldo negativo", "Situação"), "TTTTNNNNIT"
+    ws.Columns("A:B").ColumnWidth = 16
+    ws.Columns("C").ColumnWidth = 45
+    ws.Columns("D").ColumnWidth = 18
+    ws.Columns("E:I").ColumnWidth = 14
+    ws.Columns("J").ColumnWidth = 60
+    If n = 0 Then
+        resumo = "Nenhum problema encontrado nos psicotrópicos e antimicrobianos."
+    Else
+        resumo = "Controlados com problema: " & n
+    End If
+    ws.Range("A6").Value = resumo & "   |   Consultado em " & Format$(Now, "dd\/mm\/yyyy hh:nn")
+    ws.Range("A6").Font.Bold = True
+    Application.ScreenUpdating = True
+    ws.Activate
+    MsgBox resumo, vbInformation, "Relatórios do Digifarma"
+    Exit Sub
+Falha:
+    Application.ScreenUpdating = True
+    If Len(arq) > 0 Then ApagarArquivo arq
+    MsgBox "Não deu certo: " & Err.Description, vbCritical, "Relatórios do Digifarma"
+End Sub
+
 ' ---------- apoio ----------
 Private Function LerPeriodo(ByVal ws As Worksheet, ByRef ini As Date, ByRef fim As Date) As Boolean
     If Not IsDate(ws.Range("B3").Value) Or Not IsDate(ws.Range("B4").Value) Then
@@ -373,8 +522,8 @@ End Sub
 ' Roda o relatorios-digifarma.ps1 numa janela preta (onde a senha é digitada) e espera terminar.
 ' Se der erro, a janela fica aberta (pause) mostrando o motivo.
 Private Function RodarPrograma(ByVal relatorio As String, ByVal ini As Date, ByVal fim As Date, _
-                               ByVal dias As Long, ByVal arq As String) As Boolean
-    Dim pasta As String, ps1 As String, banco As String, usuario As String, cmd As String
+                               ByVal dias As Long, ByVal arq As String, Optional ByVal comDatas As Boolean = True) As Boolean
+    Dim pasta As String, ps1 As String, banco As String, usuario As String, cmd As String, datas As String
     pasta = ValorCfg("CfgPasta")
     If pasta = "" Then pasta = ThisWorkbook.Path
     If Right$(pasta, 1) = "\" Then pasta = Left$(pasta, Len(pasta) - 1)
@@ -402,9 +551,9 @@ Private Function RodarPrograma(ByVal relatorio As String, ByVal ini As Date, ByV
                vbExclamation, "Relatórios do Digifarma"
         Exit Function
     End If
+    If comDatas Then datas = " -DataInicio " & Format$(ini, "dd\/mm\/yyyy") & " -DataFim " & Format$(fim, "dd\/mm\/yyyy")
     cmd = "cmd.exe /c powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & ps1 & """" & _
-          " -Banco """ & banco & """ -Usuario """ & usuario & """ -Relatorio " & relatorio & _
-          " -DataInicio " & Format$(ini, "dd\/mm\/yyyy") & " -DataFim " & Format$(fim, "dd\/mm\/yyyy") & _
+          " -Banco """ & banco & """ -Usuario """ & usuario & """ -Relatorio " & relatorio & datas & _
           " -DiasEstoque " & dias & " -ArquivoSaida """ & arq & """ || pause"
     CreateObject("WScript.Shell").Run cmd, 1, True
     If Not Existe(arq) Then
@@ -415,7 +564,8 @@ Private Function RodarPrograma(ByVal relatorio As String, ByVal ini As Date, ByV
 End Function
 
 ' Lê o arquivo de texto (UTF-8, separado por tabulação) para uma matriz: linha 1 = cabeçalho.
-Private Function LerTabela(ByVal arq As String) As Variant
+' permitirVazio: aceita arquivo só com o cabeçalho (nada encontrado).
+Private Function LerTabela(ByVal arq As String, Optional ByVal permitirVazio As Boolean = False) As Variant
     Dim st As Object, txt As String, linhas() As String, campos() As String
     Dim n As Long, i As Long, j As Long, k As Long, ncol As Long, d() As String
     Set st = CreateObject("ADODB.Stream")
@@ -433,7 +583,7 @@ Private Function LerTabela(ByVal arq As String) As Variant
     For i = 0 To UBound(linhas)
         If Len(linhas(i)) > 0 Then n = n + 1
     Next i
-    If n < 2 Then
+    If n < 1 Or (n < 2 And Not permitirVazio) Then
         MsgBox "O relatório veio vazio.", vbExclamation, "Relatórios do Digifarma"
         Exit Function
     End If
@@ -462,4 +612,39 @@ Private Sub EscreverCabecalho(ByVal ws As Worksheet, ByVal titulos As Variant)
     r.Font.Bold = True
     r.Interior.Color = RGB(221, 235, 247)
     r.WrapText = True
+End Sub
+
+' Escreve a tabela lida (linha 1 = cabeçalho do arquivo) com os títulos em LINHA_CAB e os dados a partir de
+' LINHA_DADOS. tipos: uma letra por coluna: T = texto, N = número, I = inteiro, D = data (aaaa-mm-dd).
+Private Sub EscreverDados(ByVal ws As Worksheet, d As Variant, ByVal titulos As Variant, ByVal tipos As String)
+    Dim n As Long, nc As Long, i As Long, j As Long, saida() As Variant, v As String
+    n = UBound(d, 1) - 1
+    nc = Len(tipos)
+    LimparResultado ws
+    EscreverCabecalho ws, titulos
+    If n < 1 Then Exit Sub
+    ReDim saida(1 To n, 1 To nc)
+    For i = 1 To n
+        For j = 1 To nc
+            v = d(i + 1, j)
+            Select Case Mid$(tipos, j, 1)
+                Case "N"
+                    saida(i, j) = Val(v)
+                Case "I"
+                    saida(i, j) = CLng(Val(v))
+                Case "D"
+                    If Len(v) = 10 Then saida(i, j) = DateSerial(CInt(Left$(v, 4)), CInt(Mid$(v, 6, 2)), CInt(Mid$(v, 9, 2)))
+                Case Else
+                    saida(i, j) = v
+            End Select
+        Next j
+    Next i
+    For j = 1 To nc
+        Select Case Mid$(tipos, j, 1)
+            Case "T": ws.Cells(LINHA_DADOS, j).Resize(n, 1).NumberFormat = "@"
+            Case "D": ws.Cells(LINHA_DADOS, j).Resize(n, 1).NumberFormat = "dd/mm/yyyy"
+            Case "I": ws.Cells(LINHA_DADOS, j).Resize(n, 1).NumberFormat = "0"
+        End Select
+    Next j
+    ws.Cells(LINHA_DADOS, 1).Resize(n, nc).Value = saida
 End Sub

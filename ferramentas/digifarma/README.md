@@ -143,6 +143,13 @@ Dê dois cliques em `relatorios.bat`. O menu tem duas opções:
 1. **Abrir a janela de relatórios.** Nela você escolhe a **data de início** e a **data de fim** do período de vendas, e clica no botão do relatório:
    - **Gerar Curva ABC**: os produtos vendidos no período, do maior para o menor faturamento, com a classe. A são os que somam até 80% do faturamento, B até 95%, C o resto. Vendas canceladas não contam.
    - **Gerar Sugestão de compra (cotação)**: para cada produto, calcula a venda média por dia × os **dias de estoque desejados** (campo na janela, padrão 30) − o estoque atual. Grava uma planilha com a conta e uma **cópia preenchida da cotação**. A cópia tem PRODUTO (nome e código de barras) e QUANT na aba Cotação, a partir da linha 3, até 1000 produtos. As fórmulas, cores e abas de fornecedores da sua planilha ficam como estão e recalculam ao abrir. O `Cotacao_Pronta_em_branco.xlsx` original nunca é alterado.
+   - **Lotes vencendo (no período)**: lotes com saldo cujo **vencimento** cai entre as duas datas, do mais antigo ao mais novo. Com a data de início no passado, aparecem também os **já vencidos**. Lote de produto com estoque zero ou negativo fica de fora, porque já saiu.
+   - **Estoque negativo**: produtos com estoque abaixo de zero, indicando os controlados. Não usa as datas.
+   - **Conferência SNGPC**: para os psicotrópicos e antimicrobianos, mostra só os que têm algum destes problemas. Não usa as datas.
+     - estoque do produto diferente da soma dos saldos dos lotes;
+     - estoque negativo;
+     - lote vencido com saldo;
+     - lote com saldo negativo.
    - **Gerar mapa do banco.**
 2. **Gerar só o mapa do banco**, sem janela. Use esta opção se a janela não abrir.
 
@@ -152,10 +159,17 @@ Tudo vai para a pasta `registros\`:
 
 - `curva-abc_AAAA-MM-DD_a_AAAA-MM-DD.csv`;
 - `sugestao-compra_....csv`;
+- `lotes-vencendo_....csv`, `estoque-negativo_....csv` e `conferencia-sngpc_....csv`. Quando não há nada a mostrar, não é gravado arquivo; a janela só avisa;
 - `Cotacao_AAAA-MM-DD_HHMM.xlsx`;
 - `mapa-do-banco-....txt`.
 
 **Configuração das vendas:** os relatórios precisam saber em qual tabela e coluna estão os itens vendidos, a data e a marca de venda cancelada. Isso fica no bloco `$EsquemaPadrao`, no começo do `relatorios-digifarma.ps1`, ou num arquivo `-Esquema config.psd1`. Enquanto não estiver configurado, os botões avisam "ainda falta configurar onde ficam as vendas". O primeiro passo é gerar o mapa do banco e mandar o arquivo na conversa.
+
+**Lotes e controlados:** estes três relatórios não dependem das vendas. Eles usam nomes que apareceram no `-Descobrir` do seu banco:
+- tabela `LOTES`, com as colunas `PRODUTO_ID`, `NUM_LOTE`, `LOTE_VENCIMENTO` e `LOTE_QUANTIDADE`;
+- em `PRODUTOS`, as colunas `PROD_SALDO`, `PSICOTROPICO` e `ANTIMICROBIANO` (marcado = `S`).
+
+A suposição é que `LOTE_QUANTIDADE` é o **saldo atual** do lote. Na primeira vez, confira alguns produtos com a tela de lotes do Digifarma. Se não bater, mande na conversa um exemplo do que aparece na tela e do que saiu no relatório. Os nomes podem ser trocados no `$EsquemaPadrao` (chaves `Lote...` e `Prod...`).
 
 ## Relatórios dentro da planilha (macro do Excel)
 
@@ -167,16 +181,15 @@ Os mesmos dois relatórios podem ficar **dentro da sua planilha de cotação**, 
 2. Abra a cotação no Excel.
 3. Aperte **Alt+F11** para abrir o editor do VBA. Vá em **Arquivo > Importar arquivo** e escolha `Relatorios.bas`. Feche o editor.
 4. Aperte **Alt+F8**, escolha **InstalarRelatorios** e clique em **Executar**. Ele cria estas abas:
-   - **Sugestão de compra** e **Curva ABC**, logo depois da aba Cotação;
+   - **Sugestão de compra**, **Curva ABC**, **Lotes vencendo**, **Estoque negativo** e **Conferência SNGPC**, logo depois da aba Cotação;
    - **Config relatórios**, no fim. Nela ficam o banco, a pasta do `.ps1` e o usuário do Firebird.
 5. Use **Arquivo > Salvar como > Pasta de Trabalho Habilitada para Macro do Excel (\*.xlsm)**. Guarde esse `.xlsm` como a sua cotação em branco. Mantenha também o `.xlsx` na pasta: a janela do `relatorios.bat` ainda usa esse arquivo.
 
 **Uso:**
 
 1. Abra o `.xlsm`. Se aparecer a faixa amarela, clique em **Habilitar conteúdo**.
-2. Na aba **Curva ABC** ou **Sugestão de compra**, preencha:
-   - a **data de início** (B3);
-   - a **data de fim** (B4);
+2. Na aba do relatório, preencha:
+   - a **data de início** (B3) e a **data de fim** (B4). Em **Lotes vencendo**, são as datas de vencimento. **Estoque negativo** e **Conferência SNGPC** não têm datas;
    - na sugestão, os **dias de estoque** (B5).
 3. Clique no botão. Abre uma janela preta pedindo a **senha do Firebird**, que não fica gravada em lugar nenhum. Enquanto ela está aberta, o Excel fica parado ("Não respondendo"); é normal. Quando ela fecha, o resultado aparece na aba, a partir da linha 8.
 4. A sugestão também preenche **PRODUTO e QUANT** na aba Cotação, até 1000 produtos. Se passar disso, entram os 1000 mais vendidos, e o resto fica só na aba da sugestão. Se a Cotação já estiver preenchida, ele pergunta antes. Ao substituir, apaga também os preços, desempates e condições já digitados (colunas E a P e R a AD), porque não valeriam para os produtos novos. A proteção da aba Cotação volta como estava.
@@ -203,6 +216,7 @@ Observações:
 - tabela ambígua ou sem `PROD` no nome;
 - código com `|`;
 - relatórios: Curva ABC, sugestão de compra, período inválido ou sem vendas e cotação preenchida a partir de um modelo em branco;
+- lotes vencendo, estoque negativo e conferência SNGPC, num banco com os nomes de tabelas e colunas do Digifarma;
 - o arquivo de texto que a macro do Excel lê (`-ArquivoSaida`).
 
 A macro do Excel (`Relatorios.bas`) não é coberta por esses testes: o VBA só roda no Excel do Windows.

@@ -8,9 +8,14 @@ Relatórios do Digifarma (banco Firebird). Só lê o banco: nunca altera nada.
 -Relatorio SugestaoCompra: quanto comprar de cada produto para durar -DiasEstoque dias, pela venda média do período.
    Grava uma planilha (CSV) e, se houver a planilha de cotação em branco (-Modelo), uma cópia dela com
    PRODUTO e QUANT preenchidos na aba Cotação. A planilha em branco nunca é alterada.
+-Relatorio LotesVencendo: lotes com saldo que vencem entre -DataInicio e -DataFim (inclui os já vencidos, se o
+   início for no passado). Só lotes de produtos com estoque.
+-Relatorio EstoqueNegativo: produtos com estoque abaixo de zero (não usa datas).
+-Relatorio ConferenciaSNGPC: psicotrópicos e antimicrobianos cujo estoque não bate com a soma dos lotes, com
+   estoque negativo, lote vencido com saldo ou lote com saldo negativo (não usa datas).
 -Mapa: arquivo de texto com as tabelas e colunas do banco (só nomes e tipos, nenhum dado).
 -ArquivoSaida (com -Relatorio): grava o resultado em texto separado por tabulação, números com ponto, para a
-   macro da planilha de cotação (Relatorios.bas) ler e escrever nas abas "Curva ABC" e "Sugestão de compra".
+   macro da planilha de cotação (Relatorios.bas) ler e escrever nas abas dos relatórios.
 Onde ficam as vendas no banco do Digifarma é configurado no bloco $EsquemaPadrao (ou num arquivo -Esquema .psd1).
 
 .EXAMPLE
@@ -24,7 +29,7 @@ param(
     [switch]$Janela,
     [switch]$Mapa,
     [switch]$ContarLinhas,
-    [ValidateSet('CurvaABC', 'SugestaoCompra')][string]$Relatorio,
+    [ValidateSet('CurvaABC', 'SugestaoCompra', 'LotesVencendo', 'EstoqueNegativo', 'ConferenciaSNGPC')][string]$Relatorio,
     [string]$DataInicio,
     [string]$DataFim,
     [ValidateRange(1, 365)][int]$DiasEstoque = 30,
@@ -47,6 +52,7 @@ $TiposQtd = @(7, 8, 16, 10, 27)
 $script:Senha = $null
 $script:ModoJanela = $false
 $script:Meta = $null
+$RelatoriosComData = @('CurvaABC', 'SugestaoCompra', 'LotesVencendo')
 if (-not $PastaSaida) { $PastaSaida = Join-Path $PSScriptRoot 'registros' }
 if (-not $Modelo) { $Modelo = Join-Path $PSScriptRoot 'Cotacao_Pronta_em_branco.xlsx' }
 
@@ -58,6 +64,14 @@ $EsquemaPadrao = [ordered]@{
     ProdDescricao       = $null
     ProdCodBarras       = $null
     ProdEstoque         = 'PROD_SALDO'
+    ProdPsicotropico    = 'PSICOTROPICO'      # marcas do cadastro; coluna que não existir fica de fora
+    ProdAntimicrobiano  = 'ANTIMICROBIANO'
+    ProdMarcadoValor    = 'S'
+    LoteTabela          = 'LOTES'             # lotes: nomes vistos no -Descobrir do seu banco
+    LoteProduto         = 'PRODUTO_ID'
+    LoteNumero          = 'NUM_LOTE'
+    LoteVencimento      = 'LOTE_VENCIMENTO'
+    LoteQuantidade      = 'LOTE_QUANTIDADE'   # saldo atual do lote
     VendaTabela         = $null   # cabeçalho da venda (data, cancelada)
     VendaChave          = $null
     VendaData           = $null
@@ -329,7 +343,8 @@ function Find-Column($Tabela, [string]$Coluna, [string]$Chave) {
     return $c[0]
 }
 
-function Resolve-Esquema {
+# Uso: 'Produtos' (só o cadastro), 'Lotes' (cadastro e lotes) ou 'Vendas' (cadastro e vendas).
+function Resolve-Esquema([string]$Uso = 'Vendas') {
     $e = [ordered]@{}
     foreach ($k in $EsquemaPadrao.Keys) { $e[$k] = $EsquemaPadrao[$k] }
     if ($Esquema) {
@@ -375,6 +390,32 @@ function Resolve-Esquema {
     }
     foreach ($k in @('ProdChave', 'ProdDescricao', 'ProdCodBarras', 'ProdEstoque')) {
         if ($e[$k]) { $e[$k] = (Find-Column $prod $e[$k] $k)[1] }
+    }
+    # Marcas de controlado: se a coluna não existir, o relatório sai sem essa informação.
+    foreach ($k in @('ProdPsicotropico', 'ProdAntimicrobiano')) {
+        if (-not $e[$k]) { continue }
+        $c = @($colsProd | Where-Object { $_[1] -eq $e[$k] })
+        if ($c) { $e[$k] = $c[0][1] } else { $e[$k] = $null }
+    }
+    if ($Uso -eq 'Produtos') { return $e }
+
+    if ($Uso -eq 'Lotes') {
+        $achada = @($tabelas | Where-Object { $_ -eq $e.LoteTabela })
+        if (-not $e.LoteTabela -or -not $achada) { Stop-Script "configuração LoteTabela = '$($e.LoteTabela)': essa tabela não existe no banco." 2 }
+        $e.LoteTabela = $achada[0]
+        foreach ($k in @('LoteProduto', 'LoteVencimento', 'LoteQuantidade')) {
+            if (-not $e[$k]) { Stop-Script "falta configurar $k (coluna da tabela $($e.LoteTabela))." 2 }
+        }
+        foreach ($k in @('LoteProduto', 'LoteNumero', 'LoteVencimento', 'LoteQuantidade')) {
+            if ($e[$k]) { $e[$k] = (Find-Column $e.LoteTabela $e[$k] $k)[1] }
+        }
+        $tipo = [int](Find-Column $e.LoteTabela $e.LoteVencimento 'LoteVencimento')[2]
+        if (@(12, 35) -notcontains $tipo) { Stop-Script "configuração LoteVencimento = '$($e.LoteVencimento)': essa coluna não é de data." 2 }
+        if ($tipo -eq 12) { $e['LoteVencimentoTipo'] = 'DATE' } else { $e['LoteVencimentoTipo'] = 'TIMESTAMP' }
+        if ($TiposQtd -notcontains [int](Find-Column $e.LoteTabela $e.LoteQuantidade 'LoteQuantidade')[2]) {
+            Stop-Script "configuração LoteQuantidade = '$($e.LoteQuantidade)': essa coluna não é numérica." 2
+        }
+        return $e
     }
 
     # Vendas: sem essas informações não há como somar o que foi vendido no período.
@@ -551,6 +592,196 @@ function New-SugestaoCompra([datetime]$Inicio, [datetime]$Fim, [int]$Dias) {
     return [pscustomobject]@{ Arquivo = $(if ($cotacao) { $cotacao } else { $arquivo }); Csv = $arquivo; Cotacao = $cotacao; Resumo = $texto }
 }
 
+# ---------- estoque e lotes (não dependem das vendas) ----------
+# Pedaços de SQL do cadastro do produto (tabela com apelido P), no mesmo formato de Get-Vendas.
+function Get-ProdSql($e) {
+    $x = @{
+        Chave    = "COALESCE(REPLACE(CAST(P.$(Q $e.ProdChave) AS VARCHAR(40)), '|', '/'), '')"
+        Desc     = "COALESCE(REPLACE(REPLACE(REPLACE(SUBSTRING(P.$(Q $e.ProdDescricao) FROM 1 FOR 100), '|', '/'), ASCII_CHAR(13), ' '), ASCII_CHAR(10), ' '), '')"
+        Barras   = "''"
+        Estoque  = "'0'"
+        Controle = "''"
+        Grupo    = @("P.$(Q $e.ProdChave)", "P.$(Q $e.ProdDescricao)")
+    }
+    if ($e.ProdCodBarras) {
+        $x.Barras = "COALESCE(REPLACE(TRIM(CAST(P.$(Q $e.ProdCodBarras) AS VARCHAR(40))), '|', '/'), '')"
+        $x.Grupo += "P.$(Q $e.ProdCodBarras)"
+    }
+    if ($e.ProdEstoque) {
+        $x.Estoque = "COALESCE(CAST(P.$(Q $e.ProdEstoque) AS VARCHAR(40)), '0')"
+        $x.Grupo += "P.$(Q $e.ProdEstoque)"
+    }
+    # Controle: 'P' psicotrópico, 'A' antimicrobiano, 'PA' os dois.
+    $partes = @()
+    foreach ($par in @(@('ProdPsicotropico', 'P'), @('ProdAntimicrobiano', 'A'))) {
+        if (-not $e[$par[0]]) { continue }
+        $partes += "CASE WHEN P.$(Q $e[$par[0]]) = '$($e.ProdMarcadoValor)' THEN '$($par[1])' ELSE '' END"
+        $x.Grupo += "P.$(Q $e[$par[0]])"
+    }
+    if ($partes) { $x.Controle = $partes -join ' || ' }
+    return $x
+}
+
+function Format-Controle([string]$C) {
+    switch ($C.Trim()) {
+        'PA' { return 'Psicotrópico e antimicrobiano' }
+        'P' { return 'Psicotrópico' }
+        'A' { return 'Antimicrobiano' }
+    }
+    return ''
+}
+
+function Format-Qtd([double]$X) { return $X.ToString('0.###', $BR) }
+
+# Grava o resultado: texto para a macro (-ArquivoSaida) ou CSV. Sem linhas, não grava CSV.
+function Save-Relatorio([string]$Nome, [string]$Texto, [string[]]$CabCsv, $LinhasCsv, [string[]]$CabTsv, $LinhasTsv) {
+    Write-Host $Texto
+    if ($ArquivoSaida) {
+        Write-Tsv $ArquivoSaida $CabTsv $LinhasTsv
+        return [pscustomobject]@{ Arquivo = $ArquivoSaida; Resumo = $Texto }
+    }
+    if (-not @($LinhasCsv).Count) { return [pscustomobject]@{ Arquivo = $null; Resumo = $Texto } }
+    $arquivo = New-OutputPath $Nome
+    Write-Csv $arquivo $CabCsv $LinhasCsv
+    Write-Host "Arquivo: $arquivo"
+    return [pscustomobject]@{ Arquivo = $arquivo; Resumo = $Texto }
+}
+
+function New-EstoqueNegativo {
+    $e = Resolve-Esquema 'Produtos'
+    if (-not $e.ProdEstoque) { Stop-Script "falta configurar ProdEstoque (coluna do estoque em $($e.ProdTabela))." 2 }
+    $x = Get-ProdSql $e
+    $sql = "SELECT '#N|' || $($x.Chave) || '|' || $($x.Desc) || '|' || $($x.Barras) || '|' || $($x.Estoque) || '|' || $($x.Controle) " +
+        "FROM $(Q $e.ProdTabela) P WHERE P.$(Q $e.ProdEstoque) < 0 ORDER BY P.$(Q $e.ProdEstoque), P.$(Q $e.ProdDescricao);"
+    Write-Host 'Procurando produtos com estoque negativo ...'
+    $itens = @(Get-Rows (Invoke-Isql $sql) 'N' 5 | ForEach-Object {
+            [pscustomobject]@{
+                Codigo    = $_[0].TrimEnd()
+                Descricao = $_[1].TrimEnd()
+                CodBarras = $_[2].Trim()
+                Estoque   = (ConvertTo-Number $_[3])
+                Controle  = (Format-Controle $_[4])
+            }
+        })
+    $controlados = @($itens | Where-Object { $_.Controle }).Count
+    if ($itens) { $texto = "Estoque negativo: $($itens.Count) produtos, $controlados deles controlados (SNGPC)." }
+    else { $texto = 'Nenhum produto com estoque negativo.' }
+    $csv = @(foreach ($v in $itens) { , @($v.Codigo, $v.CodBarras, $v.Descricao, (Format-Qtd $v.Estoque), $v.Controle) })
+    $tsv = @(foreach ($v in $itens) { , @($v.Codigo, $v.CodBarras, $v.Descricao, (Format-Inv $v.Estoque), $v.Controle) })
+    return Save-Relatorio "estoque-negativo_$((Get-Date).ToString('yyyy-MM-dd_HHmm')).csv" $texto `
+        @('Código', 'Código de barras', 'Descrição', 'Estoque atual', 'Controle') $csv `
+        @('Codigo', 'CodBarras', 'Descricao', 'Estoque', 'Controle') $tsv
+}
+
+# Lotes com saldo que vencem no período, de produtos com estoque (lote de produto zerado já saiu).
+function New-LotesVencendo([datetime]$Inicio, [datetime]$Fim) {
+    Test-Periodo $Inicio $Fim
+    $e = Resolve-Esquema 'Lotes'
+    $x = Get-ProdSql $e
+    $tipo = $e.LoteVencimentoTipo
+    $venc = "L.$(Q $e.LoteVencimento)"
+    $qtd = "L.$(Q $e.LoteQuantidade)"
+    $lote = "''"
+    if ($e.LoteNumero) { $lote = "COALESCE(REPLACE(TRIM(CAST(L.$(Q $e.LoteNumero) AS VARCHAR(100))), '|', '/'), '')" }
+    $where = "$venc >= CAST('$($Inicio.ToString('yyyy-MM-dd', $Inv))' AS $tipo) AND $venc < CAST('$($Fim.AddDays(1).ToString('yyyy-MM-dd', $Inv))' AS $tipo) AND $qtd > 0"
+    if ($e.ProdEstoque) { $where += " AND P.$(Q $e.ProdEstoque) > 0" }
+    # Data montada com EXTRACT: funciona também em banco de dialeto 1, onde DATE tem hora.
+    $data = "CAST(EXTRACT(YEAR FROM $venc) AS VARCHAR(4)) || '-' || CAST(EXTRACT(MONTH FROM $venc) AS VARCHAR(2)) || '-' || CAST(EXTRACT(DAY FROM $venc) AS VARCHAR(2))"
+    $sql = "SELECT '#L|' || $data || '|' || $($x.Chave) || '|' || $($x.Desc) || '|' || $($x.Barras) || '|' || " +
+        "$lote || '|' || CAST($qtd AS VARCHAR(40)) || '|' || $($x.Estoque) || '|' || $($x.Controle) " +
+        "FROM $(Q $e.LoteTabela) L JOIN $(Q $e.ProdTabela) P ON P.$(Q $e.ProdChave) = L.$(Q $e.LoteProduto) " +
+        "WHERE $where ORDER BY $venc, P.$(Q $e.ProdDescricao);"
+    Write-Host "Procurando lotes que vencem de $($Inicio.ToString('dd/MM/yyyy')) a $($Fim.ToString('dd/MM/yyyy')) ..."
+    $hoje = (Get-Date).Date
+    $itens = @(Get-Rows (Invoke-Isql $sql) 'L' 8 | ForEach-Object {
+            $v = [datetime]::ParseExact($_[0].Trim(), 'yyyy-M-d', $Inv)
+            [pscustomobject]@{
+                Vencimento = $v
+                Dias       = ($v - $hoje).Days
+                Codigo     = $_[1].TrimEnd()
+                Descricao  = $_[2].TrimEnd()
+                CodBarras  = $_[3].Trim()
+                Lote       = $_[4].Trim()
+                QtdLote    = (ConvertTo-Number $_[5])
+                Estoque    = (ConvertTo-Number $_[6])
+                Controle   = (Format-Controle $_[7])
+            }
+        })
+    $vencidos = @($itens | Where-Object { $_.Dias -lt 0 }).Count
+    $produtos = @($itens | ForEach-Object { $_.Codigo } | Select-Object -Unique).Count
+    $periodo = "$($Inicio.ToString('dd/MM/yyyy')) a $($Fim.ToString('dd/MM/yyyy'))"
+    if ($itens) { $texto = "Lotes que vencem de ${periodo}: $($itens.Count) lotes de $produtos produtos; $vencidos já vencidos." }
+    else { $texto = "Nenhum lote com saldo vence de $periodo." }
+    $csv = @(foreach ($v in $itens) {
+            if ($v.Dias -lt 0) { $sit = 'VENCIDO' } elseif ($v.Dias -le 30) { $sit = 'vence em até 30 dias' } else { $sit = '' }
+            , @($v.Vencimento.ToString('dd/MM/yyyy'), $v.Dias, $v.Codigo, $v.CodBarras, $v.Descricao, $v.Lote, (Format-Qtd $v.QtdLote),
+                (Format-Qtd $v.Estoque), $v.Controle, $sit)
+        })
+    $tsv = @(foreach ($v in $itens) {
+            , @($v.Vencimento.ToString('yyyy-MM-dd', $Inv), $v.Dias, $v.Codigo, $v.CodBarras, $v.Descricao, $v.Lote, (Format-Inv $v.QtdLote),
+                (Format-Inv $v.Estoque), $v.Controle)
+        })
+    return Save-Relatorio "lotes-vencendo_$($Inicio.ToString('yyyy-MM-dd'))_a_$($Fim.ToString('yyyy-MM-dd')).csv" $texto `
+        @('Vencimento', 'Dias para vencer', 'Código', 'Código de barras', 'Descrição', 'Lote', 'Saldo do lote', 'Estoque do produto', 'Controle', 'Situação') $csv `
+        @('Vencimento', 'Dias', 'Codigo', 'CodBarras', 'Descricao', 'Lote', 'QtdLote', 'Estoque', 'Controle') $tsv
+}
+
+# Controlados (psicotrópico/antimicrobiano): o estoque do produto tem de bater com a soma dos saldos dos lotes.
+function New-ConferenciaSNGPC {
+    $e = Resolve-Esquema 'Lotes'
+    if (-not $e.ProdPsicotropico -and -not $e.ProdAntimicrobiano) {
+        Stop-Script "não achei as colunas de psicotrópico/antimicrobiano em $($e.ProdTabela); informe ProdPsicotropico e ProdAntimicrobiano na configuração." 2
+    }
+    if (-not $e.ProdEstoque) { Stop-Script "falta configurar ProdEstoque (coluna do estoque em $($e.ProdTabela))." 2 }
+    $x = Get-ProdSql $e
+    $qtd = "L.$(Q $e.LoteQuantidade)"
+    $venc = "L.$(Q $e.LoteVencimento)"
+    $hoje = "CAST('$((Get-Date).ToString('yyyy-MM-dd', $Inv))' AS $($e.LoteVencimentoTipo))"
+    $marcas = @()
+    foreach ($k in @('ProdPsicotropico', 'ProdAntimicrobiano')) { if ($e[$k]) { $marcas += "P.$(Q $e[$k]) = '$($e.ProdMarcadoValor)'" } }
+    $sql = "SELECT '#S|' || $($x.Chave) || '|' || $($x.Desc) || '|' || $($x.Barras) || '|' || $($x.Estoque) || '|' || $($x.Controle) || '|' || " +
+        "COALESCE(CAST(SUM($qtd) AS VARCHAR(40)), '0') || '|' || " +
+        "COALESCE(CAST(SUM(CASE WHEN $venc < $hoje AND $qtd > 0 THEN $qtd ELSE 0 END) AS VARCHAR(40)), '0') || '|' || " +
+        "CAST(SUM(CASE WHEN $qtd < 0 THEN 1 ELSE 0 END) AS VARCHAR(10)) " +
+        "FROM $(Q $e.ProdTabela) P LEFT JOIN $(Q $e.LoteTabela) L ON L.$(Q $e.LoteProduto) = P.$(Q $e.ProdChave) " +
+        "WHERE ($($marcas -join ' OR ')) GROUP BY $($x.Grupo -join ', ');"
+    Write-Host 'Conferindo estoque e lotes dos controlados ...'
+    $todos = @(Get-Rows (Invoke-Isql $sql) 'S' 8)
+    $itens = @(foreach ($r in $todos) {
+            $est = ConvertTo-Number $r[3]
+            $soma = ConvertTo-Number $r[5]
+            $vencida = ConvertTo-Number $r[6]
+            $negativos = [int](ConvertTo-Number $r[7])
+            $dif = [math]::Round($est - $soma, 3)
+            $prob = @()
+            if ($dif -ne 0) { $prob += 'estoque diferente da soma dos lotes' }
+            if ($est -lt 0) { $prob += 'estoque negativo' }
+            if ($vencida -gt 0) { $prob += 'lote vencido com saldo' }
+            if ($negativos -gt 0) { $prob += 'lote com saldo negativo' }
+            if ($prob) {
+                [pscustomobject]@{
+                    Codigo = $r[0].TrimEnd(); Descricao = $r[1].TrimEnd(); CodBarras = $r[2].Trim(); Controle = (Format-Controle $r[4])
+                    Estoque = $est; SomaLotes = $soma; Diferenca = $dif; QtdVencida = $vencida; LotesNegativos = $negativos; Situacao = ($prob -join '; ')
+                }
+            }
+        })
+    $itens = @($itens | Sort-Object Descricao)
+    if ($itens) { $texto = "Conferência SNGPC: $($todos.Count) controlados conferidos; $($itens.Count) com problema." }
+    else { $texto = "Conferência SNGPC: $($todos.Count) controlados conferidos; nenhum problema encontrado." }
+    $csv = @(foreach ($v in $itens) {
+            , @($v.Codigo, $v.CodBarras, $v.Descricao, $v.Controle, (Format-Qtd $v.Estoque), (Format-Qtd $v.SomaLotes), (Format-Qtd $v.Diferenca),
+                (Format-Qtd $v.QtdVencida), $v.LotesNegativos, $v.Situacao)
+        })
+    $tsv = @(foreach ($v in $itens) {
+            , @($v.Codigo, $v.CodBarras, $v.Descricao, $v.Controle, (Format-Inv $v.Estoque), (Format-Inv $v.SomaLotes), (Format-Inv $v.Diferenca),
+                (Format-Inv $v.QtdVencida), $v.LotesNegativos, $v.Situacao)
+        })
+    return Save-Relatorio "conferencia-sngpc_$((Get-Date).ToString('yyyy-MM-dd_HHmm')).csv" $texto `
+        @('Código', 'Código de barras', 'Descrição', 'Controle', 'Estoque do produto', 'Soma dos lotes', 'Diferença', 'Saldo em lotes vencidos',
+            'Lotes com saldo negativo', 'Situação') $csv `
+        @('Codigo', 'CodBarras', 'Descricao', 'Controle', 'Estoque', 'SomaLotes', 'Diferenca', 'QtdVencida', 'LotesNegativos', 'Situacao') $tsv
+}
+
 # ---------- planilha de cotação ----------
 # Copia a cotação em branco e preenche PRODUTO (coluna A) e QUANT (coluna B) da aba "Cotação" a partir
 # da linha 3, mexendo direto no XML do .xlsx (não precisa do Excel). Fórmulas e formatação ficam como estão;
@@ -676,7 +907,7 @@ function Show-Janela {
     $f.FormBorderStyle = 'FixedDialog'
     $f.MaximizeBox = $false
     $f.Font = New-Object Drawing.Font('Segoe UI', 10)
-    $f.ClientSize = New-Object Drawing.Size(580, 350)
+    $f.ClientSize = New-Object Drawing.Size(580, 400)
     $script:Form = $f
     $script:Ocupado = $false
     $f.Add_FormClosing({
@@ -695,7 +926,7 @@ function Show-Janela {
         $r.Size = New-Object Drawing.Size($L, 24)
         $f.Controls.Add($r)
     }
-    & $novoRotulo 'Período das vendas que a pesquisa vai usar:' 16 14 500
+    & $novoRotulo 'Período da pesquisa (vendas; nos lotes, a data de vencimento):' 16 14 550
     & $novoRotulo 'De' 16 46 30
     $script:DIni = New-Object Windows.Forms.DateTimePicker
     $script:DIni.Format = [Windows.Forms.DateTimePickerFormat]::Short
@@ -734,10 +965,13 @@ function Show-Janela {
     }
     & $novoBotao 'Gerar Curva ABC' 16 128 270 44 'CurvaABC'
     & $novoBotao 'Gerar Sugestão de compra (cotação)' 294 128 270 44 'SugestaoCompra'
-    & $novoBotao 'Gerar mapa do banco' 16 184 270 34 'Mapa'
+    & $novoBotao 'Lotes vencendo (no período)' 16 180 176 44 'LotesVencendo'
+    & $novoBotao 'Estoque negativo' 202 180 176 44 'EstoqueNegativo'
+    & $novoBotao 'Conferência SNGPC' 388 180 176 44 'ConferenciaSNGPC'
+    & $novoBotao 'Gerar mapa do banco' 16 236 270 34 'Mapa'
 
     $script:Status = New-Object Windows.Forms.Label
-    $script:Status.Location = New-Object Drawing.Point(16, 230)
+    $script:Status.Location = New-Object Drawing.Point(16, 282)
     $script:Status.Size = New-Object Drawing.Size(548, 106)
     $script:Status.Text = 'Escolha o período e clique no relatório. Os arquivos vão para a pasta "registros".'
     $f.Controls.Add($script:Status)
@@ -748,7 +982,7 @@ function Show-Janela {
 function Invoke-Botao([string]$Acao) {
     $ini = $script:DIni.Value.Date
     $fim = $script:DFim.Value.Date
-    if ($Acao -ne 'Mapa' -and $ini -gt $fim) {
+    if ($RelatoriosComData -contains $Acao -and $ini -gt $fim) {
         [void][Windows.Forms.MessageBox]::Show('A data de início está depois da data de fim.', 'Período inválido', [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Warning)
         return
     }
@@ -761,9 +995,16 @@ function Invoke-Botao([string]$Acao) {
         switch ($Acao) {
             'CurvaABC' { $r = New-CurvaABC $ini $fim }
             'SugestaoCompra' { $r = New-SugestaoCompra $ini $fim ([int]$script:NDias.Value) }
+            'LotesVencendo' { $r = New-LotesVencendo $ini $fim }
+            'EstoqueNegativo' { $r = New-EstoqueNegativo }
+            'ConferenciaSNGPC' { $r = New-ConferenciaSNGPC }
             'Mapa' { $arq = New-Mapa $true; $r = [pscustomobject]@{ Arquivo = $arq; Resumo = 'Mapa do banco gerado. Mande este arquivo na conversa.' } }
         }
         $script:Status.Text = "$($r.Resumo)`n$($r.Arquivo)"
+        if (-not $r.Arquivo) {
+            [void][Windows.Forms.MessageBox]::Show($r.Resumo, 'Pronto', [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Information)
+            return
+        }
         $resp = [Windows.Forms.MessageBox]::Show("$($r.Resumo)`n`nArquivo:`n$($r.Arquivo)`n`nAbrir agora?", 'Pronto', [Windows.Forms.MessageBoxButtons]::YesNo, [Windows.Forms.MessageBoxIcon]::Information)
         if ($resp -eq [Windows.Forms.DialogResult]::Yes) { Start-Process -FilePath $r.Arquivo }
     } catch {
@@ -779,7 +1020,7 @@ function Invoke-Botao([string]$Acao) {
 # ---------- início ----------
 if (-not ($Janela -or $Mapa -or $Relatorio)) { Stop-Script 'escolha o que fazer: -Janela, -Mapa ou -Relatorio CurvaABC/SugestaoCompra.' 2 }
 if ($ArquivoSaida -and -not $Relatorio) { Stop-Script '-ArquivoSaida só vale junto com -Relatorio.' 2 }
-if ($Relatorio) {
+if ($RelatoriosComData -contains $Relatorio) {
     if (-not $DataInicio -or -not $DataFim) { Stop-Script 'informe -DataInicio e -DataFim (dd/mm/aaaa).' 2 }
     $ini = Read-Data $DataInicio 'data de início'
     $fim = Read-Data $DataFim 'data de fim'
@@ -802,3 +1043,6 @@ if ($Mapa) {
 }
 if ($Relatorio -eq 'CurvaABC') { [void](New-CurvaABC $ini $fim) }
 if ($Relatorio -eq 'SugestaoCompra') { [void](New-SugestaoCompra $ini $fim $DiasEstoque) }
+if ($Relatorio -eq 'LotesVencendo') { [void](New-LotesVencendo $ini $fim) }
+if ($Relatorio -eq 'EstoqueNegativo') { [void](New-EstoqueNegativo) }
+if ($Relatorio -eq 'ConferenciaSNGPC') { [void](New-ConferenciaSNGPC) }

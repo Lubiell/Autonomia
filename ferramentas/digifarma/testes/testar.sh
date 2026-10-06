@@ -312,5 +312,73 @@ ok '[ $rc -eq 0 ] && [ "$(head -1 "$TMP/r7/sug.tsv")" = "Codigo${TAB}CodBarras${
 ok 'grep -qx "3${TAB}${TAB}AMOXICILINA 500MG CÁPS & \"CIA\"${TAB}4${TAB}0.1333333333${TAB}0${TAB}4${TAB}1" "$TMP/r7/sug.tsv" && grep -qx "6${TAB}7893${TAB}AZITROMICINA${TAB}1${TAB}0.0333333333${TAB}-2${TAB}1${TAB}1" "$TMP/r7/sug.tsv"' "macro sugestão: linhas da AMOXICILINA/AZITROMICINA"
 ok '[ "$(ls "$TMP/r7")" = "sug.tsv" ]' "macro sugestão: gerou outros arquivos: $(ls "$TMP/r7")"
 
+# ---------- estoque e lotes: banco com os nomes vistos no Digifarma real (PRODUTOS/LOTES), configuração padrão ----------
+DB4="$TMP/lotes.fdb"
+criar "$DB4" <<'SQL'
+CREATE TABLE PRODUTOS (PRODUTO_ID INTEGER NOT NULL PRIMARY KEY, PROD_NOME VARCHAR(60), COD_BARRAS VARCHAR(14), PROD_SALDO NUMERIC(15,3),
+  PSICOTROPICO CHAR(1), ANTIMICROBIANO CHAR(1));
+CREATE TABLE LOTES (LOTE_ID INTEGER NOT NULL PRIMARY KEY, PRODUTO_ID INTEGER, NUM_LOTE VARCHAR(20), LOTE_VENCIMENTO DATE, LOTE_QUANTIDADE NUMERIC(15,3));
+COMMIT;
+INSERT INTO PRODUTOS VALUES (1, 'RIVOTRIL 2MG', '7891000000011', 10, 'S', 'N');
+INSERT INTO PRODUTOS VALUES (2, 'AMOXICILINA 500MG', '7891000000028', 5, 'N', 'S');
+INSERT INTO PRODUTOS VALUES (3, 'DIPIRONA | GOTAS', NULL, -3, 'N', 'N');
+INSERT INTO PRODUTOS VALUES (4, 'CLONAZEPAM 0,5MG', NULL, -1, 'S', 'N');
+INSERT INTO PRODUTOS VALUES (5, 'AZITROMICINA', '7893', 0, 'N', 'S');
+INSERT INTO PRODUTOS VALUES (6, 'VITAMINA C', '7894', 8, 'N', 'N');
+INSERT INTO PRODUTOS VALUES (7, 'CEFALEXINA', '7895', 3, 'N', 'S');
+INSERT INTO LOTES VALUES (1, 1, 'A1', CURRENT_DATE + 10, 6);
+INSERT INTO LOTES VALUES (2, 1, 'A2', CURRENT_DATE + 200, 4);
+INSERT INTO LOTES VALUES (3, 2, 'B1', CURRENT_DATE - 5, 2);
+INSERT INTO LOTES VALUES (4, 2, 'B2', CURRENT_DATE + 60, 2);
+INSERT INTO LOTES VALUES (5, 3, 'C1', CURRENT_DATE + 20, 5);
+INSERT INTO LOTES VALUES (6, 6, 'D1', CURRENT_DATE + 100, 8);
+INSERT INTO LOTES VALUES (7, 6, 'D2', CURRENT_DATE + 30, 0);
+INSERT INTO LOTES VALUES (8, 7, 'E1', CURRENT_DATE + 40, 5);
+INSERT INTO LOTES VALUES (9, 7, 'E2', CURRENT_DATE + 50, -2);
+COMMIT;
+SQL
+rel4() { "$PWSH" -NoProfile -File "$DIR/relatorios-digifarma.ps1" -Isql "$(command -v "$ISQL")" -Banco "localhost:$DB4" "$@" 2>&1; }
+INI="$(date -d '-30 days' +%d/%m/%Y)"; FIM="$(date -d '+90 days' +%d/%m/%Y)"
+
+out="$(rel4 -Relatorio LotesVencendo -PastaSaida "$TMP/l0")"; rc=$?
+ok '[ $rc -eq 2 ] && grep -q "informe -DataInicio e -DataFim" <<<"$out"' "lotes sem datas: código $rc"
+out="$(rel -Esquema "$TMP/so-estoque.psd1" -Relatorio LotesVencendo -DataInicio "$INI" -DataFim "$FIM" -PastaSaida "$TMP/l0")"; rc=$?
+ok '[ $rc -eq 2 ] && grep -q "LoteTabela = .LOTES.: essa tabela não existe" <<<"$out"' "lotes sem a tabela LOTES: código $rc $out"
+
+# Lotes vencendo: vencido há 5 dias entra; saldo 0, saldo negativo, produto sem estoque e fora do período não entram
+out="$(rel4 -Relatorio LotesVencendo -DataInicio "$INI" -DataFim "$FIM" -PastaSaida "$TMP/l1")"; rc=$?
+lv="$(cat "$TMP"/l1/lotes-vencendo_*.csv 2>/dev/null)"
+ok '[ $rc -eq 0 ] && grep -q "4 lotes de 3 produtos; 1 já vencidos" <<<"$out"' "lotes vencendo: código $rc $out"
+ok '[ "$(tail -n +2 <<<"$lv" | cut -d";" -f6 | tr -d "\"\r" | tr "\n" " ")" = "B1 A1 E1 B2 " ]' "lotes vencendo: lotes/ordem: $(tail -n +2 <<<"$lv" | cut -d";" -f6 | tr "\n" " ")"
+ok 'grep -q "^\"$(date -d "-5 days" +%d/%m/%Y)\";\"-5\";\"2\";\"7891000000028\";\"AMOXICILINA 500MG\";\"B1\";\"2\";\"5\";\"Antimicrobiano\";\"VENCIDO\"" <<<"$lv"' "lotes vencendo: linha do lote vencido"
+ok 'grep -q "^\"$(date -d "+10 days" +%d/%m/%Y)\";\"10\";\"1\";.*\"A1\";\"6\";\"10\";\"Psicotrópico\";\"vence em até 30 dias\"" <<<"$lv"' "lotes vencendo: linha do RIVOTRIL"
+out="$(rel4 -Relatorio LotesVencendo -DataInicio "$INI" -DataFim "$FIM" -PastaSaida "$TMP/l2" -ArquivoSaida "$TMP/l2/lotes.tsv")"; rc=$?
+ok '[ $rc -eq 0 ] && [ "$(ls "$TMP/l2")" = "lotes.tsv" ] && grep -qx "$(date -d "-5 days" +%F)${TAB}-5${TAB}2${TAB}7891000000028${TAB}AMOXICILINA 500MG${TAB}B1${TAB}2${TAB}5${TAB}Antimicrobiano" "$TMP/l2/lotes.tsv"' "macro lotes: código $rc $(cat "$TMP/l2/lotes.tsv" 2>/dev/null | head -2)"
+
+# Estoque negativo (sem datas): DIPIRONA -3 e CLONAZEPAM -1 (controlado); "|" do nome não quebra a leitura
+out="$(rel4 -Relatorio EstoqueNegativo -PastaSaida "$TMP/n1")"; rc=$?
+en="$(cat "$TMP"/n1/estoque-negativo_*.csv 2>/dev/null)"
+ok '[ $rc -eq 0 ] && grep -q "Estoque negativo: 2 produtos, 1 deles controlados" <<<"$out"' "estoque negativo: código $rc $out"
+ok '[ "$(sed -n 2p <<<"$en" | tr -d "\r")" = "\"3\";\"\";\"DIPIRONA / GOTAS\";\"-3\";\"\"" ] && [ "$(sed -n 3p <<<"$en" | tr -d "\r")" = "\"4\";\"\";\"CLONAZEPAM 0,5MG\";\"-1\";\"Psicotrópico\"" ]' "estoque negativo: linhas: $en"
+out="$(rel -Esquema "$TMP/so-estoque.psd1" -Relatorio EstoqueNegativo -PastaSaida "$TMP/n2")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -q "Estoque negativo: 1 produtos, 0 deles controlados" <<<"$out"' "estoque negativo sem colunas de controlado: código $rc $out"
+
+# Conferência SNGPC: 5 controlados; problema na AMOXICILINA (diferença e vencido), CEFALEXINA (lote negativo) e CLONAZEPAM (negativo)
+out="$(rel4 -Relatorio ConferenciaSNGPC -PastaSaida "$TMP/s1")"; rc=$?
+cs="$(cat "$TMP"/s1/conferencia-sngpc_*.csv 2>/dev/null | tr -d "\r")"
+ok '[ $rc -eq 0 ] && grep -q "5 controlados conferidos; 3 com problema" <<<"$out"' "SNGPC: código $rc $out"
+ok '[ "$(sed -n 2p <<<"$cs")" = "\"2\";\"7891000000028\";\"AMOXICILINA 500MG\";\"Antimicrobiano\";\"5\";\"4\";\"1\";\"2\";\"0\";\"estoque diferente da soma dos lotes; lote vencido com saldo\"" ]' "SNGPC: AMOXICILINA: $(sed -n 2p <<<"$cs")"
+ok '[ "$(sed -n 3p <<<"$cs")" = "\"7\";\"7895\";\"CEFALEXINA\";\"Antimicrobiano\";\"3\";\"3\";\"0\";\"0\";\"1\";\"lote com saldo negativo\"" ]' "SNGPC: CEFALEXINA: $(sed -n 3p <<<"$cs")"
+ok '[ "$(sed -n 4p <<<"$cs")" = "\"4\";\"\";\"CLONAZEPAM 0,5MG\";\"Psicotrópico\";\"-1\";\"0\";\"-1\";\"0\";\"0\";\"estoque diferente da soma dos lotes; estoque negativo\"" ] && [ "$(wc -l <<<"$cs")" -eq 4 ]' "SNGPC: CLONAZEPAM/linhas a mais: $cs"
+out="$(rel4 -Relatorio ConferenciaSNGPC -PastaSaida "$TMP/s2" -ArquivoSaida "$TMP/s2/sngpc.tsv")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -qx "7${TAB}7895${TAB}CEFALEXINA${TAB}Antimicrobiano${TAB}3${TAB}3${TAB}0${TAB}0${TAB}1${TAB}lote com saldo negativo" "$TMP/s2/sngpc.tsv"' "macro SNGPC: código $rc"
+
+# Nada encontrado: mensagem, código 0, sem CSV; para a macro, só o cabeçalho
+sql "$DB4" "UPDATE PRODUTOS SET PROD_SALDO = 0 WHERE PROD_SALDO < 0; COMMIT;" >/dev/null
+out="$(rel4 -Relatorio EstoqueNegativo -PastaSaida "$TMP/n3")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -q "Nenhum produto com estoque negativo" <<<"$out" && [ ! -e "$TMP/n3" -o -z "$(ls "$TMP/n3" 2>/dev/null)" ]' "estoque negativo vazio: código $rc $out"
+out="$(rel4 -Relatorio EstoqueNegativo -PastaSaida "$TMP/n4" -ArquivoSaida "$TMP/n4/neg.tsv")"; rc=$?
+ok '[ $rc -eq 0 ] && [ "$(cat "$TMP/n4/neg.tsv")" = "Codigo${TAB}CodBarras${TAB}Descricao${TAB}Estoque${TAB}Controle" ]' "macro estoque negativo vazio: código $rc $(cat "$TMP/n4/neg.tsv" 2>/dev/null)"
+
 echo "passou: $PASS  falhou: $FAIL"
 [ "$FAIL" -eq 0 ]
