@@ -206,5 +206,87 @@ ok '[ $rc -eq 0 ] && grep -q "Desmarcadas: 150 de 150" <<<"$out" && [ "$(sql "$D
 rodar -Banco "$B2" -Desfazer "$TMP/a11/desfazer.sql" >/dev/null
 ok '[ "$(sql "$DB2" "SELECT COUNT(*) FROM MEDBULK WHERE CONTROLADO = '"'S'"';")" -eq 150 ]' "300 produtos: desfazer"
 
+# ---------- relatórios (relatorios-digifarma.ps1): Curva ABC e sugestão de compra ----------
+DB3="$TMP/vendas.fdb"
+criar "$DB3" <<'SQL'
+CREATE TABLE PRODUTOS (CODIGO INTEGER NOT NULL PRIMARY KEY, DESCRICAO VARCHAR(60), COD_BARRAS VARCHAR(14), ESTOQUE NUMERIC(15,3));
+CREATE TABLE VENDAS (VENDA_ID INTEGER NOT NULL PRIMARY KEY, DATA_VENDA TIMESTAMP, CANCELADA CHAR(1));
+CREATE TABLE VENDAS_ITENS (ITEM_ID INTEGER NOT NULL PRIMARY KEY, VENDA_ID INTEGER, PRODUTO_ID INTEGER, QTD NUMERIC(15,3), VALOR_TOTAL NUMERIC(15,2));
+COMMIT;
+INSERT INTO PRODUTOS VALUES (1, 'DIPIRONA 500MG', '7896004713229', 50);
+INSERT INTO PRODUTOS VALUES (2, 'CLONAZEPAM 2MG', '7896004700001', 10);
+INSERT INTO PRODUTOS VALUES (3, 'AMOXICILINA 500MG CÁPS & "CIA"', NULL, 0);
+INSERT INTO PRODUTOS VALUES (12, 'ALPRAZOLAM 1MG', '7891', 3);
+INSERT INTO PRODUTOS VALUES (21, 'CEFALEXINA 500MG', '7892', 7);
+INSERT INTO PRODUTOS VALUES (6, 'AZITROMICINA', '7893', -2);
+INSERT INTO VENDAS VALUES (1, '2026-09-05 10:00', 'N');
+INSERT INTO VENDAS VALUES (2, '2026-09-20 11:00', NULL);
+INSERT INTO VENDAS VALUES (3, '2026-09-10 09:00', 'N');
+INSERT INTO VENDAS VALUES (4, '2026-09-15 15:00', 'S');
+INSERT INTO VENDAS VALUES (5, '2026-08-31 23:00', 'N');
+INSERT INTO VENDAS VALUES (6, '2026-09-30 22:00', 'N');
+INSERT INTO VENDAS VALUES (7, '2026-10-01 00:00', 'N');
+INSERT INTO VENDAS_ITENS VALUES (1, 1, 1, 40, 200);
+INSERT INTO VENDAS_ITENS VALUES (2, 2, 1, 20, 100);
+INSERT INTO VENDAS_ITENS VALUES (3, 3, 2, 2, 20);
+INSERT INTO VENDAS_ITENS VALUES (4, 3, 3, 4, 80);
+INSERT INTO VENDAS_ITENS VALUES (5, 4, 12, 1, 4);
+INSERT INTO VENDAS_ITENS VALUES (6, 5, 21, 3, 18);
+INSERT INTO VENDAS_ITENS VALUES (7, 6, 21, 1, 6);
+INSERT INTO VENDAS_ITENS VALUES (8, 7, 6, 1, 3);
+COMMIT;
+SQL
+B3="localhost:$DB3"
+printf "@{ ProdEstoque = 'ESTOQUE' }\n" > "$TMP/so-estoque.psd1"
+cat > "$TMP/esquema.psd1" <<'PSD'
+@{
+    ProdEstoque = 'ESTOQUE'
+    VendaTabela = 'VENDAS'; VendaChave = 'VENDA_ID'; VendaData = 'DATA_VENDA'; VendaCancelada = 'CANCELADA'
+    ItemTabela = 'VENDAS_ITENS'; ItemVenda = 'VENDA_ID'; ItemProduto = 'PRODUTO_ID'; ItemQuantidade = 'QTD'; ItemValorTotal = 'VALOR_TOTAL'
+}
+PSD
+# Cotação em branco mínima: aba "Cotação" com A3:B5 vazias e um contador com resultado guardado.
+python3 - "$TMP/modelo.xlsx" <<'PY'
+import sys, zipfile
+z = zipfile.ZipFile(sys.argv[1], 'w', zipfile.ZIP_DEFLATED)
+z.writestr('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>')
+z.writestr('_rels/.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>')
+z.writestr('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="LEIA-ME" sheetId="1" r:id="rId3"/><sheet name="Cotação" sheetId="2" r:id="rId4"/></sheets><calcPr refMode="A1"/></workbook>')
+z.writestr('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>')
+z.writestr('xl/worksheets/sheet1.xml', '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>')
+linhas = ''.join('<row r="%d"><c r="A%d" s="12"/><c r="B%d" s="12"/></row>' % (r, r, r) for r in range(3, 6))
+z.writestr('xl/worksheets/sheet2.xml', '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="B1" s="5" t="n"><f aca="false">COUNTA(A3:A1002)</f><v>0</v></c></row>' + linhas + '</sheetData></worksheet>')
+z.close()
+PY
+rel() { "$PWSH" -NoProfile -File "$DIR/relatorios-digifarma.ps1" -Isql "$(command -v "$ISQL")" -Banco "$B3" "$@" 2>&1; }
+celula() { python3 -c 'import sys,zipfile,re; s=zipfile.ZipFile(sys.argv[1]).read("xl/worksheets/sheet2.xml").decode(); m=re.search(r"<c r=\"%s\"[^>]*?(/>|>.*?</c>)" % sys.argv[2], s); print(m.group(0) if m else "")' "$1" "$2"; }
+
+out="$(rel -Esquema "$TMP/so-estoque.psd1" -Relatorio CurvaABC -DataInicio 01/09/2026 -DataFim 30/09/2026 -PastaSaida "$TMP/r0")"; rc=$?
+ok '[ $rc -eq 2 ] && grep -q "ainda falta configurar onde ficam as vendas" <<<"$out"' "relatórios sem configurar vendas: código $rc $out"
+out="$(rel -Esquema "$TMP/esquema.psd1" -Relatorio CurvaABC -DataInicio 30/09/2026 -DataFim 01/09/2026 -PastaSaida "$TMP/r0")"; rc=$?
+ok '[ $rc -eq 1 ] && grep -q "data de início é depois" <<<"$out"' "período invertido: código $rc"
+out="$(rel -Esquema "$TMP/esquema.psd1" -Relatorio CurvaABC -DataInicio 01/01/2026 -DataFim 31/01/2026 -PastaSaida "$TMP/r0")"; rc=$?
+ok '[ $rc -eq 1 ] && grep -q "não houve vendas" <<<"$out"' "período sem vendas: código $rc"
+
+# Curva ABC de setembro: cancelada e fora do período não contam; a venda das 22h do último dia conta
+out="$(rel -Esquema "$TMP/esquema.psd1" -Relatorio CurvaABC -DataInicio 01/09/2026 -DataFim 30/09/2026 -PastaSaida "$TMP/r1")"; rc=$?
+abc="$(cat "$TMP"/r1/curva-abc_2026-09-01_a_2026-09-30.csv 2>/dev/null)"
+ok '[ $rc -eq 0 ] && grep -q "A: 2  B: 1  C: 1" <<<"$out"' "curva ABC: código $rc $out"
+ok 'grep -q "^\"A\";\"1\";\"1\";\"7896004713229\";\"DIPIRONA 500MG\";\"60\";\"300,00\";\"73,89\";\"73,89\";\"50\"" <<<"$abc"' "curva ABC: linha da DIPIRONA"
+ok 'grep -q "^\"C\";\"4\";\"21\";.*\"1\";\"6,00\"" <<<"$abc" && ! grep -q "ALPRAZOLAM\|AZITROMICINA" <<<"$abc"' "curva ABC: cancelada/fora do período"
+
+# Sugestão de compra (30 dias) preenchendo a cotação em branco
+out="$(rel -Esquema "$TMP/esquema.psd1" -Modelo "$TMP/modelo.xlsx" -Relatorio SugestaoCompra -DataInicio 01/09/2026 -DataFim 30/09/2026 -PastaSaida "$TMP/r2")"; rc=$?
+cot="$(ls "$TMP"/r2/Cotacao_*.xlsx 2>/dev/null | head -1)"
+ok '[ $rc -eq 0 ] && grep -q "Sugestão de compra: 2 produtos" <<<"$out" && [ -n "$cot" ]' "sugestão: código $rc $out"
+ok 'grep -q "^\"1\";\"7896004713229\";\"DIPIRONA 500MG\";\"60\";\"2,00\";\"50\";\"10\"" "$TMP"/r2/sugestao-compra_*.csv' "sugestão: DIPIRONA 10"
+ok '[ "$(celula "$cot" A3)" = "<c r=\"A3\" s=\"12\" t=\"inlineStr\"><is><t xml:space=\"preserve\">AMOXICILINA 500MG CÁPS &amp; &quot;CIA&quot;</t></is></c>" ]' "cotação A3: $(celula "$cot" A3)"
+ok '[ "$(celula "$cot" B4)" = "<c r=\"B4\" s=\"12\"><v>10</v></c>" ] && [ "$(celula "$cot" A5)" = "<c r=\"A5\" s=\"12\"/>" ]' "cotação B4/A5"
+ok '[ "$(celula "$cot" B1)" = "<c r=\"B1\" s=\"5\" t=\"n\"><f aca=\"false\">COUNTA(A3:A1002)</f></c>" ]' "cotação: resultado guardado da fórmula não foi tirado: $(celula "$cot" B1)"
+ok 'unzip -p "$cot" xl/workbook.xml | grep -q "fullCalcOnLoad=\"1\""' "cotação: recálculo ao abrir"
+ok 'unzip -p "$TMP/modelo.xlsx" xl/worksheets/sheet2.xml | grep -q "<c r=\"A3\" s=\"12\"/>"' "o modelo em branco foi alterado"
+out="$(rel -Esquema "$TMP/esquema.psd1" -Modelo "$cot" -Relatorio SugestaoCompra -DataInicio 01/09/2026 -DataFim 30/09/2026 -PastaSaida "$TMP/r3")"; rc=$?
+ok '[ $rc -eq 1 ] && grep -q "não está em branco" <<<"$out"' "cotação já preenchida como modelo: código $rc"
+
 echo "passou: $PASS  falhou: $FAIL"
 [ "$FAIL" -eq 0 ]

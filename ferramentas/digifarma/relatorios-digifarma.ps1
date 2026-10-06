@@ -3,31 +3,77 @@
 Relatórios do Digifarma (banco Firebird). Só lê o banco: nunca altera nada.
 
 .DESCRIPTION
--Mapa: grava um arquivo de texto com as tabelas e colunas do banco (só os nomes e tipos, nenhum dado
-de cliente ou de venda). É o primeiro passo para montar os relatórios de vencimento, produtos parados,
-curva ABC, margem etc.
-Com -ContarLinhas, conta também as linhas de cada tabela (mais lento; só leitura).
+-Janela: abre uma janela com data de início, data de fim e um botão para cada relatório.
+-Relatorio CurvaABC: produtos vendidos no período, do maior para o menor faturamento, com a classe A, B ou C.
+-Relatorio SugestaoCompra: quanto comprar de cada produto para durar -DiasEstoque dias, pela venda média do período.
+   Grava uma planilha (CSV) e, se houver a planilha de cotação em branco (-Modelo), uma cópia dela com
+   PRODUTO e QUANT preenchidos na aba Cotação. A planilha em branco nunca é alterada.
+-Mapa: arquivo de texto com as tabelas e colunas do banco (só nomes e tipos, nenhum dado).
+Onde ficam as vendas no banco do Digifarma é configurado no bloco $EsquemaPadrao (ou num arquivo -Esquema .psd1).
 
 .EXAMPLE
-.\relatorios-digifarma.ps1 -Banco 'localhost:C:\Digifarma\Dados\Digifarma6.FDB' -Mapa -ContarLinhas
+.\relatorios-digifarma.ps1 -Banco 'localhost:C:\Digifarma\Dados\Digifarma6.FDB' -Janela
+.\relatorios-digifarma.ps1 -Banco 'localhost:C:\Digifarma\Dados\Digifarma6.FDB' -Relatorio CurvaABC -DataInicio 01/09/2026 -DataFim 30/09/2026
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$Banco,
     [string]$Usuario = 'SYSDBA',
+    [switch]$Janela,
     [switch]$Mapa,
     [switch]$ContarLinhas,
+    [ValidateSet('CurvaABC', 'SugestaoCompra')][string]$Relatorio,
+    [string]$DataInicio,
+    [string]$DataFim,
+    [ValidateRange(1, 365)][int]$DiasEstoque = 30,
+    [string]$Modelo,
+    [string]$Esquema,
     [string]$Isql,
     [string]$PastaSaida
 )
 $ErrorActionPreference = 'Stop'
 
 $Utf8Bom = New-Object Text.UTF8Encoding $true
+$Utf8SemBom = New-Object Text.UTF8Encoding $false
 $Utf8Estrito = New-Object Text.UTF8Encoding $false, $true
 $Ansi = [Text.Encoding]::GetEncoding(1252)
+$BR = [Globalization.CultureInfo]::GetCultureInfo('pt-BR')
+$Inv = [Globalization.CultureInfo]::InvariantCulture
+$TiposTexto = @(14, 37)
+$TiposQtd = @(7, 8, 16, 10, 27)
 $script:Senha = $null
+$script:ModoJanela = $false
+$script:Meta = $null
+if (-not $PastaSaida) { $PastaSaida = Join-Path $PSScriptRoot 'registros' }
+if (-not $Modelo) { $Modelo = Join-Path $PSScriptRoot 'Cotacao_Pronta_em_branco.xlsx' }
 
+# Onde ficam as vendas no banco do Digifarma. Vazio = ainda não confirmado pelo mapa do banco.
+# ProdChave e ProdDescricao vazios são descobertos sozinhos (chave primária e coluna de nome).
+$EsquemaPadrao = [ordered]@{
+    ProdTabela          = 'PRODUTOS'
+    ProdChave           = $null
+    ProdDescricao       = $null
+    ProdCodBarras       = $null
+    ProdEstoque         = 'PROD_SALDO'
+    VendaTabela         = $null   # cabeçalho da venda (data, cancelada)
+    VendaChave          = $null
+    VendaData           = $null
+    VendaCancelada      = $null
+    VendaCanceladaValor = 'S'
+    ItemTabela          = $null   # itens vendidos
+    ItemVenda           = $null   # coluna do item que aponta para a venda
+    ItemProduto         = $null
+    ItemQuantidade      = $null
+    ItemValorTotal      = $null   # valor total do item; ou ItemPrecoUnitario (quantidade × preço)
+    ItemPrecoUnitario   = $null
+    ItemData            = $null   # se a data estiver no próprio item (sem VendaTabela)
+    ItemCancelado       = $null
+    ItemCanceladoValor  = 'S'
+}
+
+# Na janela o erro vira mensagem na tela; na linha de comando, encerra com código de saída.
 function Stop-Script([string]$Msg, [int]$Codigo = 1) {
+    if ($script:ModoJanela) { throw $Msg }
     Write-Host "ERRO: $Msg"
     exit $Codigo
 }
@@ -133,17 +179,31 @@ function Format-Type([int]$Tipo, [int]$SubTipo, [int]$Escala, [int]$Precisao, [i
     return "TIPO $Tipo"
 }
 
-if (-not $Mapa) { Stop-Script 'escolha o que gerar: por enquanto só -Mapa.' 2 }
-
-$script:IsqlExe = Find-Isql
-if (-not $env:ISC_PASSWORD) {
-    $seg = Read-Host -AsSecureString "Senha do usuário $Usuario do Firebird"
-    $script:Senha = (New-Object Management.Automation.PSCredential('u', $seg)).GetNetworkCredential().Password
+function ConvertTo-Number([string]$S) {
+    $d = 0.0
+    if ([double]::TryParse($S, [Globalization.NumberStyles]::Float, $Inv, [ref]$d)) { return $d }
+    return 0.0
 }
 
-# ---------- mapa do banco: só metadados (nomes e tipos), nenhum dado ----------
-Write-Host "Lendo a estrutura do banco $Banco ..."
-$linhas = Invoke-Isql @'
+function New-OutputPath([string]$Nome) {
+    New-Item -ItemType Directory -Force $PastaSaida | Out-Null
+    return Join-Path (Resolve-Path -LiteralPath $PastaSaida).Path $Nome
+}
+
+# CSV para o Excel em português: separador ';', UTF-8 com BOM, tudo entre aspas.
+function Write-Csv([string]$Arquivo, [string[]]$Cabecalho, $Linhas) {
+    $saida = New-Object Collections.Generic.List[string]
+    foreach ($campos in @(, $Cabecalho) + @($Linhas)) {
+        $saida.Add((($campos | ForEach-Object { '"' + ([string]$_).Replace('"', '""') + '"' }) -join ';'))
+    }
+    [IO.File]::WriteAllLines($Arquivo, $saida, $Utf8Bom)
+}
+
+# ---------- estrutura do banco (só metadados) ----------
+function Get-Meta {
+    if ($script:Meta) { return $script:Meta }
+    Write-Host "Lendo a estrutura do banco $Banco ..."
+    $linhas = Invoke-Isql @'
 SELECT '#C|' || TRIM(rf.RDB$RELATION_NAME) || '|' || TRIM(rf.RDB$FIELD_NAME) || '|' ||
        CAST(f.RDB$FIELD_TYPE AS VARCHAR(5)) || '|' || CAST(COALESCE(f.RDB$FIELD_SUB_TYPE, 0) AS VARCHAR(5)) || '|' ||
        CAST(COALESCE(f.RDB$FIELD_SCALE, 0) AS VARCHAR(5)) || '|' || CAST(COALESCE(f.RDB$FIELD_PRECISION, 0) AS VARCHAR(5)) || '|' ||
@@ -176,60 +236,476 @@ WHERE COALESCE(i.RDB$SYSTEM_FLAG, 0) = 0
 ORDER BY i.RDB$RELATION_NAME, i.RDB$INDEX_NAME, s.RDB$FIELD_POSITION;
 SELECT '#P|' || TRIM(RDB$PROCEDURE_NAME) FROM RDB$PROCEDURES WHERE RDB$PROCEDURE_NAME NOT STARTING WITH 'RDB$' ORDER BY 1;
 '@
-$colunas = @(Get-Rows $linhas 'C' 10)
-$chaves = @(Get-Rows $linhas 'K' 2)
-$ligacoes = @(Get-Rows $linhas 'F' 4)
-$indices = @(Get-Rows $linhas 'I' 4)
-$procs = @(Get-Rows $linhas 'P' 1 | ForEach-Object { $_[0] })
-if (-not $colunas) { Stop-Script 'o banco não tem tabelas de usuário. Confira o caminho em -Banco.' }
-
-$tabelas = @($colunas | ForEach-Object { $_[0] } | Select-Object -Unique)
-$ehVisao = @{}
-foreach ($c in $colunas) { $ehVisao[$c[0]] = ($c[9] -eq 'V') }
-
-$contagem = @{}
-if ($ContarLinhas) {
-    $soTabelas = @($tabelas | Where-Object { -not $ehVisao[$_] })
-    Write-Host "Contando as linhas de $($soTabelas.Count) tabela(s) (só leitura; pode levar alguns minutos) ..."
-    $sql = for ($i = 0; $i -lt $soTabelas.Count; $i++) { "SELECT '#N|$i|' || CAST(COUNT(*) AS VARCHAR(20)) FROM $(Q $soTabelas[$i]);" }
-    foreach ($r in @(Get-Rows (Invoke-Isql ($sql -join "`n")) 'N' 2)) { $contagem[$soTabelas[[int]$r[0]]] = [long]$r[1] }
-}
-
-$txt = New-Object Text.StringBuilder
-[void]$txt.AppendLine('MAPA DO BANCO DO DIGIFARMA')
-[void]$txt.AppendLine('Só nomes e tipos de tabelas e colunas: nenhum dado de cliente, venda ou produto.')
-[void]$txt.AppendLine("Banco: $Banco")
-[void]$txt.AppendLine("Gerado em: $(Get-Date -Format 'dd/MM/yyyy HH:mm')")
-[void]$txt.AppendLine("Tabelas: $(@($tabelas | Where-Object { -not $ehVisao[$_] }).Count)   Visões: $(@($tabelas | Where-Object { $ehVisao[$_] }).Count)   Procedimentos: $($procs.Count)")
-[void]$txt.AppendLine('Legenda: * chave primária, ! obrigatória, = calculada')
-foreach ($t in $tabelas) {
-    $pk = @($chaves | Where-Object { $_[0] -eq $t } | ForEach-Object { $_[1] })
-    $tipoTab = if ($ehVisao[$t]) { 'visão' } else { 'tabela' }
-    $qtd = if ($contagem.ContainsKey($t)) { ", $($contagem[$t].ToString('N0', [Globalization.CultureInfo]::GetCultureInfo('pt-BR'))) linha$(if ($contagem[$t] -ne 1) { 's' })" } else { '' }
-    [void]$txt.AppendLine('')
-    [void]$txt.AppendLine("== $t  [$tipoTab$qtd]")
-    foreach ($c in @($colunas | Where-Object { $_[0] -eq $t })) {
-        $marca = $(if ($pk -contains $c[1]) { '*' } else { ' ' }) + $(if ($c[7] -eq 'S') { '!' } else { ' ' }) + $(if ($c[8] -eq 'S') { '=' } else { ' ' })
-        [void]$txt.AppendLine(('  {0} {1,-32} {2}' -f $marca, $c[1], (Format-Type ([int]$c[2]) ([int]$c[3]) ([int]$c[4]) ([int]$c[5]) ([int]$c[6]))))
+    $colunas = @(Get-Rows $linhas 'C' 10)
+    if (-not $colunas) { Stop-Script 'o banco não tem tabelas de usuário. Confira o caminho em -Banco.' }
+    $script:Meta = @{
+        Colunas  = $colunas
+        Chaves   = @(Get-Rows $linhas 'K' 2)
+        Ligacoes = @(Get-Rows $linhas 'F' 4)
+        Indices  = @(Get-Rows $linhas 'I' 4)
+        Procs    = @(Get-Rows $linhas 'P' 1 | ForEach-Object { $_[0] })
     }
-    $fks = @($ligacoes | Where-Object { $_[0] -eq $t })
-    foreach ($f in $fks) { [void]$txt.AppendLine("     liga: $($f[1]) -> $($f[2]).$($f[3])") }
-    $idx = @($indices | Where-Object { $_[0] -eq $t } | Group-Object { $_[1] })
-    if ($idx) {
-        $desc = $idx | ForEach-Object { "$(($_.Group | ForEach-Object { $_[3] }) -join '+')$(if ($_.Group[0][2] -eq '1') { ' (único)' })" }
-        [void]$txt.AppendLine("     índices: $($desc -join '; ')")
-    }
-}
-if ($procs) {
-    [void]$txt.AppendLine('')
-    [void]$txt.AppendLine("== PROCEDIMENTOS: $($procs -join ', ')")
+    return $script:Meta
 }
 
-if (-not $PastaSaida) { $PastaSaida = Join-Path $PSScriptRoot 'registros' }
-New-Item -ItemType Directory -Force $PastaSaida | Out-Null
-$arquivo = Join-Path (Resolve-Path -LiteralPath $PastaSaida).Path ("mapa-do-banco-$(Get-Date -Format 'yyyyMMdd-HHmm').txt")
-[IO.File]::WriteAllText($arquivo, $txt.ToString(), $Utf8Bom)
-Write-Host ''
-Write-Host "Mapa gravado em: $arquivo"
-Write-Host "($($tabelas.Count) tabelas e visões, $($colunas.Count) colunas.) Mande este arquivo na conversa para eu montar os relatórios."
-if ($env:OS -eq 'Windows_NT') { Start-Process explorer.exe "/select,`"$arquivo`"" }
+# ---------- mapa do banco: só nomes e tipos, nenhum dado ----------
+function New-Mapa([bool]$Contar) {
+    $m = Get-Meta
+    $tabelas = @($m.Colunas | ForEach-Object { $_[0] } | Select-Object -Unique)
+    $ehVisao = @{}
+    foreach ($c in $m.Colunas) { $ehVisao[$c[0]] = ($c[9] -eq 'V') }
+
+    $contagem = @{}
+    if ($Contar) {
+        $soTabelas = @($tabelas | Where-Object { -not $ehVisao[$_] })
+        Write-Host "Contando as linhas de $($soTabelas.Count) tabela(s) (só leitura; pode levar alguns minutos) ..."
+        $sql = for ($i = 0; $i -lt $soTabelas.Count; $i++) { "SELECT '#N|$i|' || CAST(COUNT(*) AS VARCHAR(20)) FROM $(Q $soTabelas[$i]);" }
+        foreach ($r in @(Get-Rows (Invoke-Isql ($sql -join "`n")) 'N' 2)) { $contagem[$soTabelas[[int]$r[0]]] = [long]$r[1] }
+    }
+
+    $txt = New-Object Text.StringBuilder
+    [void]$txt.AppendLine('MAPA DO BANCO DO DIGIFARMA')
+    [void]$txt.AppendLine('Só nomes e tipos de tabelas e colunas: nenhum dado de cliente, venda ou produto.')
+    [void]$txt.AppendLine("Banco: $Banco")
+    [void]$txt.AppendLine("Gerado em: $(Get-Date -Format 'dd/MM/yyyy HH:mm')")
+    [void]$txt.AppendLine("Tabelas: $(@($tabelas | Where-Object { -not $ehVisao[$_] }).Count)   Visões: $(@($tabelas | Where-Object { $ehVisao[$_] }).Count)   Procedimentos: $($m.Procs.Count)")
+    [void]$txt.AppendLine('Legenda: * chave primária, ! obrigatória, = calculada')
+    foreach ($t in $tabelas) {
+        $pk = @($m.Chaves | Where-Object { $_[0] -eq $t } | ForEach-Object { $_[1] })
+        $tipoTab = if ($ehVisao[$t]) { 'visão' } else { 'tabela' }
+        $qtd = if ($contagem.ContainsKey($t)) { ", $($contagem[$t].ToString('N0', $BR)) linha$(if ($contagem[$t] -ne 1) { 's' })" } else { '' }
+        [void]$txt.AppendLine('')
+        [void]$txt.AppendLine("== $t  [$tipoTab$qtd]")
+        foreach ($c in @($m.Colunas | Where-Object { $_[0] -eq $t })) {
+            $marca = $(if ($pk -contains $c[1]) { '*' } else { ' ' }) + $(if ($c[7] -eq 'S') { '!' } else { ' ' }) + $(if ($c[8] -eq 'S') { '=' } else { ' ' })
+            [void]$txt.AppendLine(('  {0} {1,-32} {2}' -f $marca, $c[1], (Format-Type ([int]$c[2]) ([int]$c[3]) ([int]$c[4]) ([int]$c[5]) ([int]$c[6]))))
+        }
+        foreach ($f in @($m.Ligacoes | Where-Object { $_[0] -eq $t })) { [void]$txt.AppendLine("     liga: $($f[1]) -> $($f[2]).$($f[3])") }
+        $idx = @($m.Indices | Where-Object { $_[0] -eq $t } | Group-Object { $_[1] })
+        if ($idx) {
+            $desc = $idx | ForEach-Object { "$(($_.Group | ForEach-Object { $_[3] }) -join '+')$(if ($_.Group[0][2] -eq '1') { ' (único)' })" }
+            [void]$txt.AppendLine("     índices: $($desc -join '; ')")
+        }
+    }
+    if ($m.Procs) {
+        [void]$txt.AppendLine('')
+        [void]$txt.AppendLine("== PROCEDIMENTOS: $($m.Procs -join ', ')")
+    }
+    $arquivo = New-OutputPath "mapa-do-banco-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [IO.File]::WriteAllText($arquivo, $txt.ToString(), $Utf8Bom)
+    Write-Host "Mapa gravado em: $arquivo ($($tabelas.Count) tabelas e visões, $($m.Colunas.Count) colunas)."
+    return $arquivo
+}
+
+# ---------- onde ficam produtos e vendas ----------
+function Find-Column($Tabela, [string]$Coluna, [string]$Chave) {
+    $c = @((Get-Meta).Colunas | Where-Object { $_[0] -eq $Tabela -and $_[1] -eq $Coluna })
+    if (-not $c) { Stop-Script "configuração $Chave = '$Coluna': essa coluna não existe em $Tabela." }
+    return $c[0]
+}
+
+function Resolve-Esquema {
+    $e = [ordered]@{}
+    foreach ($k in $EsquemaPadrao.Keys) { $e[$k] = $EsquemaPadrao[$k] }
+    if ($Esquema) {
+        if (-not (Test-Path -LiteralPath $Esquema -PathType Leaf)) { Stop-Script "arquivo de configuração '$Esquema' não encontrado." }
+        $cfg = Import-PowerShellDataFile -LiteralPath $Esquema
+        foreach ($k in $cfg.Keys) {
+            if (-not $e.Contains($k)) { Stop-Script "chave desconhecida '$k' em $Esquema." }
+            $e[$k] = $cfg[$k]
+        }
+    }
+    foreach ($k in @($e.Keys)) {
+        if ($e[$k] -and $k -notmatch 'Valor$' -and $e[$k] -notmatch '^[A-Za-z_][A-Za-z0-9_$]*$') { Stop-Script "configuração $k = '$($e[$k])': nome inválido." }
+        if ($e[$k] -and $k -match 'Valor$' -and $e[$k] -notmatch '^[A-Za-z0-9]{1,10}$') { Stop-Script "configuração $k = '$($e[$k])': valor inválido." }
+    }
+    $m = Get-Meta
+    $tabelas = @($m.Colunas | ForEach-Object { $_[0] } | Select-Object -Unique)
+    foreach ($k in @('ProdTabela', 'VendaTabela', 'ItemTabela')) {
+        if (-not $e[$k]) { continue }
+        $achada = @($tabelas | Where-Object { $_ -eq $e[$k] })
+        if (-not $achada) { Stop-Script "configuração $k = '$($e[$k])': essa tabela não existe no banco." }
+        $e[$k] = $achada[0]
+    }
+
+    # Produtos: chave primária e coluna de nome descobertas sozinhas quando não informadas.
+    $prod = $e.ProdTabela
+    $colsProd = @($m.Colunas | Where-Object { $_[0] -eq $prod })
+    if (-not $e.ProdChave) {
+        $pk = @($m.Chaves | Where-Object { $_[0] -eq $prod })
+        if ($pk.Count -ne 1) { Stop-Script "não achei a chave de $prod; informe ProdChave na configuração." }
+        $e.ProdChave = $pk[0][1]
+    }
+    if (-not $e.ProdDescricao) {
+        $textos = @($colsProd | Where-Object { $TiposTexto -contains [int]$_[2] })
+        foreach ($padrao in @('^(PROD_?)?DESCRICAO$', '^(PROD_?)?NOME$', '^(PROD_?)?DESCR$', '^(PROD_?)?DESC$', '^DESCRICAO_?PRODUTO$', '^NOME_?PRODUTO$', 'DESCRICAO', 'DESCRI', '^NOME', 'NOME$')) {
+            $d = $textos | Where-Object { $_[1] -match $padrao } | Select-Object -First 1
+            if ($d) { $e.ProdDescricao = $d[1]; break }
+        }
+        if (-not $e.ProdDescricao) { Stop-Script "não achei a coluna com o nome do produto em $prod; informe ProdDescricao na configuração." }
+    }
+    if (-not $e.ProdCodBarras) {
+        $b = $colsProd | Where-Object { $TiposTexto -contains [int]$_[2] -and $_[1] -match 'BARRA|EAN|GTIN' } | Select-Object -First 1
+        if ($b) { $e.ProdCodBarras = $b[1] }
+    }
+    foreach ($k in @('ProdChave', 'ProdDescricao', 'ProdCodBarras', 'ProdEstoque')) {
+        if ($e[$k]) { $e[$k] = (Find-Column $prod $e[$k] $k)[1] }
+    }
+
+    # Vendas: sem essas informações não há como somar o que foi vendido no período.
+    $faltam = @()
+    foreach ($k in @('ItemTabela', 'ItemProduto', 'ItemQuantidade')) { if (-not $e[$k]) { $faltam += $k } }
+    if (-not $e.ItemValorTotal -and -not $e.ItemPrecoUnitario) { $faltam += 'ItemValorTotal' }
+    $dataNaVenda = $e.VendaTabela -and $e.VendaChave -and $e.ItemVenda -and $e.VendaData
+    if (-not $dataNaVenda -and -not $e.ItemData) { $faltam += 'VendaData' }
+    if ($faltam) {
+        Stop-Script ("ainda falta configurar onde ficam as vendas no seu Digifarma ($($faltam -join ', ')).`n" +
+            'Gere o mapa do banco (botão "Gerar mapa do banco") e mande o arquivo na conversa.') 2
+    }
+    foreach ($k in @('ItemVenda', 'ItemProduto', 'ItemQuantidade', 'ItemValorTotal', 'ItemPrecoUnitario', 'ItemData', 'ItemCancelado')) {
+        if ($e[$k]) { $e[$k] = (Find-Column $e.ItemTabela $e[$k] $k)[1] }
+    }
+    if ($e.VendaTabela) {
+        foreach ($k in @('VendaChave', 'VendaData', 'VendaCancelada')) {
+            if ($e[$k]) { $e[$k] = (Find-Column $e.VendaTabela $e[$k] $k)[1] }
+        }
+    }
+    return $e
+}
+
+# Soma, por produto, o que foi vendido entre as duas datas (dia final inteiro incluído).
+function Get-Vendas([datetime]$Inicio, [datetime]$Fim) {
+    $e = Resolve-Esquema
+    $i = 'I.'; $p = 'P.'
+    $chave = "COALESCE(CAST($p$(Q $e.ProdChave) AS VARCHAR(40)), '')"
+    $desc = "COALESCE(REPLACE(REPLACE(REPLACE(SUBSTRING($p$(Q $e.ProdDescricao) FROM 1 FOR 100), '|', '/'), ASCII_CHAR(13), ' '), ASCII_CHAR(10), ' '), '')"
+    $barras = if ($e.ProdCodBarras) { "COALESCE(TRIM(CAST($p$(Q $e.ProdCodBarras) AS VARCHAR(40))), '')" } else { "''" }
+    $estoque = if ($e.ProdEstoque) { "COALESCE(CAST($p$(Q $e.ProdEstoque) AS VARCHAR(40)), '0')" } else { "'0'" }
+    $qtd = "$i$(Q $e.ItemQuantidade)"
+    $valor = if ($e.ItemValorTotal) { "$i$(Q $e.ItemValorTotal)" } else { "$qtd * $i$(Q $e.ItemPrecoUnitario)" }
+    $de = "CAST('$($Inicio.ToString('yyyy-MM-dd', $Inv))' AS TIMESTAMP)"
+    $ate = "CAST('$($Fim.AddDays(1).ToString('yyyy-MM-dd', $Inv))' AS TIMESTAMP)"
+
+    $from = "FROM $(Q $e.ItemTabela) I"
+    if ($e.VendaTabela -and $e.VendaChave -and $e.ItemVenda -and $e.VendaData) {
+        $from += " JOIN $(Q $e.VendaTabela) V ON V.$(Q $e.VendaChave) = I.$(Q $e.ItemVenda)"
+        $data = "V.$(Q $e.VendaData)"
+    } else {
+        $data = "I.$(Q $e.ItemData)"
+    }
+    $from += " JOIN $(Q $e.ProdTabela) P ON P.$(Q $e.ProdChave) = I.$(Q $e.ItemProduto)"
+    $where = "$data >= $de AND $data < $ate"
+    if ($e.VendaTabela -and $e.VendaCancelada) { $where += " AND (V.$(Q $e.VendaCancelada) IS NULL OR V.$(Q $e.VendaCancelada) <> '$($e.VendaCanceladaValor)')" }
+    if ($e.ItemCancelado) { $where += " AND (I.$(Q $e.ItemCancelado) IS NULL OR I.$(Q $e.ItemCancelado) <> '$($e.ItemCanceladoValor)')" }
+    $grupo = @("$p$(Q $e.ProdChave)", "$p$(Q $e.ProdDescricao)")
+    if ($e.ProdCodBarras) { $grupo += "$p$(Q $e.ProdCodBarras)" }
+    if ($e.ProdEstoque) { $grupo += "$p$(Q $e.ProdEstoque)" }
+
+    $sql = "SELECT '#V|' || $chave || '|' || $desc || '|' || $barras || '|' || CAST(SUM($qtd) AS VARCHAR(40)) || '|' || " +
+        "CAST(SUM($valor) AS VARCHAR(40)) || '|' || $estoque $from WHERE $where GROUP BY $($grupo -join ', ');"
+    Write-Host "Somando as vendas de $($Inicio.ToString('dd/MM/yyyy')) a $($Fim.ToString('dd/MM/yyyy')) ..."
+    return @(Get-Rows (Invoke-Isql $sql) 'V' 6 | ForEach-Object {
+            [pscustomobject]@{
+                Codigo     = $_[0].TrimEnd()
+                Descricao  = $_[1].TrimEnd()
+                CodBarras  = $_[2].Trim()
+                Quantidade = (ConvertTo-Number $_[3])
+                Valor      = (ConvertTo-Number $_[4])
+                Estoque    = (ConvertTo-Number $_[5])
+            }
+        })
+}
+
+function Test-Periodo([datetime]$Inicio, [datetime]$Fim) {
+    if ($Inicio.Date -gt $Fim.Date) { Stop-Script 'a data de início é depois da data de fim.' }
+}
+
+# ---------- Curva ABC ----------
+# Classe pelo faturamento acumulado ANTES do produto: até 80% = A, até 95% = B, o resto = C.
+function New-CurvaABC([datetime]$Inicio, [datetime]$Fim) {
+    Test-Periodo $Inicio $Fim
+    $vendas = @(Get-Vendas $Inicio $Fim | Where-Object { $_.Valor -gt 0 } | Sort-Object -Property @{ Expression = 'Valor'; Descending = $true }, Descricao)
+    if (-not $vendas) { Stop-Script 'não houve vendas nesse período.' }
+    $total = ($vendas | Measure-Object -Property Valor -Sum).Sum
+    $acum = 0.0
+    $pos = 0
+    $resumo = @{ A = 0; B = 0; C = 0 }
+    $linhas = @(foreach ($v in $vendas) {
+        $pos++
+        $antes = $acum / $total
+        $acum += $v.Valor
+        $classe = if ($antes -lt 0.8) { 'A' } elseif ($antes -lt 0.95) { 'B' } else { 'C' }
+        $resumo[$classe]++
+        , @($classe, $pos, $v.Codigo, $v.CodBarras, $v.Descricao, $v.Quantidade.ToString('0.###', $BR), $v.Valor.ToString('0.00', $BR),
+            ($v.Valor / $total * 100).ToString('0.00', $BR), ($acum / $total * 100).ToString('0.00', $BR), $v.Estoque.ToString('0.###', $BR))
+    })
+    $arquivo = New-OutputPath "curva-abc_$($Inicio.ToString('yyyy-MM-dd'))_a_$($Fim.ToString('yyyy-MM-dd')).csv"
+    Write-Csv $arquivo @('Classe', 'Posição', 'Código', 'Código de barras', 'Descrição', 'Quantidade vendida', 'Faturamento (R$)',
+        '% do faturamento', '% acumulado', 'Estoque atual') $linhas
+    $texto = "Curva ABC: $($vendas.Count) produtos, faturamento R$ $($total.ToString('N2', $BR)). A: $($resumo.A)  B: $($resumo.B)  C: $($resumo.C)."
+    Write-Host $texto
+    Write-Host "Arquivo: $arquivo"
+    return [pscustomobject]@{ Arquivo = $arquivo; Resumo = $texto }
+}
+
+# ---------- Sugestão de compra ----------
+# Média de venda por dia no período × dias de estoque desejados − estoque atual (negativo conta como zero).
+function New-SugestaoCompra([datetime]$Inicio, [datetime]$Fim, [int]$Dias) {
+    Test-Periodo $Inicio $Fim
+    $diasPeriodo = ($Fim.Date - $Inicio.Date).Days + 1
+    $itens = @(foreach ($v in @(Get-Vendas $Inicio $Fim)) {
+            if ($v.Quantidade -le 0) { continue }
+            $media = $v.Quantidade / $diasPeriodo
+            $sugestao = [math]::Ceiling([math]::Round($media * $Dias - [math]::Max($v.Estoque, 0), 6))
+            if ($sugestao -le 0) { continue }
+            $v | Add-Member -NotePropertyName Media -NotePropertyValue $media -PassThru |
+                Add-Member -NotePropertyName Sugestao -NotePropertyValue ([long]$sugestao) -PassThru
+        })
+    if (-not $itens) { Stop-Script "pelas vendas desse período, o estoque atual já dá para $Dias dias; não há o que comprar." }
+    $itens = @($itens | Sort-Object Descricao)
+    $arquivo = New-OutputPath "sugestao-compra_$($Inicio.ToString('yyyy-MM-dd'))_a_$($Fim.ToString('yyyy-MM-dd')).csv"
+    $linhas = @(foreach ($v in $itens) {
+        , @($v.Codigo, $v.CodBarras, $v.Descricao, $v.Quantidade.ToString('0.###', $BR), $v.Media.ToString('0.00', $BR),
+            $v.Estoque.ToString('0.###', $BR), $v.Sugestao)
+    })
+    Write-Csv $arquivo @('Código', 'Código de barras', 'Descrição', 'Vendido no período', 'Média por dia', 'Estoque atual', "Comprar (para $Dias dias)") $linhas
+    $texto = "Sugestão de compra: $($itens.Count) produtos para $Dias dias de estoque (vendas de $diasPeriodo dias)."
+    Write-Host $texto
+    Write-Host "Planilha: $arquivo"
+    $cotacao = $null
+    if (Test-Path -LiteralPath $Modelo -PathType Leaf) {
+        $cotacao = New-OutputPath "Cotacao_$(Get-Date -Format 'yyyy-MM-dd_HHmm').xlsx"
+        $escritos = Write-Cotacao $itens $Modelo $cotacao
+        Write-Host "Cotação preenchida ($escritos produtos): $cotacao"
+        if ($escritos -lt $itens.Count) { $texto += " A cotação tem lugar para $escritos produtos; os outros estão só na planilha CSV." }
+    } else {
+        $texto += " (Não achei a cotação em branco em $Modelo; gerei só a planilha CSV.)"
+        Write-Host "Cotação em branco não encontrada em $Modelo; só o CSV foi gerado."
+    }
+    return [pscustomobject]@{ Arquivo = $(if ($cotacao) { $cotacao } else { $arquivo }); Csv = $arquivo; Cotacao = $cotacao; Resumo = $texto }
+}
+
+# ---------- planilha de cotação ----------
+# Copia a cotação em branco e preenche PRODUTO (coluna A) e QUANT (coluna B) da aba "Cotação" a partir
+# da linha 3, mexendo direto no XML do .xlsx (não precisa do Excel). Fórmulas e formatação ficam como estão;
+# o Excel recalcula tudo ao abrir. Devolve quantos produtos couberam.
+function Write-Cotacao($Itens, [string]$ModeloXlsx, [string]$Destino) {
+    Add-Type -AssemblyName System.IO.Compression
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $primeira = 3
+    $ultima = 1002
+    $lista = @($Itens)
+    if ($lista.Count -gt ($ultima - $primeira + 1)) {
+        # Cabem 1000: ficam os mais vendidos, em ordem alfabética.
+        $lista = @($lista | Sort-Object Quantidade -Descending | Select-Object -First ($ultima - $primeira + 1) | Sort-Object Descricao)
+    }
+    Copy-Item -LiteralPath $ModeloXlsx -Destination $Destino -Force
+    $zip = [IO.Compression.ZipFile]::Open($Destino, [IO.Compression.ZipArchiveMode]::Update)
+    try {
+        $ler = {
+            param($Nome)
+            $ent = $zip.GetEntry($Nome)
+            if (-not $ent) { Stop-Script "a planilha modelo não tem '$Nome'; ela é mesmo um .xlsx?" }
+            $sr = New-Object IO.StreamReader($ent.Open(), $Utf8SemBom)
+            try { return $sr.ReadToEnd() } finally { $sr.Dispose() }
+        }
+        $gravar = {
+            param($Nome, $Texto)
+            $zip.GetEntry($Nome).Delete()
+            $ent = $zip.CreateEntry($Nome, [IO.Compression.CompressionLevel]::Optimal)
+            $sw = New-Object IO.StreamWriter($ent.Open(), $Utf8SemBom)
+            try { $sw.Write($Texto) } finally { $sw.Dispose() }
+        }
+        # Aba "Cotação" -> arquivo da aba, pelo workbook.xml e suas relações.
+        $wb = & $ler 'xl/workbook.xml'
+        $rid = $null
+        foreach ($s in [regex]::Matches($wb, '<sheet\b[^>]*>')) {
+            $nome = [regex]::Match($s.Value, '\bname="([^"]*)"').Groups[1].Value
+            if ($nome -eq 'Cotação') { $rid = [regex]::Match($s.Value, '\br:id="([^"]*)"').Groups[1].Value }
+        }
+        if (-not $rid) { Stop-Script "a planilha modelo não tem a aba 'Cotação'." }
+        $rels = & $ler 'xl/_rels/workbook.xml.rels'
+        $alvo = $null
+        foreach ($r in [regex]::Matches($rels, '<Relationship\b[^>]*>')) {
+            if ([regex]::Match($r.Value, '\bId="([^"]*)"').Groups[1].Value -eq $rid) { $alvo = [regex]::Match($r.Value, '\bTarget="([^"]*)"').Groups[1].Value }
+        }
+        if (-not $alvo) { Stop-Script 'a planilha modelo está com a aba Cotação sem arquivo.' }
+        $caminho = if ($alvo.StartsWith('/')) { $alvo.TrimStart('/') } else { "xl/$alvo" }
+
+        $preencher = @{}
+        for ($k = 0; $k -lt $lista.Count; $k++) {
+            $v = $lista[$k]
+            $nomeProduto = if ($v.CodBarras) { "$($v.Descricao) - $($v.CodBarras)" } else { $v.Descricao }
+            $nomeProduto = [Security.SecurityElement]::Escape(($nomeProduto -replace '[\x00-\x08\x0B\x0C\x0E-\x1F]', ''))
+            $preencher["A$($primeira + $k)"] = '<is><t xml:space="preserve">' + $nomeProduto + '</t></is>'
+            $preencher["B$($primeira + $k)"] = '<v>' + ([long]$v.Sugestao).ToString($Inv) + '</v>'
+        }
+        $estado = @{ Feitos = 0 }
+        $folha = & $ler $caminho
+        # Só célula vazia (<c r="A3" s="12"/>) é preenchida: se a aba já tiver produtos, nada casa e o programa para.
+        $folha = [regex]::Replace($folha, '<c r="([AB]\d+)"((?:\s+s="\d+")?)\s*/>', [Text.RegularExpressions.MatchEvaluator] {
+                param($m)
+                $ref = $m.Groups[1].Value
+                if (-not $preencher.ContainsKey($ref)) { return $m.Value }
+                $estado.Feitos++
+                $tipo = if ($ref.StartsWith('A')) { ' t="inlineStr"' } else { '' }
+                return "<c r=`"$ref`"$($m.Groups[2].Value)$tipo>$($preencher[$ref])</c>"
+            })
+        if ($estado.Feitos -ne $preencher.Count) {
+            Stop-Script "a aba Cotação do modelo não está em branco nas linhas $primeira a $($primeira + $lista.Count - 1) (ou mudou de formato). Use a planilha em branco."
+        }
+        # Tira das fórmulas o resultado guardado (feito com a planilha vazia): sem ele, Excel e LibreOffice
+        # recalculam tudo ao abrir, inclusive os totais do topo e as abas de fornecedores.
+        $semCache = '(<c\b[^>]*>)(<f\b[^>]*(?:/>|>[^<]*</f>))<v>[^<]*</v>(</c>)'
+        & $gravar $caminho ([regex]::Replace($folha, $semCache, '$1$2$3'))
+        $outras = @($zip.Entries | Where-Object { $_.FullName -like 'xl/worksheets/*.xml' -and $_.FullName -ne $caminho } | ForEach-Object { $_.FullName })
+        foreach ($nome in $outras) { & $gravar $nome ([regex]::Replace((& $ler $nome), $semCache, '$1$2$3')) }
+        # Pede ao Excel para recalcular todas as fórmulas ao abrir.
+        if ($wb -match '<calcPr\b[^>]*\bfullCalcOnLoad=') {
+            $wb = $wb -replace '(<calcPr\b[^>]*\bfullCalcOnLoad=)"[^"]*"', '$1"1"'
+        } elseif ($wb -match '<calcPr\b') {
+            $wb = $wb -replace '<calcPr\b', '<calcPr fullCalcOnLoad="1"'
+        } else {
+            $wb = $wb -replace '</sheets>', '</sheets><calcPr fullCalcOnLoad="1"/>'
+        }
+        & $gravar 'xl/workbook.xml' $wb
+    } finally {
+        $zip.Dispose()
+    }
+    return $lista.Count
+}
+
+function Read-Data([string]$Texto, [string]$Nome) {
+    $d = [datetime]::MinValue
+    if ([datetime]::TryParseExact($Texto, [string[]]@('dd/MM/yyyy', 'd/M/yyyy', 'yyyy-MM-dd'), $Inv, [Globalization.DateTimeStyles]::None, [ref]$d)) { return $d }
+    Stop-Script "$Nome '$Texto' inválida; use dd/mm/aaaa (ex.: 01/09/2026)." 2
+}
+
+# ---------- janela ----------
+function Show-Janela {
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+    [Windows.Forms.Application]::EnableVisualStyles()
+    $script:ModoJanela = $true
+
+    $f = New-Object Windows.Forms.Form
+    $f.Text = 'Relatórios do Digifarma'
+    $f.StartPosition = 'CenterScreen'
+    $f.FormBorderStyle = 'FixedDialog'
+    $f.MaximizeBox = $false
+    $f.Font = New-Object Drawing.Font('Segoe UI', 10)
+    $f.ClientSize = New-Object Drawing.Size(540, 340)
+    $script:Form = $f
+
+    $novoRotulo = {
+        param($Texto, $X, $Y, $L)
+        $r = New-Object Windows.Forms.Label
+        $r.Text = $Texto
+        $r.Location = New-Object Drawing.Point($X, $Y)
+        $r.Size = New-Object Drawing.Size($L, 24)
+        $f.Controls.Add($r)
+    }
+    & $novoRotulo 'Período das vendas que a pesquisa vai usar:' 16 14 500
+    & $novoRotulo 'De' 16 46 30
+    $script:DIni = New-Object Windows.Forms.DateTimePicker
+    $script:DIni.Format = [Windows.Forms.DateTimePickerFormat]::Short
+    $script:DIni.Location = New-Object Drawing.Point(48, 42)
+    $script:DIni.Width = 130
+    $script:DIni.Value = (Get-Date).Date.AddDays(-29)
+    $f.Controls.Add($script:DIni)
+    & $novoRotulo 'até' 192 46 34
+    $script:DFim = New-Object Windows.Forms.DateTimePicker
+    $script:DFim.Format = [Windows.Forms.DateTimePickerFormat]::Short
+    $script:DFim.Location = New-Object Drawing.Point(228, 42)
+    $script:DFim.Width = 130
+    $script:DFim.Value = (Get-Date).Date
+    $f.Controls.Add($script:DFim)
+
+    & $novoRotulo 'Sugestão de compra: comprar para quantos dias de estoque?' 16 86 400
+    $script:NDias = New-Object Windows.Forms.NumericUpDown
+    $script:NDias.Minimum = 1
+    $script:NDias.Maximum = 365
+    $script:NDias.Value = [decimal]$DiasEstoque
+    $script:NDias.Location = New-Object Drawing.Point(420, 83)
+    $script:NDias.Width = 70
+    $f.Controls.Add($script:NDias)
+
+    $script:Botoes = @()
+    $novoBotao = {
+        param($Texto, $X, $Y, $L, $H, $Acao)
+        $b = New-Object Windows.Forms.Button
+        $b.Text = $Texto
+        $b.Location = New-Object Drawing.Point($X, $Y)
+        $b.Size = New-Object Drawing.Size($L, $H)
+        $b.Tag = $Acao
+        $b.Add_Click({ param($origem) Invoke-Botao $origem.Tag })
+        $f.Controls.Add($b)
+        $script:Botoes += $b
+    }
+    & $novoBotao 'Gerar Curva ABC' 16 128 250 44 'CurvaABC'
+    & $novoBotao 'Gerar Sugestão de compra (cotação)' 274 128 250 44 'SugestaoCompra'
+    & $novoBotao 'Gerar mapa do banco' 16 184 250 34 'Mapa'
+
+    $script:Status = New-Object Windows.Forms.Label
+    $script:Status.Location = New-Object Drawing.Point(16, 230)
+    $script:Status.Size = New-Object Drawing.Size(508, 96)
+    $script:Status.Text = 'Escolha o período e clique no relatório. Os arquivos vão para a pasta "registros".'
+    $f.Controls.Add($script:Status)
+
+    [void]$f.ShowDialog()
+}
+
+function Invoke-Botao([string]$Acao) {
+    $ini = $script:DIni.Value.Date
+    $fim = $script:DFim.Value.Date
+    if ($Acao -ne 'Mapa' -and $ini -gt $fim) {
+        [void][Windows.Forms.MessageBox]::Show('A data de início está depois da data de fim.', 'Período inválido', [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Warning)
+        return
+    }
+    foreach ($b in $script:Botoes) { $b.Enabled = $false }
+    $script:Form.Cursor = [Windows.Forms.Cursors]::WaitCursor
+    $script:Status.Text = 'Gerando... aguarde (pode levar alguns minutos).'
+    [Windows.Forms.Application]::DoEvents()
+    try {
+        switch ($Acao) {
+            'CurvaABC' { $r = New-CurvaABC $ini $fim }
+            'SugestaoCompra' { $r = New-SugestaoCompra $ini $fim ([int]$script:NDias.Value) }
+            'Mapa' { $arq = New-Mapa $true; $r = [pscustomobject]@{ Arquivo = $arq; Resumo = 'Mapa do banco gerado. Mande este arquivo na conversa.' } }
+        }
+        $script:Status.Text = "$($r.Resumo)`n$($r.Arquivo)"
+        $resp = [Windows.Forms.MessageBox]::Show("$($r.Resumo)`n`nArquivo:`n$($r.Arquivo)`n`nAbrir agora?", 'Pronto', [Windows.Forms.MessageBoxButtons]::YesNo, [Windows.Forms.MessageBoxIcon]::Information)
+        if ($resp -eq [Windows.Forms.DialogResult]::Yes) { Start-Process -FilePath $r.Arquivo }
+    } catch {
+        $script:Status.Text = "Não deu certo: $($_.Exception.Message)"
+        [void][Windows.Forms.MessageBox]::Show($_.Exception.Message, 'Não deu certo', [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Error)
+    } finally {
+        foreach ($b in $script:Botoes) { $b.Enabled = $true }
+        $script:Form.Cursor = [Windows.Forms.Cursors]::Default
+    }
+}
+
+# ---------- início ----------
+if (-not ($Janela -or $Mapa -or $Relatorio)) { Stop-Script 'escolha o que fazer: -Janela, -Mapa ou -Relatorio CurvaABC/SugestaoCompra.' 2 }
+if ($Relatorio) {
+    if (-not $DataInicio -or -not $DataFim) { Stop-Script 'informe -DataInicio e -DataFim (dd/mm/aaaa).' 2 }
+    $ini = Read-Data $DataInicio 'data de início'
+    $fim = Read-Data $DataFim 'data de fim'
+    Test-Periodo $ini $fim
+}
+
+$script:IsqlExe = Find-Isql
+if (-not $env:ISC_PASSWORD) {
+    $seg = Read-Host -AsSecureString "Senha do usuário $Usuario do Firebird"
+    $script:Senha = (New-Object Management.Automation.PSCredential('u', $seg)).GetNetworkCredential().Password
+}
+# Confere banco e senha antes de abrir a janela ou gerar qualquer coisa.
+[void](Get-Rows (Invoke-Isql "SELECT '#O|1' FROM RDB`$DATABASE;") 'O' 1)
+
+if ($Janela) { Show-Janela; exit 0 }
+if ($Mapa) {
+    $arquivo = New-Mapa $ContarLinhas.IsPresent
+    Write-Host 'Mande este arquivo na conversa para eu montar os relatórios.'
+    if ($env:OS -eq 'Windows_NT') { Start-Process explorer.exe "/select,`"$arquivo`"" }
+}
+if ($Relatorio -eq 'CurvaABC') { [void](New-CurvaABC $ini $fim) }
+if ($Relatorio -eq 'SugestaoCompra') { [void](New-SugestaoCompra $ini $fim $DiasEstoque) }

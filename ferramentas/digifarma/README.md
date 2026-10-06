@@ -132,9 +132,30 @@ Códigos de saída: `0` ok, `1` erro ou cancelado, `2` faltam informações (rod
 
 ## Relatórios (`relatorios-digifarma.ps1` e `relatorios.bat`)
 
-Programa separado que **só lê** o banco e nunca altera nada. Por enquanto ele gera o **mapa do banco**: um arquivo de texto com os nomes e tipos das tabelas e colunas, as chaves, os índices e quantas linhas cada tabela tem. O arquivo **não leva nenhum dado** de cliente, venda ou produto. Com ele é possível montar os relatórios de vencimento, produtos parados, ruptura, estoque negativo, curva ABC, margem, recompra, sugestão de compra, resumo do dia e conferência do SNGPC, sem adivinhar onde fica cada informação.
+Programa separado que **só lê** o banco e nunca altera nada. Coloque na mesma pasta:
 
-Coloque os dois arquivos na mesma pasta, dê dois cliques em `relatorios.bat` e escolha **1**. A contagem de linhas leva alguns minutos num banco grande, mas é só leitura e não trava o Digifarma. O arquivo vai para `registros\mapa-do-banco-AAAAMMDD-HHMM.txt`, e a pasta abre sozinha no final.
+- `relatorios.bat`;
+- `relatorios-digifarma.ps1`;
+- `Cotacao_Pronta_em_branco.xlsx`.
+
+Dê dois cliques em `relatorios.bat`. O menu tem duas opções:
+
+1. **Abrir a janela de relatórios.** Nela você escolhe a **data de início** e a **data de fim** do período de vendas, e clica no botão do relatório:
+   - **Gerar Curva ABC**: os produtos vendidos no período, do maior para o menor faturamento, com a classe. A são os que somam até 80% do faturamento, B até 95%, C o resto. Vendas canceladas não contam.
+   - **Gerar Sugestão de compra (cotação)**: para cada produto, calcula a venda média por dia × os **dias de estoque desejados** (campo na janela, padrão 30) − o estoque atual. Grava uma planilha com a conta e uma **cópia preenchida da cotação**. A cópia tem PRODUTO (nome e código de barras) e QUANT na aba Cotação, a partir da linha 3, até 1000 produtos. As fórmulas, cores e abas de fornecedores da sua planilha ficam como estão e recalculam ao abrir. O `Cotacao_Pronta_em_branco.xlsx` original nunca é alterado.
+   - **Gerar mapa do banco.**
+2. **Gerar só o mapa do banco**, sem janela. Use esta opção se a janela não abrir.
+
+O mapa do banco é um arquivo de texto com os nomes e tipos das tabelas e colunas, as chaves, os índices e quantas linhas cada tabela tem. Ele **não leva nenhum dado** de cliente, venda ou produto. É com ele que se configura onde ficam as vendas no seu Digifarma.
+
+Tudo vai para a pasta `registros\`:
+
+- `curva-abc_AAAA-MM-DD_a_AAAA-MM-DD.csv`;
+- `sugestao-compra_....csv`;
+- `Cotacao_AAAA-MM-DD_HHMM.xlsx`;
+- `mapa-do-banco-....txt`.
+
+**Configuração das vendas:** os relatórios precisam saber em qual tabela e coluna estão os itens vendidos, a data e a marca de venda cancelada. Isso fica no bloco `$EsquemaPadrao`, no começo do `relatorios-digifarma.ps1`, ou num arquivo `-Esquema config.psd1`. Enquanto não estiver configurado, os botões avisam "ainda falta configurar onde ficam as vendas". O primeiro passo é gerar o mapa do banco e mandar o arquivo na conversa.
 
 ## Testes
 
@@ -148,7 +169,10 @@ Coloque os dois arquivos na mesma pasta, dê dois cliques em `relatorios.bat` e 
 - senha errada;
 - colunas `SMALLINT`/`BOOLEAN` e desmarcado como `NULL`;
 - tabela ambígua ou sem `PROD` no nome;
-- código com `|`. Precisa de Linux com servidor Firebird, `isql-fb`, `gbak` e `pwsh`:
+- código com `|`;
+- relatórios: Curva ABC, sugestão de compra, período inválido ou sem vendas e cotação preenchida a partir de um modelo em branco.
+
+Precisa de Linux com servidor Firebird, `isql-fb`, `gbak`, `pwsh` e `python3`:
 
 ```bash
 ISC_PASSWORD=senha_do_sysdba PWSH=/caminho/pwsh bash ferramentas/digifarma/testes/testar.sh
