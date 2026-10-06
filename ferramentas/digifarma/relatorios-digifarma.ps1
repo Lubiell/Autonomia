@@ -9,6 +9,8 @@ Relatórios do Digifarma (banco Firebird). Só lê o banco: nunca altera nada.
    Grava uma planilha (CSV) e, se houver a planilha de cotação em branco (-Modelo), uma cópia dela com
    PRODUTO e QUANT preenchidos na aba Cotação. A planilha em branco nunca é alterada.
 -Mapa: arquivo de texto com as tabelas e colunas do banco (só nomes e tipos, nenhum dado).
+-ArquivoSaida (com -Relatorio): grava o resultado em texto separado por tabulação, números com ponto, para a
+   macro da planilha de cotação (Relatorios.bas) ler e escrever nas abas "Curva ABC" e "Sugestão de compra".
 Onde ficam as vendas no banco do Digifarma é configurado no bloco $EsquemaPadrao (ou num arquivo -Esquema .psd1).
 
 .EXAMPLE
@@ -29,7 +31,8 @@ param(
     [string]$Modelo,
     [string]$Esquema,
     [string]$Isql,
-    [string]$PastaSaida
+    [string]$PastaSaida,
+    [string]$ArquivoSaida   # usado pela macro da planilha: resultado em texto separado por tabulação
 )
 $ErrorActionPreference = 'Stop'
 
@@ -207,6 +210,19 @@ function Write-Csv([string]$Arquivo, [string[]]$Cabecalho, $Linhas) {
     }
     [IO.File]::WriteAllLines($Arquivo, $saida, $Utf8Bom)
 }
+
+# Texto separado por tabulação, UTF-8 sem BOM, números com ponto: lido pela macro da planilha.
+function Write-Tsv([string]$Arquivo, [string[]]$Cabecalho, $Linhas) {
+    $saida = New-Object Collections.Generic.List[string]
+    foreach ($campos in @(, $Cabecalho) + @($Linhas)) {
+        $saida.Add((($campos | ForEach-Object { ([string]$_) -replace "[`t`r`n]", ' ' }) -join "`t"))
+    }
+    $pasta = Split-Path -Parent $Arquivo
+    if ($pasta) { New-Item -ItemType Directory -Force $pasta | Out-Null }
+    [IO.File]::WriteAllLines($Arquivo, $saida, $Utf8SemBom)
+}
+
+function Format-Inv([double]$X) { return $X.ToString('0.##########', $Inv) }
 
 # ---------- estrutura do banco (só metadados) ----------
 function Get-Meta {
@@ -445,19 +461,32 @@ function New-CurvaABC([datetime]$Inicio, [datetime]$Fim) {
     $acum = 0.0
     $pos = 0
     $resumo = @{ A = 0; B = 0; C = 0 }
-    $linhas = @(foreach ($v in $vendas) {
+    $ranking = @(foreach ($v in $vendas) {
         $pos++
         $antes = $acum / $total
         $acum += $v.Valor
         $classe = if ($antes -lt 0.8) { 'A' } elseif ($antes -lt 0.95) { 'B' } else { 'C' }
         $resumo[$classe]++
-        , @($classe, $pos, $v.Codigo, $v.CodBarras, $v.Descricao, $v.Quantidade.ToString('0.###', $BR), $v.Valor.ToString('0.00', $BR),
-            ($v.Valor / $total * 100).ToString('0.00', $BR), ($acum / $total * 100).ToString('0.00', $BR), $v.Estoque.ToString('0.###', $BR))
+        [pscustomobject]@{ Classe = $classe; Posicao = $pos; Venda = $v; Fatia = $v.Valor / $total; Acumulado = $acum / $total }
+    })
+    $texto = "Curva ABC: $($vendas.Count) produtos, faturamento R$ $($total.ToString('N2', $BR)). A: $($resumo.A)  B: $($resumo.B)  C: $($resumo.C)."
+    if ($ArquivoSaida) {
+        Write-Tsv $ArquivoSaida @('Classe', 'Posicao', 'Codigo', 'CodBarras', 'Descricao', 'Quantidade', 'Faturamento', 'Fatia', 'Acumulado', 'Estoque') @(
+            foreach ($r in $ranking) {
+                , @($r.Classe, $r.Posicao, $r.Venda.Codigo, $r.Venda.CodBarras, $r.Venda.Descricao, (Format-Inv $r.Venda.Quantidade),
+                    (Format-Inv $r.Venda.Valor), (Format-Inv $r.Fatia), (Format-Inv $r.Acumulado), (Format-Inv $r.Venda.Estoque))
+            })
+        Write-Host $texto
+        return [pscustomobject]@{ Arquivo = $ArquivoSaida; Resumo = $texto }
+    }
+    $linhas = @(foreach ($r in $ranking) {
+        $v = $r.Venda
+        , @($r.Classe, $r.Posicao, $v.Codigo, $v.CodBarras, $v.Descricao, $v.Quantidade.ToString('0.###', $BR), $v.Valor.ToString('0.00', $BR),
+            ($r.Fatia * 100).ToString('0.00', $BR), ($r.Acumulado * 100).ToString('0.00', $BR), $v.Estoque.ToString('0.###', $BR))
     })
     $arquivo = New-OutputPath "curva-abc_$($Inicio.ToString('yyyy-MM-dd'))_a_$($Fim.ToString('yyyy-MM-dd')).csv"
     Write-Csv $arquivo @('Classe', 'Posição', 'Código', 'Código de barras', 'Descrição', 'Quantidade vendida', 'Faturamento (R$)',
         '% do faturamento', '% acumulado', 'Estoque atual') $linhas
-    $texto = "Curva ABC: $($vendas.Count) produtos, faturamento R$ $($total.ToString('N2', $BR)). A: $($resumo.A)  B: $($resumo.B)  C: $($resumo.C)."
     Write-Host $texto
     Write-Host "Arquivo: $arquivo"
     return [pscustomobject]@{ Arquivo = $arquivo; Resumo = $texto }
@@ -478,6 +507,19 @@ function New-SugestaoCompra([datetime]$Inicio, [datetime]$Fim, [int]$Dias) {
         })
     if (-not $itens) { Stop-Script "pelas vendas desse período, o estoque atual já dá para $Dias dias; não há o que comprar." }
     $itens = @($itens | Sort-Object Descricao)
+    if ($ArquivoSaida) {
+        # NaCotacao = 1 nos que cabem na aba Cotação (1000 linhas): os mais vendidos.
+        $cabem = @{}
+        foreach ($v in @($itens | Sort-Object Quantidade -Descending | Select-Object -First 1000)) { $cabem[$v.Codigo] = $true }
+        Write-Tsv $ArquivoSaida @('Codigo', 'CodBarras', 'Descricao', 'Quantidade', 'MediaDia', 'Estoque', 'Comprar', 'NaCotacao') @(
+            foreach ($v in $itens) {
+                , @($v.Codigo, $v.CodBarras, $v.Descricao, (Format-Inv $v.Quantidade), (Format-Inv $v.Media), (Format-Inv $v.Estoque),
+                    $v.Sugestao, $(if ($cabem.ContainsKey($v.Codigo)) { 1 } else { 0 }))
+            })
+        $texto = "Sugestão de compra: $($itens.Count) produtos para $Dias dias de estoque (vendas de $diasPeriodo dias)."
+        Write-Host $texto
+        return [pscustomobject]@{ Arquivo = $ArquivoSaida; Resumo = $texto }
+    }
     $arquivo = New-OutputPath "sugestao-compra_$($Inicio.ToString('yyyy-MM-dd'))_a_$($Fim.ToString('yyyy-MM-dd')).csv"
     $linhas = @(foreach ($v in $itens) {
         , @($v.Codigo, $v.CodBarras, $v.Descricao, $v.Quantidade.ToString('0.###', $BR), $v.Media.ToString('0.00', $BR),
@@ -736,6 +778,7 @@ function Invoke-Botao([string]$Acao) {
 
 # ---------- início ----------
 if (-not ($Janela -or $Mapa -or $Relatorio)) { Stop-Script 'escolha o que fazer: -Janela, -Mapa ou -Relatorio CurvaABC/SugestaoCompra.' 2 }
+if ($ArquivoSaida -and -not $Relatorio) { Stop-Script '-ArquivoSaida só vale junto com -Relatorio.' 2 }
 if ($Relatorio) {
     if (-not $DataInicio -or -not $DataFim) { Stop-Script 'informe -DataInicio e -DataFim (dd/mm/aaaa).' 2 }
     $ini = Read-Data $DataInicio 'data de início'

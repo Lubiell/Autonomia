@@ -299,5 +299,18 @@ out="$(rel -Esquema "$TMP/esquema.psd1" -Modelo "$cot" -Relatorio SugestaoCompra
 ok '[ $rc -eq 1 ] && grep -q "não está em branco" <<<"$out" && grep -q "planilha CSV com a sugestão foi gravada" <<<"$out"' "cotação já preenchida como modelo: código $rc"
 ok '! ls "$TMP"/r3/Cotacao_*.xlsx >/dev/null 2>&1 && ls "$TMP"/r3/sugestao-compra_*.csv >/dev/null 2>&1' "cotação incompleta ficou na pasta (ou o CSV sumiu)"
 
+# Modo da macro do Excel (-ArquivoSaida): texto com tabulação, números com ponto, sem CSV nem xlsx
+TAB=$'\t'
+out="$(rel -Mapa -ArquivoSaida "$TMP/x.tsv" -PastaSaida "$TMP/r5")"; rc=$?
+ok '[ $rc -eq 2 ] && grep -q "ArquivoSaida só vale junto com -Relatorio" <<<"$out" && [ ! -e "$TMP/x.tsv" ]' "-ArquivoSaida sem -Relatorio: código $rc"
+out="$(rel -Esquema "$TMP/esquema.psd1" -Relatorio CurvaABC -DataInicio 01/09/2026 -DataFim 30/09/2026 -PastaSaida "$TMP/r6" -ArquivoSaida "$TMP/r6/abc.tsv")"; rc=$?
+ok '[ $rc -eq 0 ] && [ "$(head -1 "$TMP/r6/abc.tsv")" = "Classe${TAB}Posicao${TAB}Codigo${TAB}CodBarras${TAB}Descricao${TAB}Quantidade${TAB}Faturamento${TAB}Fatia${TAB}Acumulado${TAB}Estoque" ]' "macro ABC: código $rc $out"
+ok 'grep -qx "A${TAB}1${TAB}1${TAB}7896004713229${TAB}DIPIRONA 500MG${TAB}60${TAB}300${TAB}0.7389162562${TAB}0.7389162562${TAB}50" "$TMP/r6/abc.tsv" && [ "$(head -c 3 "$TMP/r6/abc.tsv" | od -An -tx1 | tr -d " ")" != "efbbbf" ]' "macro ABC: linha da DIPIRONA (ou veio com BOM)"
+ok '[ "$(ls "$TMP/r6")" = "abc.tsv" ]' "macro ABC: gerou outros arquivos: $(ls "$TMP/r6")"
+out="$(rel -Esquema "$TMP/esquema.psd1" -Modelo "$TMP/modelo.xlsx" -Relatorio SugestaoCompra -DataInicio 01/09/2026 -DataFim 30/09/2026 -PastaSaida "$TMP/r7" -ArquivoSaida "$TMP/r7/sug.tsv")"; rc=$?
+ok '[ $rc -eq 0 ] && [ "$(head -1 "$TMP/r7/sug.tsv")" = "Codigo${TAB}CodBarras${TAB}Descricao${TAB}Quantidade${TAB}MediaDia${TAB}Estoque${TAB}Comprar${TAB}NaCotacao" ] && [ "$(wc -l <"$TMP/r7/sug.tsv")" -eq 4 ]' "macro sugestão: código $rc $out"
+ok 'grep -qx "3${TAB}${TAB}AMOXICILINA 500MG CÁPS & \"CIA\"${TAB}4${TAB}0.1333333333${TAB}0${TAB}4${TAB}1" "$TMP/r7/sug.tsv" && grep -qx "6${TAB}7893${TAB}AZITROMICINA${TAB}1${TAB}0.0333333333${TAB}-2${TAB}1${TAB}1" "$TMP/r7/sug.tsv"' "macro sugestão: linhas da AMOXICILINA/AZITROMICINA"
+ok '[ "$(ls "$TMP/r7")" = "sug.tsv" ]' "macro sugestão: gerou outros arquivos: $(ls "$TMP/r7")"
+
 echo "passou: $PASS  falhou: $FAIL"
 [ "$FAIL" -eq 0 ]

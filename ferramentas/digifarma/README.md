@@ -157,6 +157,37 @@ Tudo vai para a pasta `registros\`:
 
 **Configuração das vendas:** os relatórios precisam saber em qual tabela e coluna estão os itens vendidos, a data e a marca de venda cancelada. Isso fica no bloco `$EsquemaPadrao`, no começo do `relatorios-digifarma.ps1`, ou num arquivo `-Esquema config.psd1`. Enquanto não estiver configurado, os botões avisam "ainda falta configurar onde ficam as vendas". O primeiro passo é gerar o mapa do banco e mandar o arquivo na conversa.
 
+## Relatórios dentro da planilha (macro do Excel)
+
+Os mesmos dois relatórios podem ficar **dentro da sua planilha de cotação**, em abas novas com as datas e um botão. O botão chama o `relatorios-digifarma.ps1`, que só lê o banco, e traz o resultado para a aba.
+
+**Instalação (uma vez só):**
+
+1. Coloque na mesma pasta `relatorios-digifarma.ps1`, `Relatorios.bas` e a sua cotação (`Cotacao_Pronta_em_branco.xlsx`).
+2. Abra a cotação no Excel.
+3. Aperte **Alt+F11** para abrir o editor do VBA. Vá em **Arquivo > Importar arquivo** e escolha `Relatorios.bas`. Feche o editor.
+4. Aperte **Alt+F8**, escolha **InstalarRelatorios** e clique em **Executar**. Ele cria estas abas:
+   - **Sugestão de compra** e **Curva ABC**, logo depois da aba Cotação;
+   - **Config relatórios**, no fim. Nela ficam o banco, a pasta do `.ps1` e o usuário do Firebird.
+5. Use **Arquivo > Salvar como > Pasta de Trabalho Habilitada para Macro do Excel (\*.xlsm)**. Guarde esse `.xlsm` como a sua cotação em branco, e o `.xlsx` antigo pode ficar de reserva.
+
+**Uso:**
+
+1. Abra o `.xlsm`. Se aparecer a faixa amarela, clique em **Habilitar conteúdo**.
+2. Na aba **Curva ABC** ou **Sugestão de compra**, preencha:
+   - a **data de início** (B3);
+   - a **data de fim** (B4);
+   - na sugestão, os **dias de estoque** (B5).
+3. Clique no botão. Abre uma janela preta pedindo a **senha do Firebird**, que não fica gravada em lugar nenhum. Quando ela fecha, o resultado aparece na aba, a partir da linha 8.
+4. A sugestão também preenche **PRODUTO e QUANT** na aba Cotação, até 1000 produtos. Se passar disso, entram os 1000 mais vendidos, e o resto fica só na aba da sugestão. Se a Cotação já estiver preenchida, ele pergunta antes. Ao substituir, apaga também os preços, desempates e condições já digitados (colunas E a P e R a AD), porque não valeriam para os produtos novos. A proteção da aba Cotação volta como estava.
+5. Se der erro, a janela preta fica aberta mostrando o motivo. Aperte uma tecla para fechar.
+
+Observações:
+
+- Se o Excel avisar **"a Microsoft bloqueou macros porque a origem deste arquivo não é confiável"**, feche o Excel. Clique com o botão direito no `.xlsm` > **Propriedades**, marque **Desbloquear** e clique em **OK**.
+- Instalar de novo (Alt+F8 > InstalarRelatorios) refaz as abas dos relatórios e mantém o que estiver na aba Config relatórios.
+- A configuração das vendas (item anterior) vale para a planilha também. Enquanto ela não for feita, a janela preta avisa "ainda falta configurar onde ficam as vendas".
+
 ## Testes
 
 `testes/testar.sh` roda o programa contra um Firebird real em bancos descartáveis. Ele cobre:
@@ -170,7 +201,10 @@ Tudo vai para a pasta `registros\`:
 - colunas `SMALLINT`/`BOOLEAN` e desmarcado como `NULL`;
 - tabela ambígua ou sem `PROD` no nome;
 - código com `|`;
-- relatórios: Curva ABC, sugestão de compra, período inválido ou sem vendas e cotação preenchida a partir de um modelo em branco.
+- relatórios: Curva ABC, sugestão de compra, período inválido ou sem vendas e cotação preenchida a partir de um modelo em branco;
+- o arquivo de texto que a macro do Excel lê (`-ArquivoSaida`).
+
+A macro do Excel (`Relatorios.bas`) não é coberta por esses testes: o VBA só roda no Excel do Windows.
 
 Precisa de Linux com servidor Firebird, `isql-fb`, `gbak`, `pwsh` e `python3`:
 
