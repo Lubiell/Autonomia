@@ -8,6 +8,38 @@
 
 Sem `-Aplicar` o programa só **simula**: mostra a lista e não altera nada. Com `-Aplicar` ele pede confirmação, faz backup do banco, desmarca tudo numa única transação e confere o resultado.
 
+## Tudo num arquivo só: `Digifarma.bat`
+
+`Digifarma.bat` junta todas as ferramentas desta pasta num arquivo só. Os programas ficam guardados dentro dele.
+
+1. Coloque `Digifarma.bat` numa pasta onde você possa gravar, por exemplo `C:\Ferramentas\Digifarma`. Ponha junto a sua `Cotacao_Pronta_em_branco.xlsx`.
+2. Dê dois cliques nele. Na primeira vez, ele cria na mesma pasta:
+   - `desmarcar-controlados.ps1`;
+   - `relatorios-digifarma.ps1`;
+   - `Relatorios.bas`.
+
+   Depois, cada vez que abre, ele confere esses arquivos e restaura o que estiver diferente. Não edite esses arquivos; quem manda é o `.bat`.
+3. Aparece o menu:
+   - **Controlados (alteram o banco):**
+     - **1** ver os controlados com estoque (simulação);
+     - **2** desmarcar;
+     - **3** desfazer a última desmarcação.
+   - **Relatórios (só leem o banco):**
+     - **4** janela de relatórios, com datas: Curva ABC, sugestão de compra e os demais;
+     - **5** lotes vencendo: vencidos nos últimos 30 dias e os que vencem nos próximos 90;
+     - **6** estoque negativo;
+     - **7** conferência SNGPC;
+     - **8** mapa do banco.
+
+     As opções 5 a 7 abrem a planilha do resultado direto.
+   - **Planilha:** **9** mostra como colocar os relatórios dentro da planilha de cotação (macro do Excel), passo a passo.
+
+O banco e a coluna de estoque ficam nas primeiras linhas do `Digifarma.bat`. Se mudarem, ajuste no Bloco de Notas. Se o Windows avisar "O Windows protegeu o computador", clique em **Mais informações > Executar assim mesmo**. O aviso aparece porque o arquivo veio da internet.
+
+Para quem mantém o código: o `Digifarma.bat` é montado por `montar-digifarma-bat.py` a partir dos programas desta pasta. Depois de mudar um deles, rode `python3 montar-digifarma-bat.py`. O `testes/testar.sh` confere se o `.bat` está em dia.
+
+Os `.bat` separados (`desmarcar-controlados.bat` e `relatorios.bat`) continuam funcionando, se preferir.
+
 ## Antes de usar: SNGPC
 
 A marcação é o que faz o Digifarma escriturar o produto no SNGPC.
@@ -217,7 +249,8 @@ Observações:
 - código com `|`;
 - relatórios: Curva ABC, sugestão de compra, período inválido ou sem vendas e cotação preenchida a partir de um modelo em branco;
 - lotes vencendo, estoque negativo e conferência SNGPC, num banco com os nomes de tabelas e colunas do Digifarma, inclusive em banco de dialeto 1 (Digifarma antigo);
-- o arquivo de texto que a macro do Excel lê (`-ArquivoSaida`).
+- o arquivo de texto que a macro do Excel lê (`-ArquivoSaida`);
+- o `Digifarma.bat`: está em dia com os programas, recria os arquivos iguais aos originais e restaura um arquivo alterado. O menu em si (cmd do Windows) não roda no Linux.
 
 A macro do Excel (`Relatorios.bas`) não é coberta por esses testes: o VBA só roda no Excel do Windows.
 

@@ -9,11 +9,12 @@ Relatórios do Digifarma (banco Firebird). Só lê o banco: nunca altera nada.
    Grava uma planilha (CSV) e, se houver a planilha de cotação em branco (-Modelo), uma cópia dela com
    PRODUTO e QUANT preenchidos na aba Cotação. A planilha em branco nunca é alterada.
 -Relatorio LotesVencendo: lotes com saldo que vencem entre -DataInicio e -DataFim (inclui os já vencidos, se o
-   início for no passado). Só lotes de produtos com estoque.
+   início for no passado). Só lotes de produtos com estoque. Sem as datas: de 30 dias atrás a 90 dias à frente.
 -Relatorio EstoqueNegativo: produtos com estoque abaixo de zero (não usa datas).
 -Relatorio ConferenciaSNGPC: psicotrópicos e antimicrobianos cujo estoque não bate com a soma dos lotes, com
    estoque negativo, lote vencido com saldo ou lote com saldo negativo (não usa datas).
 -Mapa: arquivo de texto com as tabelas e colunas do banco (só nomes e tipos, nenhum dado).
+-Abrir (com -Relatorio): abre a planilha CSV do relatório assim que ela fica pronta.
 -ArquivoSaida (com -Relatorio): grava o resultado em texto separado por tabulação, números com ponto, para a
    macro da planilha de cotação (Relatorios.bas) ler e escrever nas abas dos relatórios.
 Onde ficam as vendas no banco do Digifarma é configurado no bloco $EsquemaPadrao (ou num arquivo -Esquema .psd1).
@@ -37,7 +38,8 @@ param(
     [string]$Esquema,
     [string]$Isql,
     [string]$PastaSaida,
-    [string]$ArquivoSaida   # usado pela macro da planilha: resultado em texto separado por tabulação
+    [string]$ArquivoSaida,  # usado pela macro da planilha: resultado em texto separado por tabulação
+    [switch]$Abrir          # abre o CSV gerado (usado pelo Digifarma.bat)
 )
 $ErrorActionPreference = 'Stop'
 
@@ -649,6 +651,7 @@ function Save-Relatorio([string]$Nome, [string]$Texto, [string[]]$CabCsv, $Linha
     $arquivo = New-OutputPath $Nome
     Write-Csv $arquivo $CabCsv $LinhasCsv
     Write-Host "Arquivo: $arquivo"
+    if ($Abrir -and $env:OS -eq 'Windows_NT') { Start-Process -FilePath $arquivo }
     return [pscustomobject]@{ Arquivo = $arquivo; Resumo = $Texto }
 }
 
@@ -1036,7 +1039,11 @@ function Invoke-Botao([string]$Acao) {
 # ---------- início ----------
 if (-not ($Janela -or $Mapa -or $Relatorio)) { Stop-Script 'escolha o que fazer: -Janela, -Mapa ou -Relatorio (CurvaABC, SugestaoCompra, LotesVencendo, EstoqueNegativo ou ConferenciaSNGPC).' 2 }
 if ($ArquivoSaida -and -not $Relatorio) { Stop-Script '-ArquivoSaida só vale junto com -Relatorio.' 2 }
-if ($RelatoriosComData -contains $Relatorio) {
+if ($Relatorio -eq 'LotesVencendo' -and -not $DataInicio -and -not $DataFim) {
+    $ini = (Get-Date).Date.AddDays(-30)
+    $fim = (Get-Date).Date.AddDays(90)
+    Write-Host "Sem datas: lotes que venceram nos últimos 30 dias e que vencem nos próximos 90."
+} elseif ($RelatoriosComData -contains $Relatorio) {
     if (-not $DataInicio -or -not $DataFim) { Stop-Script 'informe -DataInicio e -DataFim (dd/mm/aaaa).' 2 }
     $ini = Read-Data $DataInicio 'data de início'
     $fim = Read-Data $DataFim 'data de fim'

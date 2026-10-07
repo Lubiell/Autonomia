@@ -340,8 +340,11 @@ SQL
 rel4() { "$PWSH" -NoProfile -File "$DIR/relatorios-digifarma.ps1" -Isql "$(command -v "$ISQL")" -Banco "localhost:$DB4" "$@" 2>&1; }
 INI="$(date -d '-30 days' +%d/%m/%Y)"; FIM="$(date -d '+90 days' +%d/%m/%Y)"
 
+out="$(rel4 -Relatorio CurvaABC -PastaSaida "$TMP/l0")"; rc=$?
+ok '[ $rc -eq 2 ] && grep -q "informe -DataInicio e -DataFim" <<<"$out"' "curva ABC sem datas: código $rc"
+# Lotes sem datas (opção do Digifarma.bat): de 30 dias atrás a 90 dias à frente
 out="$(rel4 -Relatorio LotesVencendo -PastaSaida "$TMP/l0")"; rc=$?
-ok '[ $rc -eq 2 ] && grep -q "informe -DataInicio e -DataFim" <<<"$out"' "lotes sem datas: código $rc"
+ok '[ $rc -eq 0 ] && grep -q "Sem datas: lotes que venceram nos últimos 30 dias" <<<"$out" && grep -q "4 lotes de 3 produtos; 1 já vencidos" <<<"$out"' "lotes sem datas: código $rc $out"
 out="$(rel -Esquema "$TMP/so-estoque.psd1" -Relatorio LotesVencendo -DataInicio "$INI" -DataFim "$FIM" -PastaSaida "$TMP/l0")"; rc=$?
 ok '[ $rc -eq 2 ] && grep -q "LoteTabela = .LOTES.: essa tabela não existe" <<<"$out"' "lotes sem a tabela LOTES: código $rc $out"
 
@@ -408,6 +411,26 @@ out="$(rel5 -Relatorio LotesVencendo -DataInicio "$INI" -DataFim "$FIM" -PastaSa
 ok '[ $rc -eq 0 ] && grep -qx "$(date -d "-3 days" +%F)${TAB}-3${TAB}1${TAB}${TAB}RIVOTRIL 2MG${TAB}A2${TAB}3${TAB}10${TAB}Psicotrópico" "$TMP/d1/l.tsv" && grep -q "^$(date -d "+10 days" +%F)${TAB}10${TAB}" "$TMP/d1/l.tsv"' "dialeto 1 lotes: código $rc $out"
 out="$(rel5 -Relatorio ConferenciaSNGPC -PastaSaida "$TMP/d2" -ArquivoSaida "$TMP/d2/s.tsv")"; rc=$?
 ok '[ $rc -eq 0 ] && grep -qx "1${TAB}${TAB}RIVOTRIL 2MG${TAB}Psicotrópico${TAB}10${TAB}9${TAB}1${TAB}3${TAB}0${TAB}estoque diferente da soma dos lotes; lote vencido com saldo" "$TMP/d2/s.tsv"' "dialeto 1 SNGPC: código $rc $out"
+
+# ---------- Digifarma.bat: tudo num arquivo só ----------
+ok 'python3 "$DIR/montar-digifarma-bat.py" --conferir >/dev/null' "Digifarma.bat desatualizado: rode python3 montar-digifarma-bat.py"
+BATDIR="$TMP/bat"; mkdir -p "$BATDIR"; cp "$DIR/Digifarma.bat" "$BATDIR/"
+# A mesma linha que o .bat executa para recriar os programas na pasta dele
+cmdps="$(grep -m1 '^%PS% -Command ' "$BATDIR/Digifarma.bat" | tr -d '\r' | sed 's/^%PS% -Command "//; s/"$//')"
+extrair() { DF_BAT="$BATDIR/Digifarma.bat" "$PWSH" -NoProfile -Command "$cmdps" 2>&1; }
+out="$(extrair)"; rc=$?
+ok '[ $rc -eq 0 ] && [ "$(grep -c Atualizado <<<"$out")" -eq 3 ]' "bat: primeira extração: código $rc $out"
+ok 'cmp -s "$BATDIR/Relatorios.bas" "$DIR/Relatorios.bas"' "bat: Relatorios.bas diferente do original (cp1252/CRLF)"
+ok '[ "$(head -c3 "$BATDIR/relatorios-digifarma.ps1" | od -An -tx1 | tr -d " ")" = "efbbbf" ] && diff <(tr -d "\r" <"$BATDIR/relatorios-digifarma.ps1") <(tr -d "\r" <"$DIR/relatorios-digifarma.ps1") >/dev/null' "bat: relatorios-digifarma.ps1 diferente do original"
+ok '[ "$(head -c3 "$BATDIR/desmarcar-controlados.ps1" | od -An -tx1 | tr -d " ")" = "efbbbf" ] && diff <(tr -d "\r" <"$BATDIR/desmarcar-controlados.ps1") <(tr -d "\r" <"$DIR/desmarcar-controlados.ps1") >/dev/null' "bat: desmarcar-controlados.ps1 diferente do original"
+out="$(extrair)"; rc=$?
+ok '[ $rc -eq 0 ] && [ -z "$out" ]' "bat: segunda extração regravou sem precisar: $out"
+echo "# mexido" >> "$BATDIR/relatorios-digifarma.ps1"
+out="$(extrair)"; rc=$?
+ok '[ $rc -eq 0 ] && [ "$out" = "  Atualizado: relatorios-digifarma.ps1" ] && diff <(tr -d "\r" <"$BATDIR/relatorios-digifarma.ps1") <(tr -d "\r" <"$DIR/relatorios-digifarma.ps1") >/dev/null' "bat: programa alterado não foi restaurado: $out"
+# O programa recriado pelo .bat roda (mesmo relatório de antes, a partir da pasta do .bat)
+out="$("$PWSH" -NoProfile -File "$BATDIR/relatorios-digifarma.ps1" -Isql "$(command -v "$ISQL")" -Banco "localhost:$DB4" -Relatorio ConferenciaSNGPC 2>&1)"; rc=$?
+ok '[ $rc -eq 0 ] && grep -q "controlados conferidos" <<<"$out" && ls "$BATDIR"/registros/conferencia-sngpc_*.csv >/dev/null 2>&1' "bat: programa recriado não rodou: código $rc $out"
 
 echo "passou: $PASS  falhou: $FAIL"
 [ "$FAIL" -eq 0 ]
