@@ -9,6 +9,15 @@ Skill instalada tem a autoridade de uma instrução do sistema; hook e script ro
 4. **Ler o `SKILL.md` inteiro**, não só a descrição.
 5. **Listar e ler cada executável:** `find . -type f \( -name '*.sh' -o -name '*.py' -o -name '*.js' -o -name '*.ts' -o -name '*.ps1' \)`.
 
+## Varredura automática (primeira triagem)
+`NVIDIA/SkillSpector` (Apache-2.0) faz análise estática de uma skill, pasta, zip ou repositório. Exige Python 3.12+; rode isolado, sem instalar no sistema, fixando o commit auditado:
+
+```bash
+uvx --python 3.12 --from git+https://github.com/NVIDIA/SkillSpector@3c8e4b9 skillspector scan ./pasta-da-skill --no-llm
+```
+
+Leia cada achado antes de decidir: no modo `--no-llm` há muito falso positivo. Em 2026-10-07, nas skills do Autonomia, ele marcou como "não instalar" a própria `discover-resources` por citar `curl | sh` e `mimikatz` como coisas a evitar, e comentários HTML de exemplo como "instrução escondida". Varredura limpa não dispensa os passos acima.
+
 ## Sinais nos scripts
 Achou algum, não instala até saber para onde vai e levando o quê:
 

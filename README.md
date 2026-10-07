@@ -6,6 +6,7 @@ Configuração de orquestração para o Claude Code: regras permanentes, 12 agen
 CLAUDE.md                 regras permanentes e roteamento
 install.sh / install.ps1  instalação no nível do usuário (~/.claude)
 package.sh / package.ps1  empacota as skills em zip para o claude.ai
+CHANGELOG.md              o que mudou, por data
 .claude/
 ├── settings.json         bloqueios reais (deny/ask), sandbox e hook; não dependem do modelo
 ├── hooks/
@@ -157,6 +158,8 @@ Sai um `dist/<skill>.zip` por skill, com a pasta da skill no topo, como o claude
 - Modelo por custo: `haiku` para execução (tester, devops), `sonnet` onde a qualidade pesa (scout, developer, debugger, reviewer, security, data-analyst, qa-web, docs-writer, researcher) e `opus` só no architect, que é raro.
 - O `scout` localiza código e devolve só `arquivo:linha`, para a sessão principal ler apenas os trechos certos. Ele roda com `omitClaudeMd: true` (Claude Code v2.1.271+), sem carregar o `CLAUDE.md`.
 - `settings.json` nega leitura de `node_modules`, `.venv`, `venv`, `__pycache__` e `coverage` para o Claude não carregar arquivos gerados no contexto.
+- **Medir antes de acrescentar:** `/skill-doctor` (nativo, Claude Code v2.1.252+) mostra o custo de contexto de cada skill, quantas vezes foi usada nos últimos 7 dias e quais nunca dispararam. Rode no seu PC depois de algumas semanas de uso: skill que nunca dispara vira atalho (`disable-model-invocation: true`) ou sai. Em 2026-10-07 cada skill automática custava ~50–160 tokens por turno e os atalhos, zero.
+- `claude plugin validate ~/.claude/skills` confere o frontmatter de todas as skills instaladas.
 
 ## Segurança em camadas
 - **Permissões (`deny`/`ask`)**: bloqueio por prefixo de comando e leitura de arquivos sensíveis, inclusive `~/.ssh`, `~/.aws/credentials` e `~/.gnupg` pela ferramenta Read, que não passa pelo sandbox. Pergunta antes de `git push`, `curl`/`wget`, `pip install` (também `pip3` e `python -m pip`), `npm install -g` e `npm publish`.

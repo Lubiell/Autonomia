@@ -40,18 +40,17 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Skill `melhorar-projeto` e regra no CLAUDE.md para sugerir o agent indicado (ponto fraco fora do pedido e "Próximo passo sugerido" no relatório). Pedido do usuário: o Autonomia sugerir o agente para melhorar os projetos — 2026-10-05
 - PC e celular: `install.sh` aceita `AUTONOMIA_SEM_SANDBOX=1` para o script de configuração do ambiente na nuvem (container já isolado); README com os quatro caminhos (PC, Remote Control, nuvem, chat). Pedido do usuário: valer no PC e no celular — 2026-10-05
 - Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
+- `NVIDIA/SkillSpector` (Apache-2.0, commit `3c8e4b9`) — primeira triagem de skill antes de instalar, rodado com `uvx` sem instalar no sistema; comando e ressalva de falso positivo na `auditoria.md`. Testado nas 70 skills do Autonomia: nenhum achado real, só falsos positivos (comentário HTML de exemplo, texto que cita o que evitar) — 2026-10-07
+- `/skill-doctor` (nativo, Claude Code v2.1.252+) no lugar do plugin `session-report`: mostra custo de contexto e uso de cada skill sem instalar nada; descrito no README — 2026-10-07
 
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |
 |---|---|---|
-| `NVIDIA/SkillSpector` | audita skill antes de instalar. Vem **primeiro**: é ele que checa o resto | GitHub |
 | `pyright-lsp` | erro de tipo no mesmo turno em vez de dez turnos depois. Exige o binário `pyright-langserver` no PATH | marketplace oficial |
 | `claude-security` | varredura de segurança do repositório ou do diff, sob demanda, com cada achado verificado antes do relatório; não aplica nada sozinho. Substitui o `security-guidance` na fila (2026-10-03) | marketplace oficial |
 | `claude-code-setup` | lê o projeto e recomenda hooks, skills, MCP e subagents; somente leitura, uma vez por projeto (2026-10-03) | marketplace oficial |
-| `session-report` | mostra tokens, cache e quais skills dispararam. Único jeito de medir se as regras funcionam | marketplace oficial |
 | `context7` | documentação da versão certa; evita API inventada em biblioteca que mudou. É servidor MCP: `npx ctx7 setup --claude` pede login e gera chave | marketplace oficial |
 | `code-simplifier` | corta o que foi escrito a mais, preservando comportamento | marketplace oficial |
-| `skill-eval-action` | testa se a skill dispara, rodando no GitHub — funciona pelo celular | GitHub Action |
 | `Sentry` | erro em produção chega no celular. Hoje o trabalho termina no deploy e depois fica cego | MCP oficial |
 | `anthropics/claude-code-action` | agente roda no GitHub e abre PR sem ele estar no PC. Fixar versão ≥ v1.0.94 (CVE 7.8) e restringir gatilho ao dono do repo | GitHub Action |
 | `anthropics/claude-code-security-review` | revisão de segurança do diff em todo PR | GitHub Action |
@@ -63,7 +62,7 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 
 ## Opcionais
 - Language server da linguagem do projeto (além do `pyright-lsp`) — marketplace oficial — busca por símbolo mais barata que Grep; escolher por projeto — 2026-10-02
-- Mod `You should know` — embutido no Claude Code 2.1.287+ (`/plugin enable cc-plugin-you-should-know@builtin`) — agente paralelo que aponta o que você ou o Claude deixaram passar; liga por máquina, não pelo repositório. Exige telemetria ligada e roda um agente a mais (custo de tokens); testar uma semana e medir com o `session-report` antes de manter — 2026-10-05
+- Mod `You should know` — embutido no Claude Code 2.1.287+ (`/plugin enable cc-plugin-you-should-know@builtin`) — agente paralelo que aponta o que você ou o Claude deixaram passar; liga por máquina, não pelo repositório. Exige telemetria ligada e roda um agente a mais (custo de tokens); testar uma semana e medir com o `/skill-doctor` antes de manter — 2026-10-05
 
 ## Recusados — não instalar
 | Ferramenta | Motivo |
@@ -137,6 +136,11 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `figma/mcp-server-guide` | licença não verificada e, na prática, exige plano pago do Figma (2026-10-05) |
 | `kevinwatt/yt-dlp-mcp`, `whisper-transcribe-mcp`, `84emllc/claude-wcag-skill`, `Suganthans-GSC-MCP` | projetos de um autor, pouco uso; `midia` e `accessibility` cobrem o essencial. Reavaliar se houver necessidade (2026-10-05) |
 | Coleções de centenas de skills ("awesome" e afins) | sobreposição de gatilho em massa e custo de `description` por requisição; só como fonte de consulta |
+| `skill-eval-action` (skill-bench) | avalia a resposta da skill com uma segunda chamada de LLM, não se ela dispara; exige `ANTHROPIC_API_KEY` como secret e gasta API a cada PR. Para gatilho, as evals da `skill-creator` (já na conta) medem acerto de disparo sob demanda (2026-10-07) |
+| Clean APIs (cleanapis.com) | revenda de acesso a 33 modelos, Claude incluso, por endpoint próprio, com plano "ilimitado" a US$ 50/mês, bem abaixo do custo oficial; pagamento em cripto; todo prompt e código passa pelo servidor deles sem política de dados clara. Mesma regra do `OmniRoute`: nunca proxy entre você e a API (2026-10-07) |
+| Carrossel de ferramentas (@sergiovitalhq, 2026-09-28): `Fosowl/agenticSeek`, `coollabsio/coolify`, `D4Vinci/Scrapling`, `OpenBB-finance/OpenBB`, `documenso/documenso`, `twentyhq/twenty`, `myshell-ai/OpenVoice` | aplicativos para hospedar por conta própria, não skills. agenticSeek é agente rival (um agente principal só). Coolify exige servidor próprio; o deploy segue em GitHub Pages, Cloudflare e Firebase. Scrapling contorna bloqueio anti-bot: respeite termos e `robots.txt` e prefira API oficial (`automacao`). OpenBB, Documenso e Twenty são produtos completos (finanças, assinatura, CRM) — avaliar só se o negócio precisar e preferir a versão hospedada. OpenVoice clona voz: só com consentimento escrito da pessoa (2026-10-07) |
+| Carrossel "60 comandos" (@matheustilli, 2026-10-06) | prompts prontos de conteúdo, vendas, SaaS e código; cobertos por `conteudo`, `negocios`, `produto`, `trafego-pago`, `atendimento-vendas`, `/humanizar`, `/gancho`, `/plano`, `/decidir`, `/depurar`, `/testes`, `/refatorar` e os agents `reviewer` e `security`. O comando "gere um CLAUDE.md" é o `/init` nativo (2026-10-07) |
+| Carrossel de skills (@viniciusaraujo.ai, 2026-09-17): `hardikpandya/stop-slop`, `zarazhangrui/frontend-slides`, `Egonex-AI/Understand-Anything`, `LeonxInx/taste-skill`, `cathryn-lavery/diagram-design` | `stop-slop` (MIT) repete o que o `/humanizar` já cobre. `frontend-slides` (MIT) gera slides em HTML; a conta já tem `pptx` e o tipo Slides de artefato, e `frontend-design` cobre estética. `Understand-Anything` (MIT) é plugin com 9 skills e 233 scripts que monta grafo do código — mesma categoria do `code-review-graph`. `taste-skill` e `diagram-design`: repositório não encontrado no GitHub em 2026-10-07; diagrama fica com a skill de conta `artifact-diagramming`. UI/UX Pro Max e Impeccable já recusados; Humanizer já aproveitado (2026-10-07) |
 | `OmniRoute` | proxy que roteia o tráfego para provedores externos. Instalado, mas **não ativado**. Nunca ativar na máquina do trabalho |
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
 | `Repowise`, `Serena` | indexação semântica de repo grande; exigem servidor local e ~25 min de índice. Repos pequenos, trabalho pelo celular — custo sem ganho |
