@@ -651,7 +651,9 @@ function Save-Relatorio([string]$Nome, [string]$Texto, [string[]]$CabCsv, $Linha
     $arquivo = New-OutputPath $Nome
     Write-Csv $arquivo $CabCsv $LinhasCsv
     Write-Host "Arquivo: $arquivo"
-    if ($Abrir -and $env:OS -eq 'Windows_NT') { Start-Process -FilePath $arquivo }
+    if ($Abrir -and $env:OS -eq 'Windows_NT') {
+        try { Start-Process -FilePath $arquivo } catch { Write-Host 'Não consegui abrir a planilha sozinho; abra o arquivo acima.' }
+    }
     return [pscustomobject]@{ Arquivo = $arquivo; Resumo = $Texto }
 }
 

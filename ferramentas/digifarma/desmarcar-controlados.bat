@@ -50,7 +50,7 @@ if not defined ULTIMO (
 )
 echo.
 echo   Vai remarcar o que foi desmarcado nesta execucao:
-echo   %ULTIMO%
+echo   "%ULTIMO%"
 choice /c SN /m "  Confirma"
 if errorlevel 2 goto menu
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PROGRAMA%" -Banco "%BANCO%" -Desfazer "%ULTIMO%"

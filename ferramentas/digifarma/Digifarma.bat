@@ -13,11 +13,13 @@ set "DESMARCAR=%~dp0desmarcar-controlados.ps1"
 set "RELATORIOS=%~dp0relatorios-digifarma.ps1"
 
 set "DF_BAT=%~f0"
-%PS% -Command "$t = [IO.File]::ReadAllText($env:DF_BAT); $i = $t.IndexOf('#EXTRATOR' + '-INICIO'); $j = $t.IndexOf('#EXTRATOR' + '-FIM'); if ($i -lt 0 -or $j -lt $i) { exit 3 }; Invoke-Expression $t.Substring($i, $j - $i)"
+powershell -NoProfile -Command "$t = [IO.File]::ReadAllText($env:DF_BAT); $m = [regex]::Match($t, '(?sm)^#EXTRATOR-INICIO.*?^#EXTRATOR-FIM'); if (-not $m.Success) { exit 3 }; Invoke-Expression $m.Value"
 if errorlevel 1 (
   echo.
   echo   Nao consegui criar os programas na pasta "%~dp0".
-  echo   Coloque este .bat numa pasta onde voce possa gravar, por exemplo C:\Ferramentas\Digifarma
+  echo   - A pasta pode nao permitir gravar: coloque o .bat em C:\Ferramentas\Digifarma, por exemplo.
+  echo   - O antivirus pode ter bloqueado: libere o Digifarma.bat no antivirus.
+  echo   - O arquivo pode ter sido alterado ou corrompido: baixe o Digifarma.bat de novo.
   pause
   exit /b 1
 )
@@ -76,7 +78,7 @@ if not defined ULTIMO (
 )
 echo.
 echo   Vai remarcar o que foi desmarcado nesta execucao:
-echo   %ULTIMO%
+echo   "%ULTIMO%"
 choice /c SN /m "  Confirma"
 if errorlevel 2 goto DF_menu
 %PS% -File "%DESMARCAR%" -Banco "%BANCO%" -Desfazer "%ULTIMO%"
@@ -111,7 +113,7 @@ echo.
 echo   RELATORIOS DENTRO DA PLANILHA DE COTACAO (fazer uma vez so)
 echo.
 echo   1. Deixe a sua cotacao (Cotacao_Pronta_em_branco.xlsx) nesta pasta:
-echo      %~dp0
+echo      "%~dp0"
 echo   2. Abra a cotacao no Excel e aperte Alt+F11.
 echo   3. Clique em Arquivo, Importar arquivo e escolha Relatorios.bas (desta pasta).
 echo      Se ja tinha importado antes: botao direito em Relatorios, Remover, e importe de novo.
@@ -140,30 +142,36 @@ exit /b 0
 $ErrorActionPreference = 'Stop'
 $bat = $env:DF_BAT
 $pasta = Split-Path -Parent $bat
-$utf8Bom = New-Object Text.UTF8Encoding $true
-$ansi = [Text.Encoding]::GetEncoding(1252)
+$utf8Bom = New-Object System.Text.UTF8Encoding $true
+$ansi = [System.Text.Encoding]::GetEncoding(1252)
 $nome = $null
-$linhas = New-Object Collections.Generic.List[string]
+$mudou = $false
+$linhas = New-Object System.Collections.Generic.List[string]
 foreach ($l in [IO.File]::ReadAllLines($bat)) {
     if ($null -eq $nome) {
         if ($l.StartsWith('#ARQUIVO-INICIO ')) { $nome = $l.Substring(16).Trim(); $linhas.Clear() }
         continue
     }
     if ($l -ceq '#ARQUIVO-FIM') {
-        $texto = ($linhas -join "`r`n") + "`r`n"
-        if ($nome.EndsWith('.bas')) { $enc = $ansi } else { $enc = $utf8Bom }
+        # .bas em Windows-1252 com CRLF (o que o editor do Excel lê); .ps1 em UTF-8 com BOM, igual ao original.
+        if ($nome.EndsWith('.bas')) { $enc = $ansi; $quebra = "`r`n" } else { $enc = $utf8Bom; $quebra = "`n" }
+        $texto = ($linhas -join $quebra) + $quebra
+        # Caractere inválido = .bat salvo em outra codificação: não estraga os programas que já estão na pasta.
+        if ($texto.IndexOf([char]0xFFFD) -ge 0) { throw "o Digifarma.bat está corrompido ($nome); baixe o arquivo de novo." }
         $destino = Join-Path $pasta $nome
         $atual = $null
         if (Test-Path -LiteralPath $destino) { $atual = [IO.File]::ReadAllText($destino, $enc) }
         if ($atual -cne $texto) {
             [IO.File]::WriteAllText($destino, $texto, $enc)
             Write-Host "  Atualizado: $nome"
+            $mudou = $true
         }
         $nome = $null
         continue
     }
     $linhas.Add($l)
 }
+if ($mudou) { Start-Sleep -Seconds 2 }   # dá tempo de ler antes do menu limpar a tela
 #EXTRATOR-FIM
 #ARQUIVO-INICIO desmarcar-controlados.ps1
 <#
@@ -1558,7 +1566,9 @@ function Save-Relatorio([string]$Nome, [string]$Texto, [string[]]$CabCsv, $Linha
     $arquivo = New-OutputPath $Nome
     Write-Csv $arquivo $CabCsv $LinhasCsv
     Write-Host "Arquivo: $arquivo"
-    if ($Abrir -and $env:OS -eq 'Windows_NT') { Start-Process -FilePath $arquivo }
+    if ($Abrir -and $env:OS -eq 'Windows_NT') {
+        try { Start-Process -FilePath $arquivo } catch { Write-Host 'Não consegui abrir a planilha sozinho; abra o arquivo acima.' }
+    }
     return [pscustomobject]@{ Arquivo = $arquivo; Resumo = $Texto }
 }
 

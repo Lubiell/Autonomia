@@ -416,18 +416,24 @@ ok '[ $rc -eq 0 ] && grep -qx "1${TAB}${TAB}RIVOTRIL 2MG${TAB}Psicotrópico${TAB
 ok 'python3 "$DIR/montar-digifarma-bat.py" --conferir >/dev/null' "Digifarma.bat desatualizado: rode python3 montar-digifarma-bat.py"
 BATDIR="$TMP/bat"; mkdir -p "$BATDIR"; cp "$DIR/Digifarma.bat" "$BATDIR/"
 # A mesma linha que o .bat executa para recriar os programas na pasta dele
-cmdps="$(grep -m1 '^%PS% -Command ' "$BATDIR/Digifarma.bat" | tr -d '\r' | sed 's/^%PS% -Command "//; s/"$//')"
+cmdps="$(grep -m1 '^powershell -NoProfile -Command ' "$BATDIR/Digifarma.bat" | tr -d '\r' | sed 's/^powershell -NoProfile -Command "//; s/"$//')"
 extrair() { DF_BAT="$BATDIR/Digifarma.bat" "$PWSH" -NoProfile -Command "$cmdps" 2>&1; }
 out="$(extrair)"; rc=$?
 ok '[ $rc -eq 0 ] && [ "$(grep -c Atualizado <<<"$out")" -eq 3 ]' "bat: primeira extração: código $rc $out"
 ok 'cmp -s "$BATDIR/Relatorios.bas" "$DIR/Relatorios.bas"' "bat: Relatorios.bas diferente do original (cp1252/CRLF)"
-ok '[ "$(head -c3 "$BATDIR/relatorios-digifarma.ps1" | od -An -tx1 | tr -d " ")" = "efbbbf" ] && diff <(tr -d "\r" <"$BATDIR/relatorios-digifarma.ps1") <(tr -d "\r" <"$DIR/relatorios-digifarma.ps1") >/dev/null' "bat: relatorios-digifarma.ps1 diferente do original"
-ok '[ "$(head -c3 "$BATDIR/desmarcar-controlados.ps1" | od -An -tx1 | tr -d " ")" = "efbbbf" ] && diff <(tr -d "\r" <"$BATDIR/desmarcar-controlados.ps1") <(tr -d "\r" <"$DIR/desmarcar-controlados.ps1") >/dev/null' "bat: desmarcar-controlados.ps1 diferente do original"
+ok 'cmp -s "$BATDIR/relatorios-digifarma.ps1" "$DIR/relatorios-digifarma.ps1"' "bat: relatorios-digifarma.ps1 diferente do original (UTF-8 com BOM)"
+ok 'cmp -s "$BATDIR/desmarcar-controlados.ps1" "$DIR/desmarcar-controlados.ps1"' "bat: desmarcar-controlados.ps1 diferente do original (UTF-8 com BOM)"
 out="$(extrair)"; rc=$?
 ok '[ $rc -eq 0 ] && [ -z "$out" ]' "bat: segunda extração regravou sem precisar: $out"
 echo "# mexido" >> "$BATDIR/relatorios-digifarma.ps1"
 out="$(extrair)"; rc=$?
-ok '[ $rc -eq 0 ] && [ "$out" = "  Atualizado: relatorios-digifarma.ps1" ] && diff <(tr -d "\r" <"$BATDIR/relatorios-digifarma.ps1") <(tr -d "\r" <"$DIR/relatorios-digifarma.ps1") >/dev/null' "bat: programa alterado não foi restaurado: $out"
+ok '[ $rc -eq 0 ] && [ "$out" = "  Atualizado: relatorios-digifarma.ps1" ] && cmp -s "$BATDIR/relatorios-digifarma.ps1" "$DIR/relatorios-digifarma.ps1"' "bat: programa alterado não foi restaurado: $out"
+# .bat salvo em outra codificação (byte inválido): falha e não estraga o que já está na pasta
+python3 -c 'import sys; d = open(sys.argv[1], "rb").read(); i = d.index("Relatórios do Digifarma".encode()); open(sys.argv[1], "wb").write(d[:i] + b"\xe9" + d[i + 1:])' "$BATDIR/Digifarma.bat"
+echo "# mexido" >> "$BATDIR/relatorios-digifarma.ps1"
+out="$(extrair)"; rc=$?
+ok '[ $rc -ne 0 ] && grep -q "Digifarma.bat está corrompido" <<<"$out" && [ "$(tail -1 "$BATDIR/relatorios-digifarma.ps1")" = "# mexido" ]' "bat corrompido: código $rc $out"
+cp "$DIR/Digifarma.bat" "$BATDIR/"
 # O programa recriado pelo .bat roda (mesmo relatório de antes, a partir da pasta do .bat)
 out="$("$PWSH" -NoProfile -File "$BATDIR/relatorios-digifarma.ps1" -Isql "$(command -v "$ISQL")" -Banco "localhost:$DB4" -Relatorio ConferenciaSNGPC 2>&1)"; rc=$?
 ok '[ $rc -eq 0 ] && grep -q "controlados conferidos" <<<"$out" && ls "$BATDIR"/registros/conferencia-sngpc_*.csv >/dev/null 2>&1' "bat: programa recriado não rodou: código $rc $out"

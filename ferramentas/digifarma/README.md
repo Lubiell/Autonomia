@@ -31,10 +31,15 @@ Sem `-Aplicar` o programa só **simula**: mostra a lista e não altera nada. Com
      - **7** conferência SNGPC;
      - **8** mapa do banco.
 
-     As opções 5 a 7 abrem a planilha do resultado direto.
+     As opções 5 a 7 abrem a planilha do resultado direto. Quando não há nada a mostrar, só aparece o aviso na janela preta.
    - **Planilha:** **9** mostra como colocar os relatórios dentro da planilha de cotação (macro do Excel), passo a passo.
 
-O banco e a coluna de estoque ficam nas primeiras linhas do `Digifarma.bat`. Se mudarem, ajuste no Bloco de Notas. Se o Windows avisar "O Windows protegeu o computador", clique em **Mais informações > Executar assim mesmo**. O aviso aparece porque o arquivo veio da internet.
+O banco e a coluna de estoque ficam nas duas linhas `set` do começo do `Digifarma.bat`. Se mudarem, ajuste só essas linhas no Bloco de Notas e salve com a codificação **UTF-8** (ou ANSI), nunca "Unicode".
+
+Avisos do Windows, porque o arquivo veio da internet:
+- **"O Windows protegeu o computador"**: clique em **Mais informações > Executar assim mesmo**.
+- **"Aviso de segurança"** ao abrir: clique em **Executar**. Para não perguntar mais, clique com o botão direito no `Digifarma.bat` > **Propriedades**, marque **Desbloquear** e clique em **OK**.
+- **Antivírus**: o `.bat` grava os programas na pasta e os executa, e alguns antivírus desconfiam disso. Se ele sumir ou for bloqueado, libere o `Digifarma.bat` no antivírus. Se der erro ao abrir, o próprio `.bat` mostra as causas prováveis.
 
 Para quem mantém o código: o `Digifarma.bat` é montado por `montar-digifarma-bat.py` a partir dos programas desta pasta. Depois de mudar um deles, rode `python3 montar-digifarma-bat.py`. O `testes/testar.sh` confere se o `.bat` está em dia.
 
