@@ -6,6 +6,7 @@ Configuração de orquestração para o Claude Code: regras permanentes, 12 agen
 CLAUDE.md                 regras permanentes e roteamento
 install.sh / install.ps1  instalação no nível do usuário (~/.claude)
 package.sh / package.ps1  empacota as skills em zip para o claude.ai
+ferramentas/digifarma/    desmarca psicotrópico/antimicrobiano no Digifarma (ver README da pasta)
 .claude/
 ├── settings.json         bloqueios reais (deny/ask), sandbox e hook; não dependem do modelo
 ├── hooks/
