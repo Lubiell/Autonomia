@@ -406,8 +406,13 @@ function Resolve-Esquema([string]$Uso = 'Vendas') {
         foreach ($k in @('LoteProduto', 'LoteVencimento', 'LoteQuantidade')) {
             if (-not $e[$k]) { Stop-Script "falta configurar $k (coluna da tabela $($e.LoteTabela))." 2 }
         }
-        foreach ($k in @('LoteProduto', 'LoteNumero', 'LoteVencimento', 'LoteQuantidade')) {
-            if ($e[$k]) { $e[$k] = (Find-Column $e.LoteTabela $e[$k] $k)[1] }
+        foreach ($k in @('LoteProduto', 'LoteVencimento', 'LoteQuantidade')) {
+            $e[$k] = (Find-Column $e.LoteTabela $e[$k] $k)[1]
+        }
+        # Número do lote é só informativo: se a coluna não existir, sai em branco.
+        if ($e.LoteNumero) {
+            $c = @((Get-Meta).Colunas | Where-Object { $_[0] -eq $e.LoteTabela -and $_[1] -eq $e.LoteNumero })
+            if ($c) { $e.LoteNumero = $c[0][1] } else { $e.LoteNumero = $null }
         }
         $tipo = [int](Find-Column $e.LoteTabela $e.LoteVencimento 'LoteVencimento')[2]
         if (@(12, 35) -notcontains $tipo) { Stop-Script "configuração LoteVencimento = '$($e.LoteVencimento)': essa coluna não é de data." 2 }
@@ -738,7 +743,11 @@ function New-ConferenciaSNGPC {
     $venc = "L.$(Q $e.LoteVencimento)"
     $hoje = "CAST('$((Get-Date).ToString('yyyy-MM-dd', $Inv))' AS $($e.LoteVencimentoTipo))"
     $marcas = @()
-    foreach ($k in @('ProdPsicotropico', 'ProdAntimicrobiano')) { if ($e[$k]) { $marcas += "P.$(Q $e[$k]) = '$($e.ProdMarcadoValor)'" } }
+    $usadas = @()
+    foreach ($k in @('ProdPsicotropico', 'ProdAntimicrobiano')) {
+        if ($e[$k]) { $marcas += "P.$(Q $e[$k]) = '$($e.ProdMarcadoValor)'"; $usadas += "$($e[$k]) = '$($e.ProdMarcadoValor)'" }
+    }
+    Write-Host "Controlados: produtos com $($usadas -join ' ou ')."
     $sql = "SELECT '#S|' || $($x.Chave) || '|' || $($x.Desc) || '|' || $($x.Barras) || '|' || $($x.Estoque) || '|' || $($x.Controle) || '|' || " +
         "COALESCE(CAST(SUM($qtd) AS VARCHAR(40)), '0') || '|' || " +
         "COALESCE(CAST(SUM(CASE WHEN $venc < $hoje AND $qtd > 0 THEN $qtd ELSE 0 END) AS VARCHAR(40)), '0') || '|' || " +
@@ -986,6 +995,13 @@ function Invoke-Botao([string]$Acao) {
         [void][Windows.Forms.MessageBox]::Show('A data de início está depois da data de fim.', 'Período inválido', [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Warning)
         return
     }
+    # Com a data de fim até hoje, o relatório de lotes só traria os já vencidos.
+    if ($Acao -eq 'LotesVencendo' -and $fim -le (Get-Date).Date) {
+        $resp = [Windows.Forms.MessageBox]::Show("A data de fim ($($fim.ToString('dd/MM/yyyy'))) não passa de hoje: só vão aparecer lotes JÁ VENCIDOS.`n`n" +
+            "Para ver os que vão vencer, ponha uma data de fim no futuro (por exemplo, daqui a 90 dias).`n`nGerar assim mesmo?",
+            'Lotes vencendo', [Windows.Forms.MessageBoxButtons]::YesNo, [Windows.Forms.MessageBoxIcon]::Question)
+        if ($resp -ne [Windows.Forms.DialogResult]::Yes) { return }
+    }
     $script:Ocupado = $true
     foreach ($b in $script:Botoes) { $b.Enabled = $false }
     $script:Form.Cursor = [Windows.Forms.Cursors]::WaitCursor
@@ -1018,7 +1034,7 @@ function Invoke-Botao([string]$Acao) {
 }
 
 # ---------- início ----------
-if (-not ($Janela -or $Mapa -or $Relatorio)) { Stop-Script 'escolha o que fazer: -Janela, -Mapa ou -Relatorio CurvaABC/SugestaoCompra.' 2 }
+if (-not ($Janela -or $Mapa -or $Relatorio)) { Stop-Script 'escolha o que fazer: -Janela, -Mapa ou -Relatorio (CurvaABC, SugestaoCompra, LotesVencendo, EstoqueNegativo ou ConferenciaSNGPC).' 2 }
 if ($ArquivoSaida -and -not $Relatorio) { Stop-Script '-ArquivoSaida só vale junto com -Relatorio.' 2 }
 if ($RelatoriosComData -contains $Relatorio) {
     if (-not $DataInicio -or -not $DataFim) { Stop-Script 'informe -DataInicio e -DataFim (dd/mm/aaaa).' 2 }

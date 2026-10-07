@@ -380,5 +380,34 @@ ok '[ $rc -eq 0 ] && grep -q "Nenhum produto com estoque negativo" <<<"$out" && 
 out="$(rel4 -Relatorio EstoqueNegativo -PastaSaida "$TMP/n4" -ArquivoSaida "$TMP/n4/neg.tsv")"; rc=$?
 ok '[ $rc -eq 0 ] && [ "$(cat "$TMP/n4/neg.tsv")" = "Codigo${TAB}CodBarras${TAB}Descricao${TAB}Estoque${TAB}Controle" ]' "macro estoque negativo vazio: código $rc $(cat "$TMP/n4/neg.tsv" 2>/dev/null)"
 
+# Coluna do número do lote com outro nome: os relatórios de lote seguem, com o lote em branco
+printf "@{ LoteNumero = 'NAO_EXISTE' }\n" > "$TMP/sem-numero.psd1"
+out="$(rel4 -Esquema "$TMP/sem-numero.psd1" -Relatorio LotesVencendo -DataInicio "$INI" -DataFim "$FIM" -PastaSaida "$TMP/l3" -ArquivoSaida "$TMP/l3/l.tsv")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -qx "$(date -d "-5 days" +%F)${TAB}-5${TAB}2${TAB}7891000000028${TAB}AMOXICILINA 500MG${TAB}${TAB}2${TAB}5${TAB}Antimicrobiano" "$TMP/l3/l.tsv"' "lotes sem a coluna do número: código $rc $out"
+out="$(rel4 -Esquema "$TMP/sem-numero.psd1" -Relatorio ConferenciaSNGPC -PastaSaida "$TMP/s3")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -q "Controlados: produtos com PSICOTROPICO = .S. ou ANTIMICROBIANO = .S." <<<"$out"' "SNGPC sem a coluna do número: código $rc $out"
+
+# Banco em dialeto 1 (Digifarma antigo): a coluna DATE é na verdade TIMESTAMP
+DB5="$TMP/dialeto1.fdb"
+{ echo "SET SQL DIALECT 1; CREATE DATABASE 'localhost:$DB5' DEFAULT CHARACTER SET WIN1252;"; cat <<'SQL'
+CREATE TABLE PRODUTOS (PRODUTO_ID INTEGER NOT NULL PRIMARY KEY, PROD_NOME VARCHAR(60), PROD_SALDO NUMERIC(15,3), PSICOTROPICO CHAR(1), ANTIMICROBIANO CHAR(1));
+CREATE TABLE LOTES (LOTE_ID INTEGER NOT NULL PRIMARY KEY, PRODUTO_ID INTEGER, NUM_LOTE VARCHAR(20), LOTE_VENCIMENTO DATE, LOTE_QUANTIDADE NUMERIC(15,3));
+COMMIT;
+INSERT INTO PRODUTOS VALUES (1, 'RIVOTRIL 2MG', 10, 'S', 'N');
+INSERT INTO LOTES VALUES (1, 1, 'A1', 'TODAY', 6);
+INSERT INTO LOTES VALUES (2, 1, 'A2', 'TODAY', 3);
+UPDATE LOTES SET LOTE_VENCIMENTO = LOTE_VENCIMENTO + 10 WHERE LOTE_ID = 1;
+UPDATE LOTES SET LOTE_VENCIMENTO = LOTE_VENCIMENTO - 3 WHERE LOTE_ID = 2;
+COMMIT;
+SQL
+} > "$TMP/cria1.sql"
+"$ISQL" -q -i "$TMP/cria1.sql" >/dev/null 2>&1
+ok '[ "$(sql "$DB5" "SELECT F.RDB\$FIELD_TYPE FROM RDB\$RELATION_FIELDS R JOIN RDB\$FIELDS F ON F.RDB\$FIELD_NAME = R.RDB\$FIELD_SOURCE WHERE R.RDB\$FIELD_NAME = '"'"'LOTE_VENCIMENTO'"'"';" | tr -d " ")" = "35" ]' "dialeto 1: banco de teste não ficou com TIMESTAMP"
+rel5() { "$PWSH" -NoProfile -File "$DIR/relatorios-digifarma.ps1" -Isql "$(command -v "$ISQL")" -Banco "localhost:$DB5" "$@" 2>&1; }
+out="$(rel5 -Relatorio LotesVencendo -DataInicio "$INI" -DataFim "$FIM" -PastaSaida "$TMP/d1" -ArquivoSaida "$TMP/d1/l.tsv")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -qx "$(date -d "-3 days" +%F)${TAB}-3${TAB}1${TAB}${TAB}RIVOTRIL 2MG${TAB}A2${TAB}3${TAB}10${TAB}Psicotrópico" "$TMP/d1/l.tsv" && grep -q "^$(date -d "+10 days" +%F)${TAB}10${TAB}" "$TMP/d1/l.tsv"' "dialeto 1 lotes: código $rc $out"
+out="$(rel5 -Relatorio ConferenciaSNGPC -PastaSaida "$TMP/d2" -ArquivoSaida "$TMP/d2/s.tsv")"; rc=$?
+ok '[ $rc -eq 0 ] && grep -qx "1${TAB}${TAB}RIVOTRIL 2MG${TAB}Psicotrópico${TAB}10${TAB}9${TAB}1${TAB}3${TAB}0${TAB}estoque diferente da soma dos lotes; lote vencido com saldo" "$TMP/d2/s.tsv"' "dialeto 1 SNGPC: código $rc $out"
+
 echo "passou: $PASS  falhou: $FAIL"
 [ "$FAIL" -eq 0 ]

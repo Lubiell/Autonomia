@@ -19,7 +19,8 @@ echo.
 echo   RELATORIOS DO DIGIFARMA (so leitura, nao altera nada)
 echo   Banco: %BANCO%
 echo.
-echo   1 - Abrir a janela de relatorios (Curva ABC, Sugestao de compra, mapa)
+echo   1 - Abrir a janela de relatorios (Curva ABC, Sugestao de compra, lotes vencendo,
+echo       estoque negativo, conferencia SNGPC e mapa)
 echo   2 - Gerar so o MAPA DO BANCO, sem janela (mande o arquivo na conversa)
 echo   3 - Sair
 echo.

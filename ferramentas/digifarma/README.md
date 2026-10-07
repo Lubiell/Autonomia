@@ -143,7 +143,7 @@ Dê dois cliques em `relatorios.bat`. O menu tem duas opções:
 1. **Abrir a janela de relatórios.** Nela você escolhe a **data de início** e a **data de fim** do período de vendas, e clica no botão do relatório:
    - **Gerar Curva ABC**: os produtos vendidos no período, do maior para o menor faturamento, com a classe. A são os que somam até 80% do faturamento, B até 95%, C o resto. Vendas canceladas não contam.
    - **Gerar Sugestão de compra (cotação)**: para cada produto, calcula a venda média por dia × os **dias de estoque desejados** (campo na janela, padrão 30) − o estoque atual. Grava uma planilha com a conta e uma **cópia preenchida da cotação**. A cópia tem PRODUTO (nome e código de barras) e QUANT na aba Cotação, a partir da linha 3, até 1000 produtos. As fórmulas, cores e abas de fornecedores da sua planilha ficam como estão e recalculam ao abrir. O `Cotacao_Pronta_em_branco.xlsx` original nunca é alterado.
-   - **Lotes vencendo (no período)**: lotes com saldo cujo **vencimento** cai entre as duas datas, do mais antigo ao mais novo. Com a data de início no passado, aparecem também os **já vencidos**. Lote de produto com estoque zero ou negativo fica de fora, porque já saiu.
+   - **Lotes vencendo (no período)**: lotes com saldo cujo **vencimento** cai entre as duas datas, do mais antigo ao mais novo. Ajuste as datas antes: a janela abre com os últimos 30 dias, e com a data de fim até hoje ele avisa que só vão aparecer lotes já vencidos. Com a data de início no passado, aparecem também os **já vencidos**. Lote de produto com estoque zero ou negativo fica de fora, porque já saiu.
    - **Estoque negativo**: produtos com estoque abaixo de zero, indicando os controlados. Não usa as datas.
    - **Conferência SNGPC**: para os psicotrópicos e antimicrobianos, mostra só os que têm algum destes problemas. Não usa as datas.
      - estoque do produto diferente da soma dos saldos dos lotes;
@@ -169,11 +169,11 @@ Tudo vai para a pasta `registros\`:
 - tabela `LOTES`, com as colunas `PRODUTO_ID`, `NUM_LOTE`, `LOTE_VENCIMENTO` e `LOTE_QUANTIDADE`;
 - em `PRODUTOS`, as colunas `PROD_SALDO`, `PSICOTROPICO` e `ANTIMICROBIANO` (marcado = `S`).
 
-A suposição é que `LOTE_QUANTIDADE` é o **saldo atual** do lote. Na primeira vez, confira alguns produtos com a tela de lotes do Digifarma. Se não bater, mande na conversa um exemplo do que aparece na tela e do que saiu no relatório. Os nomes podem ser trocados no `$EsquemaPadrao` (chaves `Lote...` e `Prod...`).
+A suposição é que `LOTE_QUANTIDADE` é o **saldo atual** do lote e que há **uma linha por lote**. A tabela também tem `ENTRADA_SAIDA` e `ESTOQUE_MOVIMENTADO`, então pode ser que guarde uma linha por movimento. Nesse caso a soma ficaria errada, e a conferência SNGPC encheria de "estoque diferente da soma dos lotes". Na primeira vez, confira alguns produtos com a tela de lotes do Digifarma. Se não bater, mande na conversa um exemplo do que aparece na tela e do que saiu no relatório. Os nomes podem ser trocados no `$EsquemaPadrao` (chaves `Lote...` e `Prod...`).
 
 ## Relatórios dentro da planilha (macro do Excel)
 
-Os mesmos dois relatórios podem ficar **dentro da sua planilha de cotação**, em abas novas com as datas e um botão. O botão chama o `relatorios-digifarma.ps1`, que só lê o banco, e traz o resultado para a aba.
+Os relatórios também podem ficar **dentro da sua planilha de cotação**, em abas novas com as datas e um botão. O botão chama o `relatorios-digifarma.ps1`, que só lê o banco, e traz o resultado para a aba.
 
 **Instalação (uma vez só):**
 
@@ -216,7 +216,7 @@ Observações:
 - tabela ambígua ou sem `PROD` no nome;
 - código com `|`;
 - relatórios: Curva ABC, sugestão de compra, período inválido ou sem vendas e cotação preenchida a partir de um modelo em branco;
-- lotes vencendo, estoque negativo e conferência SNGPC, num banco com os nomes de tabelas e colunas do Digifarma;
+- lotes vencendo, estoque negativo e conferência SNGPC, num banco com os nomes de tabelas e colunas do Digifarma, inclusive em banco de dialeto 1 (Digifarma antigo);
 - o arquivo de texto que a macro do Excel lê (`-ArquivoSaida`).
 
 A macro do Excel (`Relatorios.bas`) não é coberta por esses testes: o VBA só roda no Excel do Windows.
