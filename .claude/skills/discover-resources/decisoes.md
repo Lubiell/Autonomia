@@ -42,6 +42,8 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Perguntas em aberto no agent `architect` (cada ramo de decisão que o código não responde vira pergunta fechada com recomendação) — ideia da skill `grill-me` de `mattpocock/skills` (MIT), sem instalar — 2026-10-03
 - `NVIDIA/SkillSpector` (Apache-2.0, commit `3c8e4b9`) — primeira triagem de skill antes de instalar, rodado com `uvx` sem instalar no sistema; comando e ressalva de falso positivo na `auditoria.md`. Testado nas 70 skills do Autonomia: nenhum achado real, só falsos positivos (comentário HTML de exemplo, texto que cita o que evitar) — 2026-10-07
 - `/skill-doctor` (nativo, Claude Code v2.1.252+) no lugar do plugin `session-report`: mostra custo de contexto e uso de cada skill sem instalar nada; descrito no README — 2026-10-07
+- Atalho `/conselheiro` — ideia do prompt "conselheiro brutalmente honesto" (@matheustilli, 2026-10-08), reescrito: franco sem crueldade, cada ponto baseado no que a pessoa disse, plano com primeiro passo, encaminhamento a profissional em saúde, dinheiro alto ou lei. Complementa `/advogado-do-diabo` (ataca a ideia) e `/critica-plano` (ataca o plano) — 2026-10-08
+- 4 linhas no `CLAUDE.md` (não pedir licença para passo implícito; dúvida pequena vira suposição declarada; mudar de abordagem após duas falhas iguais; parar ao concluir) — do "Protocolo operacional de autonomia" enviado pelo usuário (2026-10-08). O resto do documento (650 linhas) já estava coberto ou cita skills que não existem aqui (`context-manager`, `vibe-coder`, `doc-processor`) ou já recusadas (`claude-mem`); colá-lo inteiro custaria contexto em todo turno — 2026-10-08
 
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |

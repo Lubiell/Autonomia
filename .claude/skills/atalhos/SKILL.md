@@ -16,6 +16,7 @@ Escolha na tabela o atalho que corresponde ao pedido e siga as instruções comp
 | Pedido | Atalho |
 |---|---|
 | Defende o lado oposto da sua ideia ou decisão para testá-la sob pressão. | `advogado-do-diabo` |
+| Conselho franco sobre a própria situação: desculpas, riscos subestimados, custo de oportunidade e plano. | `conselheiro` |
 | Ataca um plano em busca de falhas e riscos antes que eles aconteçam (pre-mortem). | `critica-plano` |
 | Lista prós e contras equilibrados de uma opção e recomenda. | `pros-contras` |
 | Pesa as opções e escolhe uma, acabando com a paralisia de análise. | `decidir` |
