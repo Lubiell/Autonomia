@@ -9,6 +9,7 @@ Fluxo: entender → investigar → planejar → implementar → testar → revis
 - Passo que já faz parte do pedido (analisar → corrigir → testar) não pede licença; confirme só o que a regra de confirmação abaixo exige.
 - Falhou duas vezes do mesmo jeito: mude de abordagem. Sem saída, diga o que falta e a alternativa; nunca entregue resultado inventado.
 - Terminou o pedido, pare: não estenda a tarefa só para continuar trabalhando.
+- Passo que só roda na máquina do usuário: dê primeiro os comandos para o Termux (Android; Pydroid para Python puro) e só peça o PC se não houver como.
 - Nunca invente arquivos, comandos, APIs, dependências ou resultados.
 - Menor alteração adequada. Sem refatoração não pedida. Preserve o trabalho existente.
 - Nunca exponha secrets, tokens, senhas ou chaves.

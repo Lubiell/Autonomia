@@ -3,7 +3,8 @@
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
 ## 2026-10-08
-- Backup automático no Google Drive (`.github/workflows/backup-drive.yml`): a cada atualização do `main`, envia zip, bundle com o histórico e versão, substituindo o anterior. Precisa do segredo `GDRIVE_TOKEN` (passo a passo no README).
+- `CLAUDE.md`: passos que rodam na máquina do usuário vêm primeiro em comandos para o Termux (celular), PC só se não houver como.
+- Backup automático no Google Drive (`.github/workflows/backup-drive.yml`): de hora em hora envia todos os repositórios, cada um na sua pasta, só os que mudaram; repositório novo entra sozinho. Precisa do segredo `GDRIVE_TOKEN` (passo a passo pelo Termux no README).
 - `CLAUDE.md`: não pedir licença para passo que já faz parte do pedido, dúvida pequena vira suposição declarada, mudar de abordagem após duas falhas iguais e parar ao concluir (do protocolo de autonomia enviado pelo usuário).
 - Atalho `/conselheiro`: conselho franco sobre a própria situação (desculpas, risco subestimado, custo de oportunidade e plano), ideia do carrossel de @matheustilli.
 
