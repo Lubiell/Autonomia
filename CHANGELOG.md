@@ -2,6 +2,9 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-10-08
+- Atalho `/conselheiro`: conselho franco sobre a própria situação (desculpas, risco subestimado, custo de oportunidade e plano), ideia do carrossel de @matheustilli.
+
 ## 2026-10-07
 - `/skill-doctor` (nativo) no README para medir custo e uso de cada skill; substitui o plugin `session-report` da fila.
 - Varredura com `NVIDIA/SkillSpector` na `auditoria.md`, como primeira triagem antes de instalar skill (com o aviso de falso positivo).
