@@ -182,6 +182,23 @@ Não vêm instalados; avalie com a skill `discover-resources`.
 - `code-review` e `feature-dev` repetem o `reviewer` e o `architect`/`developer`; não instale junto.
 - Referências: [anthropics/skills](https://github.com/anthropics/skills) (formato de skills), [obra/superpowers](https://github.com/obra/superpowers) (TDD e depuração, de onde vieram os passos do `tester` e do `debugger`), [karanb192/claude-code-hooks](https://github.com/karanb192/claude-code-hooks) e [disler/claude-code-damage-control](https://github.com/disler/claude-code-damage-control) (hooks de segurança).
 
+## Backup no Google Drive
+O workflow `.github/workflows/backup-drive.yml` roda a cada atualização do `main` (e pelo botão **Run workflow** em Actions). Ele envia para `Backups-GitHub/<repositório>/` no seu Drive:
+- `<repositório>.zip`: o código atual, abre em qualquer lugar;
+- `<repositório>.bundle`: o histórico completo (restaura com `git clone <repositório>.bundle`);
+- `<repositório>-versao.txt`: commit e data do backup.
+
+Cada envio substitui o arquivo anterior de mesmo nome; as versões antigas ficam no histórico de versões do próprio arquivo no Drive (o Google guarda por 30 dias). Sem o segredo abaixo, o job só avisa e não falha.
+
+**Configurar uma vez (no PC, ~5 min):**
+1. Instale o rclone: `winget install Rclone.Rclone` (Windows) ou veja rclone.org/install.
+2. Rode `rclone config` e responda: `n` (novo) → nome `gdrive` → tipo `drive` → `client_id` e `client_secret` em branco → escopo **`drive.file`** (o rclone só enxerga os arquivos que ele mesmo criou, não o resto do seu Drive) → demais perguntas no padrão → `y` para autorizar no navegador com sua conta Google.
+3. Rode `rclone config show gdrive` e copie só o valor de `token` (o texto que começa com `{"access_token"`).
+4. No GitHub, em cada repositório: **Settings > Secrets and variables > Actions > New repository secret**, nome `GDRIVE_TOKEN`, valor = o token copiado.
+5. Em **Actions > backup-drive > Run workflow**, rode uma vez e confira a pasta `Backups-GitHub` no Drive.
+
+O token dá acesso só aos arquivos criados por ele; não cole em chat nem em arquivo do repositório. Para revogar: myaccount.google.com/permissions.
+
 ## Testes
 ```bash
 bash tests/guard.test.sh      # hook
