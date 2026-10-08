@@ -22,11 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Sintaxe
-        run: for f in .claude/hooks/guard.sh install.sh package.sh tests/*.sh; do bash -n "$f"; done
+        run: for f in .claude/hooks/guard.sh .github/scripts/*.sh install.sh package.sh tests/*.sh; do bash -n "$f"; done
       # shellcheck já vem nos runners Ubuntu do GitHub.
       - name: Lint (shellcheck)
         if: runner.os == 'Linux'
-        run: shellcheck -S warning .claude/hooks/guard.sh install.sh package.sh tests/*.sh
+        run: shellcheck -S warning .claude/hooks/guard.sh .github/scripts/*.sh install.sh package.sh tests/*.sh
       # No macOS, /bin/bash é o 3.2 que o hook precisa suportar.
       - name: Hook
         run: |

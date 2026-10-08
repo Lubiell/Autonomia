@@ -183,21 +183,25 @@ Não vêm instalados; avalie com a skill `discover-resources`.
 - Referências: [anthropics/skills](https://github.com/anthropics/skills) (formato de skills), [obra/superpowers](https://github.com/obra/superpowers) (TDD e depuração, de onde vieram os passos do `tester` e do `debugger`), [karanb192/claude-code-hooks](https://github.com/karanb192/claude-code-hooks) e [disler/claude-code-damage-control](https://github.com/disler/claude-code-damage-control) (hooks de segurança).
 
 ## Backup no Google Drive
-O workflow `.github/workflows/backup-drive.yml` roda a cada atualização do `main` (e pelo botão **Run workflow** em Actions). Ele envia para `Backups-GitHub/<repositório>/` no seu Drive:
-- `<repositório>.zip`: o código atual, abre em qualquer lugar;
+O workflow `.github/workflows/backup-drive.yml` (com `.github/scripts/backup-drive.sh`) faz backup de **todos os seus repositórios**, cada um na própria pasta `Backups-GitHub/<repositório>/` do Drive:
+- `<repositório>.zip`: o código da branch principal, abre em qualquer lugar;
 - `<repositório>.bundle`: o histórico completo (restaura com `git clone <repositório>.bundle`);
 - `<repositório>-versao.txt`: commit e data do backup.
 
-Cada envio substitui o arquivo anterior de mesmo nome; as versões antigas ficam no histórico de versões do próprio arquivo no Drive (o Google guarda por 30 dias). Sem o segredo abaixo, o job só avisa e não falha.
+Roda de hora em hora, a cada atualização do `main` do Autonomia e pelo botão **Run workflow** em Actions. Só reenvia o repositório que mudou; repositório novo entra sozinho na próxima hora. Cada envio substitui o arquivo anterior de mesmo nome; o Drive guarda as versões antigas no histórico do arquivo (30 dias). Sem o segredo abaixo, o job só avisa e não falha. Em repositório público, o GitHub pausa agendamentos depois de 60 dias sem atividade; um commit ou um **Run workflow** reativa.
 
-**Configurar uma vez (no PC, ~5 min):**
-1. Instale o rclone: `winget install Rclone.Rclone` (Windows) ou veja rclone.org/install.
-2. Rode `rclone config` e responda: `n` (novo) → nome `gdrive` → tipo `drive` → `client_id` e `client_secret` em branco → escopo **`drive.file`** (o rclone só enxerga os arquivos que ele mesmo criou, não o resto do seu Drive) → demais perguntas no padrão → `y` para autorizar no navegador com sua conta Google.
-3. Rode `rclone config show gdrive` e copie só o valor de `token` (o texto que começa com `{"access_token"`).
-4. No GitHub, em cada repositório: **Settings > Secrets and variables > Actions > New repository secret**, nome `GDRIVE_TOKEN`, valor = o token copiado.
-5. Em **Actions > backup-drive > Run workflow**, rode uma vez e confira a pasta `Backups-GitHub` no Drive.
+**Configurar uma vez, pelo celular no Termux (~5 min):**
+1. No Termux: `pkg install rclone`.
+2. `rclone config` e responda: `n` (novo) → nome `gdrive` → tipo `drive` → `client_id` e `client_secret` em branco → escopo **`drive.file`** (o rclone só enxerga os arquivos que ele mesmo criou, não o resto do seu Drive) → demais perguntas no padrão → `y` em "Use web browser to automatically authenticate". Abra o link `http://127.0.0.1:53682/auth...` que aparecer no navegador do celular e autorize com sua conta Google.
+3. `rclone config show gdrive` e copie só o valor de `token` (o texto que começa com `{"access_token"`).
+4. No GitHub (navegador do celular), no repositório **Autonomia**: **Settings > Secrets and variables > Actions > New repository secret**, nome `GDRIVE_TOKEN`, valor = o token copiado.
+5. **Actions > backup-drive > Run workflow** e confira a pasta `Backups-GitHub` no Drive.
 
-O token dá acesso só aos arquivos criados por ele; não cole em chat nem em arquivo do repositório. Para revogar: myaccount.google.com/permissions.
+No PC o processo é o mesmo, instalando o rclone com `winget install Rclone.Rclone`.
+
+**Repositórios privados (opcional):** sem mais nada, entram só os públicos. Para incluir os privados, crie um token de acesso (GitHub > Settings > Developer settings > Fine-grained tokens, acesso a todos os repositórios, permissão **Contents: Read-only**) e salve no Autonomia como segredo `BACKUP_GH_TOKEN`.
+
+Os tokens dão acesso só ao necessário; não cole em chat nem em arquivo do repositório. Para revogar o do Drive: myaccount.google.com/permissions.
 
 ## Testes
 ```bash

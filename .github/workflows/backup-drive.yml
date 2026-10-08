@@ -1,43 +1,44 @@
 name: backup-drive
 
-# A cada atualização do main, envia o repositório para o Google Drive
-# (pasta Backups-GitHub/<repositório>/), substituindo o backup anterior.
-# O Drive guarda as versões antigas no histórico do próprio arquivo.
-# Precisa do segredo GDRIVE_TOKEN (ver README, seção "Backup no Google Drive");
+# Backup de TODOS os repositórios do dono no Google Drive, uma pasta por
+# repositório (Backups-GitHub/<repo>/), substituindo o backup anterior.
+# Repositório novo entra sozinho. Roda de hora em hora, a cada atualização
+# do main deste repositório e pelo botão Run workflow; só reenvia o que mudou.
+# Precisa do segredo GDRIVE_TOKEN (ver README, "Backup no Google Drive");
 # sem ele, o job só avisa e termina sem erro.
 
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '17 * * * *'
   workflow_dispatch:
+    inputs:
+      force:
+        description: Reenviar todos, mesmo sem mudança
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
   group: backup-drive
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   backup:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
-      - name: Empacotar
-        run: |
-          name="${GITHUB_REPOSITORY#*/}"
-          mkdir -p backup
-          # Código atual (abre em qualquer lugar) e histórico completo (git clone <arquivo>.bundle).
-          git archive --format=zip --prefix="$name/" -o "backup/$name.zip" HEAD
-          git bundle create "backup/$name.bundle" --all
-          git log -1 --format='%H %cI %s' > "backup/$name-versao.txt"
-          ls -l backup
-
-      - name: Enviar para o Google Drive
+      - name: Backup no Google Drive
         env:
+          GH_TOKEN: ${{ github.token }}
+          BACKUP_OWNER: ${{ github.repository_owner }}
+          BACKUP_GH_TOKEN: ${{ secrets.BACKUP_GH_TOKEN }}
+          BACKUP_FORCE: ${{ inputs.force && '1' || '0' }}
           RCLONE_CONFIG_GDRIVE_TYPE: drive
           RCLONE_CONFIG_GDRIVE_SCOPE: drive.file
           RCLONE_CONFIG_GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
@@ -46,10 +47,6 @@ jobs:
             echo "::warning::Segredo GDRIVE_TOKEN não configurado; backup no Drive não foi feito."
             exit 0
           fi
+          sudo apt-get update -qq
           sudo apt-get install -y -qq rclone >/dev/null
-          name="${GITHUB_REPOSITORY#*/}"
-          # copyto sobrescreve o arquivo de mesmo nome: sempre fica só a versão mais recente.
-          for f in backup/*; do
-            rclone copyto "$f" "gdrive:Backups-GitHub/$name/$(basename "$f")"
-          done
-          rclone ls "gdrive:Backups-GitHub/$name"
+          bash .github/scripts/backup-drive.sh
