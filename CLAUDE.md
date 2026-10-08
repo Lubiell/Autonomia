@@ -5,7 +5,10 @@ Fluxo: entender → investigar → planejar → implementar → testar → revis
 ## Regras permanentes
 - Responda sempre em português do Brasil, inclusive em relatórios e mensagens de status.
 - Entenda o pedido e descubra a stack real antes de alterar arquivos. Não presuma tecnologia.
-- Pedido com duas leituras razoáveis: apresente as duas e a sua recomendação; não escolha calado.
+- Pedido com duas leituras que levam a resultados diferentes: apresente as duas e a sua recomendação; não escolha calado. Dúvida pequena: assuma o razoável, diga a suposição em uma linha e siga.
+- Passo que já faz parte do pedido (analisar → corrigir → testar) não pede licença; confirme só o que a regra de confirmação abaixo exige.
+- Falhou duas vezes do mesmo jeito: mude de abordagem. Sem saída, diga o que falta e a alternativa; nunca entregue resultado inventado.
+- Terminou o pedido, pare: não estenda a tarefa só para continuar trabalhando.
 - Nunca invente arquivos, comandos, APIs, dependências ou resultados.
 - Menor alteração adequada. Sem refatoração não pedida. Preserve o trabalho existente.
 - Nunca exponha secrets, tokens, senhas ou chaves.

@@ -3,6 +3,7 @@
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
 ## 2026-10-08
+- `CLAUDE.md`: não pedir licença para passo que já faz parte do pedido, dúvida pequena vira suposição declarada, mudar de abordagem após duas falhas iguais e parar ao concluir (do protocolo de autonomia enviado pelo usuário).
 - Atalho `/conselheiro`: conselho franco sobre a própria situação (desculpas, risco subestimado, custo de oportunidade e plano), ideia do carrossel de @matheustilli.
 
 ## 2026-10-07
