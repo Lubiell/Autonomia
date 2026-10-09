@@ -2,6 +2,9 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-10-09
+- `CLAUDE.md`: script Python é testado antes de entregar ou commitar, e envio a repositório só com teste passando, por branch e pull request (mesma regra do celular, agora também no PC).
+
 ## 2026-10-08
 - `CLAUDE.md`: passos que rodam na máquina do usuário vêm primeiro em comandos para o Termux (celular), PC só se não houver como.
 - Backup automático no Google Drive (`.github/workflows/backup-drive.yml`): de hora em hora envia todos os repositórios, cada um na sua pasta, só os que mudaram; repositório novo entra sozinho. Precisa do segredo `GDRIVE_TOKEN` (passo a passo pelo Termux no README).
