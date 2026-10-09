@@ -10,6 +10,8 @@ Fluxo: entender → investigar → planejar → implementar → testar → revis
 - Falhou duas vezes do mesmo jeito: mude de abordagem. Sem saída, diga o que falta e a alternativa; nunca entregue resultado inventado.
 - Terminou o pedido, pare: não estenda a tarefa só para continuar trabalhando.
 - Passo que só roda na máquina do usuário: dê primeiro os comandos para o Termux (Android; Pydroid para Python puro) e só peça o PC se não houver como.
+- Script Python (ou outro código que roda): execute e teste antes de entregar ou commitar; falhou, corrija e rode de novo. Pydroid fica para janela e gráfico, que não rodam sem tela.
+- Enviar para um repositório: só com o teste passando, numa branch nova e com pull request; nunca direto no main e nunca faça merge sem o usuário pedir.
 - Nunca invente arquivos, comandos, APIs, dependências ou resultados.
 - Menor alteração adequada. Sem refatoração não pedida. Preserve o trabalho existente.
 - Nunca exponha secrets, tokens, senhas ou chaves.
