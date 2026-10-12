@@ -1,6 +1,6 @@
 ---
 name: conteudo
-description: Use para escrever ou revisar conteúdo de redes sociais e anúncios — post, legenda, carrossel, roteiro de Reels/TikTok/Shorts, título, gancho, chamada para ação, texto de anúncio ou de página de captura. Define objetivo e público, escreve no tom do usuário e entrega variações prontas para publicar.
+description: Use para escrever ou revisar conteúdo de redes sociais e anúncios — post, legenda, carrossel, roteiro de Reels/TikTok/Shorts, título, gancho, chamada para ação, texto de anúncio ou de página de captura, e plano de publicação (calendário). Define objetivo e público, escreve no tom do usuário e entrega variações prontas para publicar.
 ---
 
 # Conteúdo para redes e anúncios
@@ -20,6 +20,8 @@ description: Use para escrever ou revisar conteúdo de redes sociais e anúncios
 - **Carrossel:** slide 1 = gancho; um ponto por slide; último slide = resumo + CTA. Indique o texto de cada slide.
 - **Roteiro de vídeo:** tabela com tempo, fala e o que aparece na tela (texto, corte, imagem). 15–45 s para Reels/TikTok, salvo pedido. Texto na tela legível sem som.
 - **Anúncio:** variações de título, texto principal e CTA separadas, para teste A/B. Uma promessa por variação.
+- **Mesma ideia em várias plataformas:** reescreva para cada uma (tamanho, formato, tom), não copie e cole.
+- **Plano de publicação:** tabela semana × dia × plataforma × formato × tema × objetivo, na frequência que a pessoa consegue manter (melhor 3 por semana sempre do que 7 por uma semana). Misture educar, provar e vender.
 
 ## 3. Limites por plataforma
 - Instagram: legenda até 2.200 caracteres, até 30 hashtags; só as primeiras linhas aparecem antes do "mais".

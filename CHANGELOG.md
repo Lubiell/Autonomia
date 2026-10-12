@@ -2,6 +2,10 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-10-12
+- Skills do Firebase atualizadas para o commit oficial `b5735e5` (metadado de autor e texto reformatado; auditoria sem achado novo).
+- `conteudo`: mesma ideia reescrita para cada plataforma e plano de publicação (calendário) na frequência que a pessoa consegue manter.
+
 ## 2026-10-11
 - `CLAUDE.md`: discordar com motivo, alternativa e risco; não ceder a insistência sem fato novo; resposta começa pelo mais útil, sem bajulação; afirmação sem prova marcada como [Provável] ou [Chute].
 - `/conselheiro`: primeira frase sempre desafia a premissa e cada afirmação leva [Certeza], [Provável] ou [Chute] (prompt de @matheustilli).
