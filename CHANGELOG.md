@@ -6,6 +6,7 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 - `CLAUDE.md`: com os testes locais e o CI do PR verdes, o Claude faz o merge sozinho e confere que chegou ao main (antes, só com pedido do usuário). CI vermelho ou ausente continua sem merge.
 
 ## 2026-10-12
+- Agent `security`: investiga a origem da entrada e a proteção do framework antes de relatar, e separa falha confirmada de "precisa verificar" (método de `getsentry/skills`).
 - Skills do Firebase atualizadas para o commit oficial `b5735e5` (metadado de autor e texto reformatado; auditoria sem achado novo).
 - `conteudo`: mesma ideia reescrita para cada plataforma e plano de publicação (calendário) na frequência que a pessoa consegue manter.
 
