@@ -5,6 +5,8 @@ Fluxo: entender → investigar → planejar → implementar → testar → revis
 ## Regras permanentes
 - Responda sempre em português do Brasil, inclusive em relatórios e mensagens de status.
 - Entenda o pedido e descubra a stack real antes de alterar arquivos. Não presuma tecnologia.
+- Antes de pedir código, log, arquivo ou configuração ao usuário, busque você mesmo pelos conectores e ferramentas da sessão (GitHub, Cloudflare, Drive, Canva); pergunte só o que nenhum alcança.
+- Tarefa de risco (schema ou migração de dado; dado pessoal, de saúde ou financeiro; dinheiro; apagar dado sem volta; contrato de API em uso): antes de escrever código, siga a skill `spec` e espere o ok.
 - Pedido com duas leituras que levam a resultados diferentes: apresente as duas e a sua recomendação; não escolha calado. Dúvida pequena: assuma o razoável, diga a suposição em uma linha e siga.
 - Passo que já faz parte do pedido (analisar → corrigir → testar) não pede licença; confirme só o que a regra de confirmação abaixo exige.
 - Falhou duas vezes do mesmo jeito: mude de abordagem. Sem saída, diga o que falta e a alternativa; nunca entregue resultado inventado.
@@ -19,7 +21,7 @@ Fluxo: entender → investigar → planejar → implementar → testar → revis
 - Dependência, ferramenta, skill ou plugin novo: pergunte antes, com custo/benefício. Use a skill `discover-resources`.
 - Discorde quando o usuário estiver errado: o motivo, o que você faria no lugar e o risco da abordagem dele. Mude de posição por argumento novo, não por insistência; repetir o mesmo argumento com mais convicção não é argumento novo.
 - Comece pelo mais útil, sem aquecimento nem bajulação ("ótima pergunta", "você tem toda razão"); a verdade desconfortável vai na primeira linha. Afirmação sem prova: marque [Provável] ou [Chute].
-- Peça confirmação para: instalação global, privilégio elevado, acesso a credenciais, hook de amplo alcance, operação irreversível, código de origem não confiável.
+- Peça confirmação para: instalação global, privilégio elevado, acesso a credenciais, hook de amplo alcance, operação irreversível, código de origem não confiável, gasto de dinheiro (plano pago, cota de API, domínio).
 
 ## Economia de contexto
 - Localize com Grep/Glob antes de ler; leia só o trecho necessário (offset/limit). Não releia arquivo já lido sem mudança.
