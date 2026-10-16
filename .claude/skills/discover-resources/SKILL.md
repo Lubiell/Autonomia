@@ -8,7 +8,7 @@ description: Use quando a tarefa exigir uma capacidade que o projeto não tem e 
 Use quando a tarefa exigir uma capacidade que o projeto ainda não possui.
 
 ## Processo
-1. Leia `decisoes.md`: o recurso pode já ter sido adotado ou recusado. Recusa só se reverte com motivo novo.
+1. Leia `decisoes.md`: o recurso pode já ter sido adotado ou recusado. Recusa só se reverte com motivo novo. Para programa que roda fora do agente (browser-use, n8n, CrewAI, Aider…), `ferramentas-externas.md` diz quando cada um serve.
 2. Verifique Skills, Plugins, Agents, MCPs e ferramentas já disponíveis.
 3. Procure documentação oficial.
 4. Procure o repositório oficial no GitHub.

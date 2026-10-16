@@ -25,6 +25,12 @@ Em variável de ambiente, arquivo `.env` fora do Git ou gerenciador de segredos.
 - **Nuvem:** GitHub Actions com `on: schedule` (cron em UTC por padrão; `timezone: "America/Sao_Paulo"` muda o fuso) ou Cron Triggers do Cloudflare Workers.
 - Avise quando falhar (e-mail, Telegram, Slack); rotina que falha calada é pior que nenhuma.
 
+## GitHub Actions com agente (`@claude`, revisão de PR)
+- Action fixada por versão ou hash, nunca `@main`/`@beta`; `permissions:` mínimo (sem `contents: write` onde `pull-requests: write` basta).
+- Gatilho só para issue ou comentário do dono do repositório: repositório público aceita issue de qualquer um.
+- O agente abre PR, nunca dá push em `main`; limite de turnos e de custo por execução; segredo só em `secrets.*`, nunca no prompt nem no log.
+- Sem `--dangerously-skip-permissions` em repositório que toca dado de paciente ou pessoal. O agente da Action não tem o contexto da conversa: o que ele precisa saber vai escrito na issue ou no repositório.
+
 ## Robô de navegador (Playwright)
 - Seletores estáveis: papel e texto (`getByRole`, `getByText`) ou `data-testid`, não posição nem classe gerada.
 - Espere pelo elemento ou pelo estado, nunca `sleep` fixo.
