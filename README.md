@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 34 skills, 37 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 34 skills, 38 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -55,8 +55,8 @@ CHANGELOG.md              o que mudou, por data
     ├── produto/              descoberta, feedback, PRD, priorização RICE, MVP, métricas
     ├── prompts-ia/           prompts para imagem, vídeo, texto e assistentes em outras IAs
     ├── cursos/               curso, aula, treinamento: objetivos, módulos, roteiro, avaliação
-    ├── atalhos/              roteador: escolhe e aplica sozinho um dos 39 atalhos abaixo
-    ├── (37 atalhos)          /humanizar, /resumir, /email, /plano, /depurar… — ver "Atalhos"
+    ├── atalhos/              roteador: escolhe e aplica sozinho um dos 40 atalhos abaixo
+    ├── (38 atalhos)          /humanizar, /resumir, /email, /plano, /depurar… — ver "Atalhos"
     ├── handoff/              /handoff: documento para outra sessão continuar (só por comando)
     ├── grill-me/             /grill-me: entrevista até o plano não ter pontas soltas (só por comando)
     └── discover-resources/   avaliar recurso externo antes de instalar
@@ -95,7 +95,7 @@ Rodam sozinhos: a skill `atalhos` (uma só descrição no contexto) reconhece o 
 | Resolver o trabalho | `/email` `/responder` `/resumir` `/tarefas` `/pauta` |
 | Planejar e organizar | `/ideias` `/decidir` `/plano` `/checklist` `/modelo` |
 | Programar | `/depurar` `/explicar-codigo` `/refatorar` `/otimizar` `/testes` |
-| Publicar e aprender | `/regex` `/mensagem-commit` `/documentar` `/quiz` `/comparar` |
+| Publicar e aprender | `/regex` `/mensagem-commit` `/documentar` `/quiz` `/comparar` `/livros` |
 
 ## Conectores (MCP) recomendados — opcionais
 Dão ao Claude acesso às suas contas e ferramentas. Não vêm instalados: cada um pede login ou chave sua. Instale só o que for usar, com o menor acesso possível (somente leitura quando existir), seguindo o README oficial de cada um.
@@ -183,7 +183,7 @@ Não vêm instalados; avalie com a skill `discover-resources`.
 - **`claude-security@claude-plugins-official`**: varredura de segurança do repositório ou só do diff, sob demanda (`/claude-security`), com cada achado verificado antes do relatório; não aplica nada sozinho. Preferido ao `security-guidance`, que faz uma chamada de LLM ao fim de todo turno.
 - **`claude-code-setup@claude-plugins-official`**: lê o projeto e recomenda hooks, skills, MCP e subagents. Somente leitura; rode uma vez por projeto.
 - `code-review` e `feature-dev` repetem o `reviewer` e o `architect`/`developer`; não instale junto.
-- Referências: [anthropics/skills](https://github.com/anthropics/skills) (formato de skills), [obra/superpowers](https://github.com/obra/superpowers) (TDD e depuração, de onde vieram os passos do `tester` e do `debugger`), [karanb192/claude-code-hooks](https://github.com/karanb192/claude-code-hooks) e [disler/claude-code-damage-control](https://github.com/disler/claude-code-damage-control) (hooks de segurança).
+- Referências: [anthropics/skills](https://github.com/anthropics/skills) (formato de skills), [obra/superpowers](https://github.com/obra/superpowers) (TDD e depuração, de onde vieram os passos do `tester` e do `debugger`), os livros *Debugging* (Agans), *The Pragmatic Programmer* (Hunt e Thomas), *Refactoring* (Fowler), *A Philosophy of Software Design* (Ousterhout) e *Working Effectively with Legacy Code* (Feathers) (checklists do `debugger`, `reviewer`, `architect` e `/refatorar`), [karanb192/claude-code-hooks](https://github.com/karanb192/claude-code-hooks) e [disler/claude-code-damage-control](https://github.com/disler/claude-code-damage-control) (hooks de segurança).
 
 ## Backup no Google Drive
 O workflow `.github/workflows/backup-drive.yml` (com `.github/scripts/backup-drive.sh`) faz backup de **todos os seus repositórios**, cada um na própria pasta `Backups-GitHub/<repositório>/` do Drive:
