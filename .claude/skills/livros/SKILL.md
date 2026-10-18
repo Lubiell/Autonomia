@@ -21,6 +21,8 @@ Indique de 2 a 5 livros da lista abaixo, na ordem de leitura, com uma linha de p
 | MDN — Aprender desenvolvimento web (em português) | HTML, CSS e JavaScript, iniciante | https://developer.mozilla.org/pt-BR/docs/Learn |
 | *Pro Git*, Scott Chacon e Ben Straub (2ª ed., em português) | Git, iniciante a avançado | https://git-scm.com/book/pt-br/v2 |
 | *The Linux Command Line*, William Shotts | terminal e shell (vale para o Termux), iniciante | https://linuxcommand.org/tlcl.php |
+| SQLBolt (tutorial interativo, no navegador) | SQL, iniciante | https://sqlbolt.com/ |
+| Tutorial oficial do PostgreSQL | SQL e banco relacional, iniciante a intermediário | https://www.postgresql.org/docs/current/tutorial.html |
 | *SQL Performance Explained* (versão web *Use The Index, Luke*), Markus Winand | SQL e índices, intermediário | https://use-the-index-luke.com/ |
 | *High Performance Browser Networking*, Ilya Grigorik | rede e desempenho web, intermediário | https://hpbn.co/ |
 | *Structure and Interpretation of Computer Programs* (edição em JavaScript) | fundamentos de computação, intermediário a avançado | https://sicp.sourceacademy.org/ |

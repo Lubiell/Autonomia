@@ -46,9 +46,13 @@ for d in "$ROOT"/.claude/skills/*/; do
 done
 [ "$n" -gt 0 ] && pass=$((pass + 1)) || ko "nenhuma skill encontrada"
 
+# Teto de palavras por agent: a rotina semanal acrescenta regras sozinha e não pode inchá-los
+AGENT_WORDS=600
 for f in "$ROOT"/.claude/agents/*.md; do
   [ -f "$f" ] || continue
   check "$f" "$(basename "$f" .md)"
+  w="$(wc -w < "$f" | tr -d ' ')"
+  [ "$w" -le "$AGENT_WORDS" ] && pass=$((pass + 1)) || ko "$f: $w palavras (teto $AGENT_WORDS; troque uma regra fraca em vez de somar)"
 done
 
 # Todo atalho (só por comando) aparece no roteador "atalhos", que os aciona sozinho
