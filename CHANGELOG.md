@@ -2,6 +2,9 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-10-18
+- Regras de livros clássicos de programação nos agents: `debugger` (*Debugging*, de Agans, e *The Pragmatic Programmer*), `reviewer` e `/refatorar` (maus cheiros de *Refactoring*, de Fowler), `architect` (*A Philosophy of Software Design*, de Ousterhout, *Pragmatic Programmer* e *Working Effectively with Legacy Code*, de Feathers). Só checklists curtos; o corpo do agent carrega apenas quando ele roda, então o custo por turno não muda.
+
 ## 2026-10-16
 - Skill de conta `protocolo-dev` incorporada ao Autonomia, para ter uma fonte só de regras: skills novas `spec` (tarefa de risco: caminhos com custo, spec curta e ok antes de codar) e `pecas-graficas` (Canva e checklist de design); `discover-resources/ferramentas-externas.md`; regras de GitHub Actions com agente na `automacao`; no `CLAUDE.md`, buscar pelos conectores antes de perguntar, gate da `spec` e confirmação para gasto de dinheiro. Depois de instalar, a `protocolo-dev` pode ser apagada da conta.
 - README: a sessão na nuvem reaproveita a instalação antiga (vista em 16/10 com a de 09/10); como forçar a reinstalação.
