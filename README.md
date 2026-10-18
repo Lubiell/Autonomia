@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 34 skills, 38 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 34 skills, 37 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -55,8 +55,8 @@ CHANGELOG.md              o que mudou, por data
     ├── produto/              descoberta, feedback, PRD, priorização RICE, MVP, métricas
     ├── prompts-ia/           prompts para imagem, vídeo, texto e assistentes em outras IAs
     ├── cursos/               curso, aula, treinamento: objetivos, módulos, roteiro, avaliação
-    ├── atalhos/              roteador: escolhe e aplica sozinho um dos 40 atalhos abaixo
-    ├── (38 atalhos)          /humanizar, /resumir, /email, /plano, /depurar… — ver "Atalhos"
+    ├── atalhos/              roteador: escolhe e aplica sozinho um dos 39 atalhos abaixo
+    ├── (37 atalhos)          /humanizar, /resumir, /email, /plano, /depurar… — ver "Atalhos"
     ├── handoff/              /handoff: documento para outra sessão continuar (só por comando)
     ├── grill-me/             /grill-me: entrevista até o plano não ter pontas soltas (só por comando)
     └── discover-resources/   avaliar recurso externo antes de instalar
@@ -95,7 +95,7 @@ Rodam sozinhos: a skill `atalhos` (uma só descrição no contexto) reconhece o 
 | Resolver o trabalho | `/email` `/responder` `/resumir` `/tarefas` `/pauta` |
 | Planejar e organizar | `/ideias` `/decidir` `/plano` `/checklist` `/modelo` |
 | Programar | `/depurar` `/explicar-codigo` `/refatorar` `/otimizar` `/testes` |
-| Publicar e aprender | `/regex` `/mensagem-commit` `/documentar` `/quiz` `/comparar` `/livros` |
+| Publicar e aprender | `/regex` `/mensagem-commit` `/documentar` `/quiz` `/comparar` |
 
 ## Conectores (MCP) recomendados — opcionais
 Dão ao Claude acesso às suas contas e ferramentas. Não vêm instalados: cada um pede login ou chave sua. Instale só o que for usar, com o menor acesso possível (somente leitura quando existir), seguindo o README oficial de cada um.

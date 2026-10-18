@@ -1,6 +1,6 @@
 ---
 name: atalhos
-description: Use em tarefas rápidas de texto, decisão e trabalho do dia a dia — resumir, revisar, humanizar, mudar o tom, enxugar, e-mail, resposta, pauta, tarefas de reunião, ideias, prós e contras, decidir, plano, checklist, modelo, gancho, títulos, regex, mensagem de commit, quiz, comparar opções, indicar livros de programação. Escolhe o atalho certo e segue as instruções dele.
+description: Use em tarefas rápidas de texto, decisão e trabalho do dia a dia — resumir, revisar, humanizar, mudar o tom, enxugar, e-mail, resposta, pauta, tarefas de reunião, ideias, prós e contras, decidir, plano, checklist, modelo, gancho, títulos, regex, mensagem de commit, quiz, comparar opções. Escolhe o atalho certo e segue as instruções dele.
 ---
 
 # Roteador de atalhos
@@ -76,7 +76,6 @@ Escolha na tabela o atalho que corresponde ao pedido e siga as instruções comp
 | Pedido | Atalho |
 |---|---|
 | Testa o que você entendeu de um assunto e acha as lacunas rápido. | `quiz` |
-| Indica livros de programação por tema e nível, priorizando os gratuitos e legais. | `livros` |
 
 ## Processo
 | Pedido | Atalho |
