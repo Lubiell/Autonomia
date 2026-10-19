@@ -2,6 +2,9 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-10-19
+- Skills `wrangler` e `workers-best-practices` atualizadas para o commit oficial `86505e4` da Cloudflare: Wrangler só em projeto que já tem `wrangler.jsonc/json/toml`; projeto novo segue o CLI `cf`. Skills do Firebase e do web-quality sem mudança relevante.
+
 ## 2026-10-18
 - Regras de livros clássicos de programação nos agents: `debugger` (*Debugging*, de Agans, e *The Pragmatic Programmer*), `reviewer` e `/refatorar` (maus cheiros de *Refactoring*, de Fowler), `architect` (*A Philosophy of Software Design*, de Ousterhout, *Pragmatic Programmer* e *Working Effectively with Legacy Code*, de Feathers). Só checklists curtos; o corpo do agent carrega apenas quando ele roda, então o custo por turno não muda.
 - Regras dos livros também no `developer` (ao escrever código) e no `tester` (teste de caracterização antes de mexer em código sem teste; um comportamento por teste). `skills.test.sh` limita cada agent a 600 palavras, para a rotina semanal trocar regra fraca em vez de inchar.
@@ -14,6 +17,7 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 - `CLAUDE.md`: com os testes locais e o CI do PR verdes, o Claude faz o merge sozinho e confere que chegou ao main (antes, só com pedido do usuário). CI vermelho ou ausente continua sem merge.
 
 ## 2026-10-12
+- Agent `security`: investiga a origem da entrada e a proteção do framework antes de relatar, e separa falha confirmada de "precisa verificar" (método de `getsentry/skills`).
 - Skills do Firebase atualizadas para o commit oficial `b5735e5` (metadado de autor e texto reformatado; auditoria sem achado novo).
 - `conteudo`: mesma ideia reescrita para cada plataforma e plano de publicação (calendário) na frequência que a pessoa consegue manter.
 
