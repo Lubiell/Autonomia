@@ -2,6 +2,17 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-10-18
+- Regras de livros clássicos de programação nos agents: `debugger` (*Debugging*, de Agans, e *The Pragmatic Programmer*), `reviewer` e `/refatorar` (maus cheiros de *Refactoring*, de Fowler), `architect` (*A Philosophy of Software Design*, de Ousterhout, *Pragmatic Programmer* e *Working Effectively with Legacy Code*, de Feathers). Só checklists curtos; o corpo do agent carrega apenas quando ele roda, então o custo por turno não muda.
+- Regras dos livros também no `developer` (ao escrever código) e no `tester` (teste de caracterização antes de mexer em código sem teste; um comportamento por teste). `skills.test.sh` limita cada agent a 600 palavras, para a rotina semanal trocar regra fraca em vez de inchar.
+- Rotina semanal "Sabedoria e melhoria de programas" (quintas): pesquisa sabedoria de programação e atualiza os agents por PR com merge automático no CI verde; depois melhora um dos seus repositórios por PR pequeno com teste. Em dado de saúde, schema ou envio à Anvisa (`digifarma-sngpc`), só PR em rascunho, sem merge.
+- Atalho `/livros` criado e removido no mesmo dia: o usuário não vai ler os livros, e as regras deles já estão nos agents.
+
+## 2026-10-16
+- Skill de conta `protocolo-dev` incorporada ao Autonomia, para ter uma fonte só de regras: skills novas `spec` (tarefa de risco: caminhos com custo, spec curta e ok antes de codar) e `pecas-graficas` (Canva e checklist de design); `discover-resources/ferramentas-externas.md`; regras de GitHub Actions com agente na `automacao`; no `CLAUDE.md`, buscar pelos conectores antes de perguntar, gate da `spec` e confirmação para gasto de dinheiro. Depois de instalar, a `protocolo-dev` pode ser apagada da conta.
+- README: a sessão na nuvem reaproveita a instalação antiga (vista em 16/10 com a de 09/10); como forçar a reinstalação.
+- `CLAUDE.md`: com os testes locais e o CI do PR verdes, o Claude faz o merge sozinho e confere que chegou ao main (antes, só com pedido do usuário). CI vermelho ou ausente continua sem merge.
+
 ## 2026-10-12
 - Agent `security`: investiga a origem da entrada e a proteção do framework antes de relatar, e separa falha confirmada de "precisa verificar" (método de `getsentry/skills`).
 - Skills do Firebase atualizadas para o commit oficial `b5735e5` (metadado de autor e texto reformatado; auditoria sem achado novo).

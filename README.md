@@ -29,6 +29,7 @@ CHANGELOG.md              o que mudou, por data
     ├── frontend-design/      direção visual de sites (oficial Anthropic, Apache-2.0)
     ├── webapp-testing/       teste de site no navegador com Playwright (oficial Anthropic, Apache-2.0)
     ├── deploy-web/           checklist de publicação: GitHub Pages, Cloudflare, Firebase
+    ├── spec/                 tarefa de risco: caminhos com custo, spec curta e ok antes de codar
     ├── wrangler/             CLI da Cloudflare (oficial Cloudflare, Apache-2.0)
     ├── workers-best-practices/ Workers em produção (oficial Cloudflare, Apache-2.0)
     ├── firebase-hosting-basics/, firebase-auth-basics/, firebase-security-rules-auditor/ (oficiais Firebase, Apache-2.0)
@@ -36,6 +37,7 @@ CHANGELOG.md              o que mudou, por data
     ├── mei-impostos/         MEI, DAS, DASN-SIMEI, NFS-e, quando virar ME
     ├── contratos/            contrato e proposta de prestação de serviço
     ├── marca/                posicionamento, tom de voz, paleta, tipografia, guia de marca
+    ├── pecas-graficas/       cartaz, etiqueta, folheto e post pelo Canva, checklist de design
     ├── rh/                   CLT, PJ, estágio, vaga, entrevista sem viés, onboarding
     ├── melhorar-projeto/     diagnóstico por área e o agent ou skill indicado para cada melhoria
     ├── banco-dados/          modelagem, migração, query segura, índices, Firestore, backup, LGPD
@@ -59,6 +61,7 @@ CHANGELOG.md              o que mudou, por data
     ├── grill-me/             /grill-me: entrevista até o plano não ter pontas soltas (só por comando)
     └── discover-resources/   avaliar recurso externo antes de instalar
         ├── auditoria.md      checklist de segurança antes de instalar
+        ├── ferramentas-externas.md  browser-use, n8n, CrewAI, Aider…: quando cada um serve
         └── decisoes.md       registro do que foi adotado ou recusado
 tests/                    testes do hook e dos instaladores
 .github/workflows/test.yml  CI: Linux, macOS (bash 3.2) e Windows (Git Bash, PowerShell 7 e 5.1)
@@ -67,12 +70,12 @@ tests/                    testes do hook e dos instaladores
 ## Áreas cobertas
 | Área | Agents | Skills |
 |---|---|---|
-| Desenvolvimento | architect, developer, debugger, tester, reviewer, devops, scout, docs-writer | api-backend, banco-dados, automacao, deploy-web, wrangler, workers-best-practices, firebase-hosting-basics, firebase-auth-basics, firebase-security-rules-auditor |
+| Desenvolvimento | architect, developer, debugger, tester, reviewer, devops, scout, docs-writer | spec, api-backend, banco-dados, automacao, deploy-web, wrangler, workers-best-practices, firebase-hosting-basics, firebase-auth-basics, firebase-security-rules-auditor |
 | Sites | qa-web | frontend-design, seo, webapp-testing, accessibility, performance |
 | Dados | data-analyst | analise-dados |
 | Marketing | — | conteudo, trafego-pago |
 | Negócios e gestão | — | negocios, projetos, atendimento-vendas, produto, mei-impostos, contratos, rh |
-| Marca | — | marca |
+| Marca | — | marca, pecas-graficas |
 | Educação | — | cursos |
 | IA generativa | — | prompts-ia |
 | Segurança e privacidade | security | seguranca-digital, lgpd |
@@ -133,11 +136,11 @@ Use **um** dos dois modos. Se o `CLAUDE.md` estiver no nível do usuário e tamb
 |---|---|
 | **PC** — Claude Code no terminal, VS Code ou app desktop | instalador acima (`install.sh` / `install.ps1`) |
 | **Celular controlando o PC** | no PC, rode `claude remote-control` na pasta do projeto; a sessão aparece no app Claude do celular (Code) com tudo o que está instalado no PC. O PC precisa ficar ligado. |
-| **Celular com sessão na nuvem** — app Claude > Code, sem o PC | a sessão roda num container novo, sem o seu `~/.claude`. Nas configurações do ambiente da nuvem (menu do ambiente na barra de título da sessão > Editar), em **Script de configuração**, cole a linha abaixo. Toda sessão nova instala a versão mais recente do `main`. |
+| **Celular com sessão na nuvem** — app Claude > Code, sem o PC | a sessão roda num container novo, sem o seu `~/.claude`. Nas configurações do ambiente da nuvem (menu do ambiente na barra de título da sessão > Editar), em **Script de configuração**, cole a linha abaixo. Atenção: uma sessão aberta em 16/10 ainda tinha a instalação de 09/10 (`ls -l ~/.claude/CLAUDE.md` mostra a data), ou seja, o ambiente reaproveita o resultado do script. [Provável] Editar o script (trocar a data do comentário no fim da linha) faz o ambiente instalar de novo; confira a data na sessão seguinte. |
 | **Chat do app Claude** — celular, web e desktop | skills por zip (seção seguinte): ficam na conta e valem em todos os aparelhos. As regras do `CLAUDE.md` entram coladas nas instruções da conta ou de um Projeto. No chat não há agents nem hook: quando uma skill indica um agent, o próprio Claude faz a tarefa seguindo a skill. |
 
 ```bash
-git clone --depth 1 https://github.com/Lubiell/Autonomia.git /tmp/autonomia && AUTONOMIA_SEM_SANDBOX=1 bash /tmp/autonomia/install.sh
+git clone --depth 1 https://github.com/Lubiell/Autonomia.git /tmp/autonomia && AUTONOMIA_SEM_SANDBOX=1 bash /tmp/autonomia/install.sh  # 2026-10-16
 ```
 
 `AUTONOMIA_SEM_SANDBOX=1` instala tudo menos o sandbox, porque o container da nuvem já é isolado. A política de rede do ambiente precisa liberar o `github.com`.
@@ -180,7 +183,7 @@ Não vêm instalados; avalie com a skill `discover-resources`.
 - **`claude-security@claude-plugins-official`**: varredura de segurança do repositório ou só do diff, sob demanda (`/claude-security`), com cada achado verificado antes do relatório; não aplica nada sozinho. Preferido ao `security-guidance`, que faz uma chamada de LLM ao fim de todo turno.
 - **`claude-code-setup@claude-plugins-official`**: lê o projeto e recomenda hooks, skills, MCP e subagents. Somente leitura; rode uma vez por projeto.
 - `code-review` e `feature-dev` repetem o `reviewer` e o `architect`/`developer`; não instale junto.
-- Referências: [anthropics/skills](https://github.com/anthropics/skills) (formato de skills), [obra/superpowers](https://github.com/obra/superpowers) (TDD e depuração, de onde vieram os passos do `tester` e do `debugger`), [karanb192/claude-code-hooks](https://github.com/karanb192/claude-code-hooks) e [disler/claude-code-damage-control](https://github.com/disler/claude-code-damage-control) (hooks de segurança).
+- Referências: [anthropics/skills](https://github.com/anthropics/skills) (formato de skills), [obra/superpowers](https://github.com/obra/superpowers) (TDD e depuração, de onde vieram os passos do `tester` e do `debugger`), os livros *Debugging* (Agans), *The Pragmatic Programmer* (Hunt e Thomas), *Refactoring* (Fowler), *A Philosophy of Software Design* (Ousterhout) e *Working Effectively with Legacy Code* (Feathers) (checklists do `debugger`, `reviewer`, `architect` e `/refatorar`), [karanb192/claude-code-hooks](https://github.com/karanb192/claude-code-hooks) e [disler/claude-code-damage-control](https://github.com/disler/claude-code-damage-control) (hooks de segurança).
 
 ## Backup no Google Drive
 O workflow `.github/workflows/backup-drive.yml` (com `.github/scripts/backup-drive.sh`) faz backup de **todos os seus repositórios**, cada um na própria pasta `Backups-GitHub/<repositório>/` do Drive:

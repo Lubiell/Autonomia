@@ -48,6 +48,10 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Atalho `/cliente-dificil` — do infográfico "O mapa completo do Claude" (@poderartificial, 2026-10-11), único item sem equivalente: treino de venda e atendimento com o Claude no papel do cliente e avaliação no fim. O resto do mapa (fórmula do prompt, papéis, fluxos de conteúdo e automação, conectores, skills, Claude Code) já está coberto por `prompts-ia`, `conteudo`, `automacao`, os atalhos e o README — 2026-10-11
 - Carrossel "10 skills" (fabianocarvalhojr, 2026-10-12): o conteúdo das skills só vem por DM (comentar palavra-chave), e o comando mostrado só cria uma pasta vazia — não há o que auditar nem instalar. Todas já cobertas: `automation-master`/`file-automation` = `automacao` (+ `midia` para converter); `browser-automation` = `automacao` + `webapp-testing`; `data-analysis` = `analise-dados` + agent `data-analyst`; `research-agent` = agent `researcher`; `content-writer` = `conteudo` + `/humanizar`; `design-automation` = `marca`. Única lacuna: post adaptado por plataforma e plano de publicação, acrescentados à `conteudo` — 2026-10-12
 - Agent `security`: investigar antes de relatar (origem da entrada, proteção do framework) e separar "confirmado" de "precisa verificar" e de "teórico" — método da skill `security-review` de `getsentry/skills` (Apache-2.0, commit `d18b7aa`), reescrito em português sem copiar; chegou pelo carrossel de @devemdobro (2026-10-12). Teste real: separou SQL injection de um falso positivo com constante. Do mesmo carrossel: `writing-plans` (já disponível na conta e no `architect`), `test-driven-development` (vermelho → verde já está no `tester`; `superpowers` segue recusado) e `frontend-design` (já instalada) — 2026-10-12
+- Skill de conta `protocolo-dev` aposentada: o que só ela tinha veio para cá — skills `spec` (gate de tarefa de risco) e `pecas-graficas` (Canva e checklist de design), `ferramentas-externas.md` nesta pasta, regras de GitHub Actions com agente na `automacao`, e no `CLAUDE.md` conectores antes de perguntar e confirmação para gasto. `sync.md` não veio: o instalador do Autonomia já iguala as máquinas. O resto já existia aqui (`handoff`, `deploy-web`, `depurar`, `testes`, `banco-dados`, `api-backend`, `conteudo`, `discover-resources`). Motivo: duas fontes de regra se contradiziam (merge automático) e a skill de conta não tem histórico nem teste — 2026-10-16
+- Regras de livros clássicos de programação, reescritas em checklists curtos, sem copiar texto: no `debugger`, as 9 regras de *Debugging* (David Agans) que faltavam (olhar antes de teorizar, checar o óbvio, dividir para isolar, uma mudança por vez, anotar, "sumiu sem saber por quê não está corrigido") e "`select` não está quebrado" de *The Pragmatic Programmer* (Hunt e Thomas, 2ª ed., dica 33); no `reviewer` e no `/refatorar`, os maus cheiros de *Refactoring* (Fowler, 2ª ed., cap. 3) e o "nunca refatorar e mudar comportamento juntos"; no `architect`, "projete duas vezes", módulo profundo, divisão pelo que se esconde e "elimine o erro pelo desenho" de *A Philosophy of Software Design* (Ousterhout), "fácil de mudar" e "balas traçantes" do *Pragmatic Programmer* (dicas 14 e 20) e testes de caracterização antes de mexer em código sem teste de *Working Effectively with Legacy Code* (Feathers). TDD (Beck) já estava no `tester` via `obra/superpowers`. A lista `free-programming-books` continua recusada: livro inteiro não muda o comportamento do Claude — 2026-10-18
+- Atalho `/livros` (lista de livros para o usuário estudar): criado e removido em 2026-10-18 — o usuário não vai ler os livros; o que melhora os programas são as regras deles nos agents (item acima). Não recriar sem pedido novo — 2026-10-18
+- Rotina semanal "Sabedoria e melhoria de programas" (pedido do usuário, 2026-10-18): fontes só reconhecidas (livros, documentação oficial, guias de engenharia de empresas e autores conhecidos), regra reescrita em uma linha com a fonte registrada aqui, nunca texto copiado. Pode mexer só no corpo dos agents e no `/refatorar`; nunca em `settings`, hooks, permissões, `CLAUDE.md` nem em regra que afrouxe teste ou segurança. Merge automático com CI verde, por escolha do usuário, ciente de que o CI confere formato e não conteúdo; o agent `security` revisa o diff antes. Nos outros repositórios, PR pequeno com teste e merge só com CI verde; em dado de saúde, financeiro, schema ou contrato de API, PR em rascunho com a `spec`, sem merge — 2026-10-18
 
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |
@@ -86,10 +90,10 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `last30days` (mvanhorn/last30days-skill) | pesquisa de tendências em redes sociais; fora do escopo de desenvolvimento (2026-10-03) |
 | `wshobson/agents` | coleção de 199 agents, 161 skills e 90 plugins: gatilhos sobrepostos aos agents daqui (2026-10-03) |
 | `ai-berkshire` (xbtlin/ai-berkshire) | análise de investimentos, fora do escopo; instala por script (`install-claude-commands.sh`) (2026-10-03) |
-| `claude-mem` (thedotmack/claude-mem) | instalador `npx` que grava as sessões e injeta resumo em toda sessão nova; a continuidade aqui é o `PROGRESS.md` versionado (`handoff.md` do `protocolo-dev`) (2026-10-03) |
+| `claude-mem` (thedotmack/claude-mem) | instalador `npx` que grava as sessões e injeta resumo em toda sessão nova; a continuidade aqui é o `PROGRESS.md` versionado (skill `handoff`) (2026-10-03) |
 | `ui-ux-pro-max` (nextlevelbuilder) | sobrepõe `frontend-design` e `web-design-guidelines`; a busca exige Python (2026-10-03) |
 | `w95/awesome-claude-corporate-skills` | finanças, operações e jurídico escritos para o direito e a contabilidade dos EUA; fora do escopo de desenvolvimento, e copiar as pastas inteiras traz mais de 40 skills (2026-10-03) |
-| `rampstackco/claude-skills` (launch-runbook) | o checklist de publicação já está no `deploy.md` do `protocolo-dev` (2026-10-03) |
+| `rampstackco/claude-skills` (launch-runbook) | o checklist de publicação já está na skill `deploy-web` (2026-10-03) |
 | "Prompt de instalação" das 42 skills (@marcondes.ai) | instala tudo de uma vez, contra a regra de um recurso por vez; skills oficiais citadas (`skill-creator`, `mcp-builder`, `frontend-design`, `canvas-design`, `xlsx`, `docx`, `internal-comms` e outras) já estão disponíveis na conta (2026-10-03) |
 | `shanraisshan/claude-code-best-practice` | guia de referência, não instalável; o que serve já está aplicado (CLAUDE.md curto, settings para o que é determinístico, subagent para isolar contexto) (2026-10-03) |
 | `nimrodfisher/data-analytics-skills` (MIT, 31 skills) | sobrepõe a skill `analise-dados` e cobraria 31 descrições de contexto em todo turno; a ideia útil (processar por script, trazer só o resultado) entrou na `analise-dados` (2026-10-03) |
@@ -153,12 +157,12 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
 | `Repowise`, `Serena` | indexação semântica de repo grande; exigem servidor local e ~25 min de índice. Repos pequenos, trabalho pelo celular — custo sem ganho |
 | `tirth8205/code-review-graph` (MIT, v2.3.9, commit 2026-09-18) | mesma categoria do `Serena`: grafo de código via servidor MCP em Python (`fastmcp`, `tree-sitter`, `networkx`, `watchdog`), e o `install` grava MCP, hook de SessionStart, skills e regras em cada ferramenta detectada. O "60–70% menos tokens" do carrossel (@matheustilli, 2026-10-05) compara com ler o repositório inteiro, que o próprio README chama de teto que nenhum agente paga; contra busca por grep o README ainda não publicou medição. Repos pequenos + `scout` cobrem. Reavaliar só para repo grande (2026-10-05) |
-| modpack `repowise-dev` (no-ai-slop, critic, devil, deep, risk, decision) | personas de resposta; disputam gatilho com o agent `reviewer` e com `spec.md` |
+| modpack `repowise-dev` (no-ai-slop, critic, devil, deep, risk, decision) | personas de resposta; disputam gatilho com o agent `reviewer` e com a skill `spec` |
 | `Strix` | pentest autônomo real, mas exige Docker, chave de LLM paga e scan de 1–4h. Cobrir com `security-review.yml` no CI em vez disso |
 | `Ralph loop` | repete o prompt sem gate de verificação; a regra de evidência já confere saída real |
 
 ## Ferramentas externas avaliadas
-Detalhe de uso em `ferramentas-externas.md` do `protocolo-dev`.
+Detalhe de uso em `ferramentas-externas.md`, nesta pasta.
 
 | Ferramenta | Decisão |
 |---|---|
@@ -168,7 +172,7 @@ Detalhe de uso em `ferramentas-externas.md` do `protocolo-dev`.
 | `CrewAI`, `LangGraph` | só se o projeto for construir um agente. Não instalar "para ajudar" |
 | `Aider`, `OpenHands` | agentes rivais, rodam ao lado. Um agente principal só |
 | `Fooocus` | exige GPU dedicada. Sem ela não roda. Canva já cobre peça gráfica |
-| `claude-task-master` | recusado: colide com `spec.md` e com o agent `architect`. Licença NOASSERTION |
+| `claude-task-master` | recusado: colide com a skill `spec` e com o agent `architect`. Licença NOASSERTION |
 | `ollama/ollama` | roda LLM aberto no próprio PC; exige RAM/GPU e o modelo local é bem mais fraco que o Claude. Só se um projeto precisar processar dado sensível sem enviar para a nuvem. Nunca como proxy do Claude Code (mesma regra do `OmniRoute`) (2026-10-07) |
 | `supabase/supabase` | Postgres gerenciado com login e armazenamento; alternativa ao Firebase/D1 só se o projeto precisar de SQL relacional com autenticação pronta. A `banco-dados` já cobre Postgres. Usar o serviço hospedado, não instalar o repositório (2026-10-07) |
 | `FlowiseAI/Flowise` | montar agente de IA arrastando blocos; mesma regra de `CrewAI`/`LangGraph`: só se o projeto for construir um agente. Para ligar sistemas, `n8n` (2026-10-07) |
@@ -177,7 +181,7 @@ Detalhe de uso em `ferramentas-externas.md` do `protocolo-dev`.
 
 ## Cobertos por texto — não instalar
 Do repositório `addyosmani/agent-skills` (MIT, auditado: sem rede, sem `eval`, hooks não registrados automaticamente):
-`spec-driven-development` → `spec.md` · `source-driven-development` e `doubt-driven-development` → regra de evidência do `CLAUDE.md` · `incremental-implementation` → agent `architect` · `browser-testing-with-devtools` → `testes.md` · `context-engineering` → seção Economia de contexto do `CLAUDE.md`
+`spec-driven-development` → skill `spec` · `source-driven-development` e `doubt-driven-development` → regra de evidência do `CLAUDE.md` · `incremental-implementation` → agent `architect` · `browser-testing-with-devtools` → skill `webapp-testing` e agent `qa-web` · `context-engineering` → seção Economia de contexto do `CLAUDE.md`
 
 Instalá-las por cima duplicaria o gatilho. Se um desses textos se mostrar fraco na prática, vale ler a versão de lá e melhorar o daqui — não instalar as duas.
 

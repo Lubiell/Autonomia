@@ -25,7 +25,7 @@ description: Use para criar ou organizar a identidade de uma marca — posiciona
 Liste opções e confira antes de escolher: domínio disponível, @ nas redes, e busca de marca registrada no INPI (busca.inpi.gov.br). Registrar a marca no INPI protege o nome; recomende para quem vai investir nele.
 
 ## Guia de marca (uma página)
-Posicionamento, tom com exemplos, paleta com códigos, fontes, logo e usos proibidos, 2–3 peças de exemplo. Para peça visual, use as skills `canvas-design` ou `theme-factory`, se disponíveis.
+Posicionamento, tom com exemplos, paleta com códigos, fontes, logo e usos proibidos, 2–3 peças de exemplo. Para peça visual (cartaz, etiqueta, post), use a skill `pecas-graficas`.
 
 ## Consistência
 Ao revisar site, post ou anúncio, aponte o que foge do guia (cor, fonte, tom, promessa) e a correção.
