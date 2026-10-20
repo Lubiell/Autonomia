@@ -2,13 +2,16 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-10-20
+- Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
+
 ## 2026-10-19
 - Skills `wrangler` e `workers-best-practices` atualizadas para o commit oficial `86505e4` da Cloudflare: Wrangler só em projeto que já tem `wrangler.jsonc/json/toml`; projeto novo segue o CLI `cf`. Skills do Firebase e do web-quality sem mudança relevante.
 
 ## 2026-10-18
 - Regras de livros clássicos de programação nos agents: `debugger` (*Debugging*, de Agans, e *The Pragmatic Programmer*), `reviewer` e `/refatorar` (maus cheiros de *Refactoring*, de Fowler), `architect` (*A Philosophy of Software Design*, de Ousterhout, *Pragmatic Programmer* e *Working Effectively with Legacy Code*, de Feathers). Só checklists curtos; o corpo do agent carrega apenas quando ele roda, então o custo por turno não muda.
 - Regras dos livros também no `developer` (ao escrever código) e no `tester` (teste de caracterização antes de mexer em código sem teste; um comportamento por teste). `skills.test.sh` limita cada agent a 600 palavras, para a rotina semanal trocar regra fraca em vez de inchar.
-- Rotina semanal "Sabedoria e melhoria de programas" (quintas): pesquisa sabedoria de programação e atualiza os agents por PR com merge automático no CI verde; depois melhora um dos seus repositórios por PR pequeno com teste. Em dado de saúde, schema ou envio à Anvisa (`digifarma-sngpc`), só PR em rascunho, sem merge.
+- Rotina semanal "Sabedoria e melhoria de programas" (quintas): pesquisa sabedoria de programação e atualiza os agents por PR com merge automático no CI verde; depois melhora um dos seus repositórios por PR pequeno com teste. Em dado de saúde, schema ou envio a órgão público, só PR em rascunho, sem merge.
 - Atalho `/livros` criado e removido no mesmo dia: o usuário não vai ler os livros, e as regras deles já estão nos agents.
 
 ## 2026-10-16
