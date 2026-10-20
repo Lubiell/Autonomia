@@ -2,6 +2,9 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-10-20
+- `digifarma-sngpc` passa a ter merge automático com CI verde, a pedido do usuário. Continuam em rascunho, sem merge, os PRs que mexem em regras do Firebase, schema ou envio à Anvisa. Regra registrada em `decisoes.md` e no passo 10 da rotina semanal.
+
 ## 2026-10-19
 - Skills `wrangler` e `workers-best-practices` atualizadas para o commit oficial `86505e4` da Cloudflare: Wrangler só em projeto que já tem `wrangler.jsonc/json/toml`; projeto novo segue o CLI `cf`. Skills do Firebase e do web-quality sem mudança relevante.
 
