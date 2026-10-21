@@ -3,6 +3,9 @@
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
 ## 2026-10-21
+- `skills.test.sh` reprova skills ou agents com descrições parecidas demais, que disputam o mesmo gatilho, e skill com corpo vazio. Também confere que todo hook do `settings.json` existe e usa evento válido.
+- `guard.sh` bloqueia também `git stash clear`, `git branch -D` e `git checkout .`/`git restore .` (sem `--staged`), que descartam trabalho sem volta.
+- Agent `tester`: desconfiar de teste que passa sem provar nada, e quebrar a regra de propósito para ver o teste falhar.
 - Ideias do Ponytail 5 enxertadas sem instalar: `reviewer` só aponta achado com caso concreto, procura todos os chamadores e julga escala pela carga esperada; `developer` lista tudo que a mudança alcança antes de editar e marca atalho com `atalho: <limite>, <quando trocar>`.
 - `devops`: configurado, alcançável, funcionando e autorizado conferidos como fatos separados (ideia do Ruflo). O Ruflo em si foi recusado: framework de swarm que substituiria os agents.
 

@@ -55,6 +55,13 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Política de merge por repositório (pedido do usuário, 2026-10-20): quando o `CLAUDE.md` do próprio repositório define quando fazer merge, a rotina semanal segue a dele no lugar da regra geral de tarefa de risco. Motivo: o Autonomia é de uso geral; regra de um projeto fica no projeto — 2026-10-20
 - Ponytail 5 (`DietrichGebert/ponytail`, MIT, commit `09c434a`, 2026-10-18), segundo enxerto sem instalar: no `reviewer`, achado só com caso concreto, procurar todos os chamadores quando muda assinatura, escala julgada pela carga esperada e atalho `atalho:` com limite declarado como decisão; no `developer`, listar todo ponto que a mudança alcança antes de editar, código movido mantém validação e o comentário `atalho: <limite>, <quando trocar>`. Continua sem instalar pelo mesmo motivo de 2026-10-03 (modo sempre ativo, hooks em toda resposta) — 2026-10-21
 - "Configurado, alcançável, funcionando e autorizado são fatos separados" no agent `devops` — ideia do `CLAUDE.md` de `ruvnet/ruflo` (MIT, commit `9271be4`), reescrita; o resto recusado (ver Recusados) — 2026-10-21
+- Busca de 2026-10-21 em repositórios de outros usuários, ideias reescritas sem instalar:
+  - `tests/skills.test.sh` reprova descrições parecidas demais (Jaccard > 0,6, disputam gatilho) e corpo vazio. Ideia de `erphq/skillcheck` (MIT).
+  - O mesmo teste confere que todo hook citado no `settings.json` existe e usa evento conhecido. Ideia de `pdugan20/claudelint` (MIT).
+  - O `guard.sh` passa a bloquear `git stash clear`, `git branch -D` e `git checkout .`/`git restore .` sem `--staged`. Ideia dos packs de `Dicklesworthstone/destructive_command_guard`, cuja licença é custom e não foi lida: regras escritas do zero, sem copiar texto.
+  - O agent `tester` desconfia de teste que passa sem provar nada. Ideia do `prove-test-validity` de `searlsco/prove_it` (MIT).
+  - Pendentes de ok do usuário: o Stop hook do `prove_it` (bloquear o fim do turno até os testes passarem), por ser hook novo de amplo alcance com custo a cada turno; e PIX/boleto (`rafaelkamimura/claude-tools`) e consulta CNPJ/NF-e (`nikolasdehor/mcp-fiscal-brasil`), por envolverem dinheiro e dado fiscal (skill `spec`).
+  - Descartados: `Zandereins/schliff` (nota depende de conjunto de avaliação gerado pelo próprio plugin), `vnmoorthy/groundtruth` (parado desde abril; mesma ideia do `prove_it`), `kursku/skills` (catálogo de 2.300 skills) — 2026-10-21
 
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |
