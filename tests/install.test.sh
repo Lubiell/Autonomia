@@ -30,6 +30,8 @@ for mode in $modes; do
   run "$H" >/dev/null || ko "[$mode] install.sh falhou (novo)"
   S="$H/settings.json"
   assert "[$mode] novo: hook aponta para a instalação" ".hooks.PreToolUse[0].hooks[0].command == \"bash \\\"$H/hooks/guard.sh\\\"\"" "$S"
+  assert "[$mode] novo: hook Stop aponta para a instalação" ".hooks.Stop[0].hooks[0].command == \"bash \\\"$H/hooks/verify-stop.sh\\\"\"" "$S"
+  [ -f "$H/hooks/verify-stop.sh" ] && ok || ko "[$mode] novo: verify-stop.sh instalado"
   assert "[$mode] novo: sandbox ligado" '.sandbox.enabled == true' "$S"
   assert "[$mode] novo: ask inclui retry fora do sandbox" '.permissions.ask | index("Bash(dangerouslyDisableSandbox:true)")' "$S"
   assert "[$mode] novo: deny inclui leitura de ~/.ssh" '.permissions.deny | index("Read(~/.ssh/**)")' "$S"

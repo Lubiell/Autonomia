@@ -10,7 +10,8 @@ CHANGELOG.md              o que mudou, por data
 .claude/
 ├── settings.json         bloqueios reais (deny/ask), sandbox e hook; não dependem do modelo
 ├── hooks/
-│   └── guard.sh          bloqueia comando destrutivo, segredo em commit, SQL sem WHERE
+│   ├── guard.sh          bloqueia comando destrutivo, segredo em commit, SQL sem WHERE
+│   └── verify-stop.sh    roda os testes antes de encerrar, se o código mudou
 ├── agents/
 │   ├── architect.md      planeja, somente leitura (opus)
 │   ├── developer.md      implementa (sonnet)
@@ -175,6 +176,14 @@ Sai um `dist/<skill>.zip` por skill, com a pasta da skill no topo, como o claude
   - escrita pelo shell em `.claude/settings*` ou `.claude/hooks/` (`>`, `sed -i`, `cp`, `mv`, `tee`, `Set-Content`…). As ferramentas Edit/Write já são protegidas pelo Claude Code, que nunca aprova sozinho escrita em `.claude/`;
   - **agents somente leitura:** quando quem chama é o `architect`, o `reviewer` ou o `security` (campo `agent_type` que o Claude Code envia ao hook), bloqueia qualquer escrita pelo shell: redirecionamento para arquivo, `rm`, `mv`, `cp`, `touch`, `sed -i`, `tee`, `find -delete`, `git add/commit/push/checkout/reset` e afins. Leitura, `git diff/log/status` e testes passam. É melhor esforço, não sandbox: script que grava por dentro (`python -c`, `node -e`) não é visto.
   Texto de mensagem de commit (`-m "..."`) não dispara os bloqueios de comando. Usa `jq` ou `python3` se houver; senão lê o JSON bruto. Teste: `bash tests/guard.test.sh`.
+- **Hook `verify-stop.sh`** (Stop): antes de o Claude encerrar a resposta, roda a verificação do projeto se o código mudou desde a última verificação que passou. Se ela falhar, o Claude recebe o fim da saída e continua para corrigir.
+  - **Comando:** primeira linha útil de `.claude/verify-cmd` na raiz do repositório (escreva `off` para desligar). Sem esse arquivo, `npm test` (só com script de teste real e `node_modules` presente) ou `pytest -q` (só com configuração do pytest). Sem comando, não faz nada.
+  - **Quando não roda:** só documentação mudou (`.md`, `.txt`, `.rst`, LICENSE, CHANGELOG), nada mudou desde a última verificação que passou, ou é a primeira vez no repositório com a árvore limpa (só marca o ponto de partida).
+  - **Sem loop:** nunca bloqueia duas vezes seguidas. Erro do próprio hook não bloqueia. O estado fica em `.git/autonomia-verified`. Limite de 5 minutos.
+  - **Custo:** o tempo dos testes em cada resposta que mexeu em código. Para desligar num projeto: `echo off > .claude/verify-cmd`.
+  - **Aprovação:** o comando vem do repositório, então só roda depois que você o aprova, no seu terminal, na raiz do repositório: `bash ~/.claude/hooks/verify-stop.sh --aprovar`. A aprovação fica em `.git/autonomia-verify-ok` (não vem no clone) e vale só para aquele comando; se ele mudar, o hook avisa uma vez e para de rodar até nova aprovação. O `guard.sh` impede o Claude de aprovar sozinho.
+  - **Falha repetida:** o mesmo código que já falhou não bloqueia de novo (turno só de conversa passa); qualquer mudança de código volta a verificar. A correção feita no turno em que o hook bloqueou só é conferida na resposta seguinte.
+  - **Teste:** `bash tests/verify-stop.test.sh`.
 - **Sandbox nativo** (`sandbox.enabled`): o sistema operacional limita escrita e rede dos comandos de shell e esconde `~/.ssh`, `~/.aws/credentials` e `~/.gnupg` deles. Funciona em macOS, Linux e WSL2; no Linux/WSL2 precisa de `bubblewrap` e `socat` (ex.: `sudo apt-get install bubblewrap socat`); veja o estado com `/sandbox`. Sem eles, ou no Windows nativo, os comandos rodam fora do sandbox. `autoAllowBashIfSandboxed: false` mantém os pedidos de permissão de sempre; mude para `true` se quiser que comandos dentro do sandbox rodem sem perguntar. Repetir um comando fora do sandbox sempre pergunta (`Bash(dangerouslyDisableSandbox:true)` em `ask`).
 
 ## Plugins e referências (opcional)
@@ -209,6 +218,7 @@ Os tokens dão acesso só ao necessário; não cole em chat nem em arquivo do re
 ## Testes
 ```bash
 bash tests/guard.test.sh      # hook
+bash tests/verify-stop.test.sh  # hook Stop (testes antes de encerrar)
 bash tests/install.test.sh    # install.sh, em pastas temporárias
 bash tests/skills.test.sh     # cabeçalho de skills e agents (name igual à pasta, description presente e até 450 caracteres)
 bash tests/package.test.sh    # package.sh: um zip por skill, pasta no topo, com zip e com python

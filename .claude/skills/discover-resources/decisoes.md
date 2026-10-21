@@ -60,7 +60,8 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
   - O mesmo teste confere que todo hook citado no `settings.json` existe e usa evento conhecido. Ideia de `pdugan20/claudelint` (MIT).
   - O `guard.sh` passa a bloquear `git stash clear`, `git branch -D` e `git checkout .`/`git restore .` sem `--staged`. Ideia dos packs de `Dicklesworthstone/destructive_command_guard`, cuja licença é custom e não foi lida: regras escritas do zero, sem copiar texto.
   - O agent `tester` desconfia de teste que passa sem provar nada. Ideia do `prove-test-validity` de `searlsco/prove_it` (MIT).
-  - Pendentes de ok do usuário: o Stop hook do `prove_it` (bloquear o fim do turno até os testes passarem), por ser hook novo de amplo alcance com custo a cada turno; e PIX/boleto (`rafaelkamimura/claude-tools`) e consulta CNPJ/NF-e (`nikolasdehor/mcp-fiscal-brasil`), por envolverem dinheiro e dado fiscal (skill `spec`).
+  - Hook Stop `verify-stop.sh` (aprovado pelo usuário em 2026-10-21): roda a verificação do projeto antes de encerrar a resposta, só quando o código mudou desde a última que passou. Ideia do Stop hook de `searlsco/prove_it` (MIT), reescrita em bash sem Node nem Homebrew, com saída para não entrar em loop (`stop_hook_active`) e `off` por projeto.
+  - Pendentes de ok do usuário: PIX/boleto (`rafaelkamimura/claude-tools`) e consulta CNPJ/NF-e (`nikolasdehor/mcp-fiscal-brasil`), por envolverem dinheiro e dado fiscal (skill `spec`).
   - Descartados: `Zandereins/schliff` (nota depende de conjunto de avaliação gerado pelo próprio plugin), `vnmoorthy/groundtruth` (parado desde abril; mesma ideia do `prove_it`), `kursku/skills` (catálogo de 2.300 skills) — 2026-10-21
 
 ## Instalar — fila, em ordem de valor

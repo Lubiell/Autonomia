@@ -57,6 +57,11 @@ if printf '%s' "$scmd" | tr '[:upper:]' '[:lower:]' | grep -Eq "(^|[^a-z0-9_-])(
   block "exclusão irreversível de recurso na nuvem (wrangler/firebase/gh delete)"
 fi
 
+# Aprovar o comando de verificação do repositório (hook verify-stop.sh) é decisão do usuário, no terminal dele.
+if printf '%s' "$cmd" | grep -Eq 'verify-stop(\.sh)?[^;&|]*--aprovar|autonomia-verify-ok'; then
+  block "aprovação do comando de verificação (verify-stop.sh --aprovar) é do usuário"
+fi
+
 # Segredo no commit: arquivo sensível ou chave conhecida no que vai ser commitado.
 # Usa $commit_dir, $commit_all (git commit -a) e $add_any (git add no mesmo comando, que
 # roda depois deste hook: aí vale a árvore de trabalho inteira, inclusive arquivos novos).
