@@ -27,6 +27,7 @@ try {
     $Fwd = $H -replace '\\', '/'
     Check 'novo: hook aponta para a instalacao' ($Cmd -eq ('bash "' + $Fwd + '/hooks/guard.sh"'))
     Check 'novo: sem CLAUDE_PROJECT_DIR' (-not ($Cmd -like '*CLAUDE_PROJECT_DIR*'))
+    Check 'novo: hook Stop aponta para a instalacao' (@($S.hooks.Stop)[0].hooks[0].command -eq ('bash "' + $Fwd + '/hooks/verify-stop.sh"'))
     Check 'novo: sandbox ligado' ($S.sandbox.enabled -eq $true)
     Check 'novo: ask inclui retry fora do sandbox' (@($S.permissions.ask) -contains 'Bash(dangerouslyDisableSandbox:true)')
     Check 'novo: deny copiado' (@($S.permissions.deny).Count -gt 0)

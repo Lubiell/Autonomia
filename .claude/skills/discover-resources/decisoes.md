@@ -55,6 +55,16 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Política de merge por repositório (pedido do usuário, 2026-10-20): quando o `CLAUDE.md` do próprio repositório define quando fazer merge, a rotina semanal segue a dele no lugar da regra geral de tarefa de risco. Motivo: o Autonomia é de uso geral; regra de um projeto fica no projeto — 2026-10-20
 - Ponytail 5 (`DietrichGebert/ponytail`, MIT, commit `09c434a`, 2026-10-18), segundo enxerto sem instalar: no `reviewer`, achado só com caso concreto, procurar todos os chamadores quando muda assinatura, escala julgada pela carga esperada e atalho `atalho:` com limite declarado como decisão; no `developer`, listar todo ponto que a mudança alcança antes de editar, código movido mantém validação e o comentário `atalho: <limite>, <quando trocar>`. Continua sem instalar pelo mesmo motivo de 2026-10-03 (modo sempre ativo, hooks em toda resposta) — 2026-10-21
 - "Configurado, alcançável, funcionando e autorizado são fatos separados" no agent `devops` — ideia do `CLAUDE.md` de `ruvnet/ruflo` (MIT, commit `9271be4`), reescrita; o resto recusado (ver Recusados) — 2026-10-21
+- Busca de 2026-10-21 em repositórios de outros usuários, ideias reescritas sem instalar:
+  - `tests/skills.test.sh` reprova descrições parecidas demais (Jaccard > 0,6, disputam gatilho) e corpo vazio. Ideia de `erphq/skillcheck` (MIT).
+  - O mesmo teste confere que todo hook citado no `settings.json` existe e usa evento conhecido. Ideia de `pdugan20/claudelint` (MIT).
+  - O `guard.sh` passa a bloquear `git stash clear`, `git branch -D` e `git checkout .`/`git restore .` sem `--staged`. Ideia dos packs de `Dicklesworthstone/destructive_command_guard`, cuja licença é custom e não foi lida: regras escritas do zero, sem copiar texto.
+  - O agent `tester` desconfia de teste que passa sem provar nada. Ideia do `prove-test-validity` de `searlsco/prove_it` (MIT).
+  - Hook Stop `verify-stop.sh` (aprovado pelo usuário em 2026-10-21): roda a verificação do projeto antes de encerrar a resposta, só quando o código mudou desde a última que passou. Ideia do Stop hook de `searlsco/prove_it` (MIT), reescrita em bash sem Node nem Homebrew, com saída para não entrar em loop (`stop_hook_active`) e `off` por projeto.
+  - `ayghri/i-have-adhd` (MIT, commit `1ecea19`), do reel de @alice.allg (2026-10-21), três ideias reescritas sem instalar, com ok do usuário: passo atual e próximo a cada resposta e estimativa de tempo concreta (`CLAUDE.md`); três tentativas sem sucesso viram pergunta sobre a suposição (`debugger`). Não instalado: hooks reinjetam as regras em toda mensagem, e o resto (ação primeiro, sem aquecimento nem fecho) já está no `CLAUDE.md`.
+  - Do mesmo reel: `superpowers` e `andrej-karpathy-skills` já avaliados (2026-10-02 e 2026-10-03), sem motivo novo.
+  - Pendentes de ok do usuário: PIX/boleto (`rafaelkamimura/claude-tools`) e consulta CNPJ/NF-e (`nikolasdehor/mcp-fiscal-brasil`), por envolverem dinheiro e dado fiscal (skill `spec`).
+  - Descartados: `Zandereins/schliff` (nota depende de conjunto de avaliação gerado pelo próprio plugin), `vnmoorthy/groundtruth` (parado desde abril; mesma ideia do `prove_it`), `kursku/skills` (catálogo de 2.300 skills) — 2026-10-21
 
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |
@@ -83,6 +93,7 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | Ferramenta | Motivo |
 |---|---|
 | `superpowers` | camada de workflow completa: duplica os agents e o `protocolo-dev`, e injeta texto em toda sessão via SessionStart. 988k instalações não mudam isso — seria substituição, não complemento |
+| `nyldn/claude-octopus` (MIT) | 23 MB e dezenas de hooks; a conferência por vários modelos exige as CLIs do Codex e do Gemini (outras assinaturas, como o `codex-plugin-cc` recusado em 2026-10-12). Revisão independente já existe com o agent `reviewer` (2026-10-21) |
 | `ruvnet/ruflo` (Claude Flow V3, MIT) | framework de swarm de 163 MB: ~380 skills, ~540 agents, MCP próprio, daemon e hooks; manda abrir swarm em toda tarefa de 3+ arquivos, o contrário da regra de delegação do `CLAUDE.md`. Seria substituição, não complemento. Uma ideia aproveitada no `devops` (2026-10-21) |
 | `feature-dev`, `code-review` | trazem o próprio ciclo de planejar/construir/revisar; duplicam `architect`, `developer` e `reviewer` |
 | `pr-review-toolkit` | colide com o agent `reviewer` |

@@ -1,0 +1,2 @@
+# Verificação rápida do hook verify-stop.sh neste repositório (instaladores ficam para o CI).
+bash tests/skills.test.sh && bash tests/guard.test.sh && bash tests/verify-stop.test.sh

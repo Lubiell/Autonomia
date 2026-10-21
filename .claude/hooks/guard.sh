@@ -57,6 +57,11 @@ if printf '%s' "$scmd" | tr '[:upper:]' '[:lower:]' | grep -Eq "(^|[^a-z0-9_-])(
   block "exclusão irreversível de recurso na nuvem (wrangler/firebase/gh delete)"
 fi
 
+# Aprovar o comando de verificação do repositório (hook verify-stop.sh) é decisão do usuário, no terminal dele.
+if printf '%s' "$cmd" | grep -Eq 'verify-stop(\.sh)?[^;&|]*--aprovar|autonomia-verify-ok'; then
+  block "aprovação do comando de verificação (verify-stop.sh --aprovar) é do usuário"
+fi
+
 # Segredo no commit: arquivo sensível ou chave conhecida no que vai ser commitado.
 # Usa $commit_dir, $commit_all (git commit -a) e $add_any (git add no mesmo comando, que
 # roda depois deste hook: aí vale a árvore de trabalho inteira, inclusive arquivos novos).
@@ -248,7 +253,7 @@ while IFS= read -r seg && IFS= read -r oseg <&3; do
         done
         ;;
       git)
-        sub="" rest=() gdir=""
+        sub="" rest=() gdir="" si=$n
         for ((j = i + 1; j < n; j++)); do
           t="${w[j]}"
           if [ -z "$sub" ]; then
@@ -264,7 +269,7 @@ while IFS= read -r seg && IFS= read -r oseg <&3; do
                 ;;
               *core.hookspath*) block "git com core.hooksPath (desliga os hooks do Git)" ;;
               -*) ;;
-              *) sub="$t" ;;
+              *) sub="$t" si=$j ;;
             esac
           else
             rest+=("$t")
@@ -320,6 +325,45 @@ while IFS= read -r seg && IFS= read -r oseg <&3; do
             ;;
           reset)
             for t in "${rest[@]}"; do [ "$t" = "--hard" ] && block "git reset --hard"; done
+            ;;
+          # Descarte sem volta de trabalho não commitado ou de branch não mesclada (ideia dos packs do dcg).
+          # Opções curtas lidas no original (ow): -D/-d e -S/-s mudam de sentido com a caixa.
+          stash)
+            for t in "${rest[@]}"; do
+              case "$t" in
+                -*) ;;
+                clear) block "git stash clear (apaga todos os stashes)" ;;
+                *) break ;;
+              esac
+            done
+            ;;
+          branch)
+            del=0 force=0
+            for ((k = si + 1; k < n; k++)); do
+              t="${ow[k]}"
+              case "$t" in
+                --delete) del=1 ;;
+                --force) force=1 ;;
+                --*) ;;
+                -*) [[ "$t" == *D* ]] && del=1 force=1; [[ "$t" == *d* ]] && del=1; [[ "$t" == *f* ]] && force=1 ;;
+              esac
+            done
+            [ "$del" = 1 ] && [ "$force" = 1 ] && block "git branch -D (apaga branch sem conferir se foi mesclada)"
+            ;;
+          checkout | restore)
+            # Sem --worktree, "restore --staged" só tira do índice; o -s do restore é --source.
+            staged=0 wt=0 dot=0
+            for ((k = si + 1; k < n; k++)); do
+              t="${ow[k]}"
+              case "$t" in
+                --staged) staged=1 ;;
+                --worktree) wt=1 ;;
+                --*) ;;
+                -*) [ "$sub" = restore ] && { [[ "$t" == *S* ]] && staged=1; [[ "$t" == *W* ]] && wt=1; } ;;
+                . | ./ | :/ | '*') dot=1 ;;
+              esac
+            done
+            [ "$dot" = 1 ] && { [ "$staged" = 0 ] || [ "$wt" = 1 ]; } && block "git $sub . (descarta todas as alterações não commitadas)"
             ;;
           clean)
             dry=0 force=0
