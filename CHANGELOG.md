@@ -2,6 +2,10 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-10-21
+- Ideias do Ponytail 5 enxertadas sem instalar: `reviewer` só aponta achado com caso concreto, procura todos os chamadores e julga escala pela carga esperada; `developer` lista tudo que a mudança alcança antes de editar e marca atalho com `atalho: <limite>, <quando trocar>`.
+- `devops`: configurado, alcançável, funcionando e autorizado conferidos como fatos separados (ideia do Ruflo). O Ruflo em si foi recusado: framework de swarm que substituiria os agents.
+
 ## 2026-10-20
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 

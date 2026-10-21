@@ -53,6 +53,8 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Atalho `/livros` (lista de livros para o usuário estudar): criado e removido em 2026-10-18 — o usuário não vai ler os livros; o que melhora os programas são as regras deles nos agents (item acima). Não recriar sem pedido novo — 2026-10-18
 - Rotina semanal "Sabedoria e melhoria de programas" (pedido do usuário, 2026-10-18): fontes só reconhecidas (livros, documentação oficial, guias de engenharia de empresas e autores conhecidos), regra reescrita em uma linha com a fonte registrada aqui, nunca texto copiado. Pode mexer só no corpo dos agents e no `/refatorar`; nunca em `settings`, hooks, permissões, `CLAUDE.md` nem em regra que afrouxe teste ou segurança. Merge automático com CI verde, por escolha do usuário, ciente de que o CI confere formato e não conteúdo; o agent `security` revisa o diff antes. Nos outros repositórios, PR pequeno com teste e merge só com CI verde; em dado de saúde, financeiro, schema ou contrato de API, PR em rascunho com a `spec`, sem merge — 2026-10-18
 - Política de merge por repositório (pedido do usuário, 2026-10-20): quando o `CLAUDE.md` do próprio repositório define quando fazer merge, a rotina semanal segue a dele no lugar da regra geral de tarefa de risco. Motivo: o Autonomia é de uso geral; regra de um projeto fica no projeto — 2026-10-20
+- Ponytail 5 (`DietrichGebert/ponytail`, MIT, commit `09c434a`, 2026-10-18), segundo enxerto sem instalar: no `reviewer`, achado só com caso concreto, procurar todos os chamadores quando muda assinatura, escala julgada pela carga esperada e atalho `atalho:` com limite declarado como decisão; no `developer`, listar todo ponto que a mudança alcança antes de editar, código movido mantém validação e o comentário `atalho: <limite>, <quando trocar>`. Continua sem instalar pelo mesmo motivo de 2026-10-03 (modo sempre ativo, hooks em toda resposta) — 2026-10-21
+- "Configurado, alcançável, funcionando e autorizado são fatos separados" no agent `devops` — ideia do `CLAUDE.md` de `ruvnet/ruflo` (MIT, commit `9271be4`), reescrita; o resto recusado (ver Recusados) — 2026-10-21
 
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |
@@ -81,6 +83,7 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | Ferramenta | Motivo |
 |---|---|
 | `superpowers` | camada de workflow completa: duplica os agents e o `protocolo-dev`, e injeta texto em toda sessão via SessionStart. 988k instalações não mudam isso — seria substituição, não complemento |
+| `ruvnet/ruflo` (Claude Flow V3, MIT) | framework de swarm de 163 MB: ~380 skills, ~540 agents, MCP próprio, daemon e hooks; manda abrir swarm em toda tarefa de 3+ arquivos, o contrário da regra de delegação do `CLAUDE.md`. Seria substituição, não complemento. Uma ideia aproveitada no `devops` (2026-10-21) |
 | `feature-dev`, `code-review` | trazem o próprio ciclo de planejar/construir/revisar; duplicam `architect`, `developer` e `reviewer` |
 | `pr-review-toolkit` | colide com o agent `reviewer` |
 | `disler/claude-code-damage-control` | exige `uv` ou Bun; coberto pelo `guard.sh` (2026-10-02) |
