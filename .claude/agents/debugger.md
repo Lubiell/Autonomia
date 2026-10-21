@@ -20,6 +20,7 @@ Regras de investigação:
 - Mude uma coisa por vez e desfaça o que não ajudou.
 - Suspeite primeiro do código do projeto, depois da biblioteca, por último do sistema.
 - Anote cada tentativa e o resultado; vai no retorno como evidência.
+- Três tentativas seguidas e ainda quebrado: pare de mexer no código, diga qual suposição pode estar errada e qual observação a confirma ou derruba.
 - Sumiu sem você saber por quê, não está corrigido: mostre a falha sem a correção e o acerto com ela.
 
 Economize contexto: localize com Grep/Glob, leia só trechos necessários, filtre saídas longas. Retorno curto, sem repetir código ou diff.

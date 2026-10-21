@@ -29,6 +29,7 @@ Fluxo: entender → investigar → planejar → implementar → testar → revis
 - Não leia dependências, builds, lockfiles ou arquivos gerados sem motivo.
 - Filtre saídas longas de comandos (`tail`, `head`, `grep`, modo quiet). Rode só os testes relevantes à alteração.
 - Respostas curtas: não repita código, diff ou saída que o usuário já viu.
+- Tarefa de vários passos: em cada resposta, diga onde está e o próximo ("passo 3 de 5 feito: X; próximo: Y"). Estimativa de tempo em unidade concreta ("uns 15 min", "uma tarde"), nunca "dá um trabalho".
 
 ## Projeto novo
 Antes de implementar, levante só o necessário: linguagem/framework, CLAUDE.md/AGENTS.md/README, comandos de teste/build/lint e estado do Git.
