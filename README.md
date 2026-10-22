@@ -132,6 +132,8 @@ Antes de instalar, a skill `discover-resources` e o agent `security` avaliam o c
 
 **Num projeto:** copie `CLAUDE.md` e `.claude/` para a raiz do repositório.
 
+**Windows, em um clique:** baixe [`instalar-autonomia.bat`](instalar-autonomia.bat) e dê dois cliques. Ele baixa a versão mais nova do GitHub e roda o `install.ps1`; rode de novo sempre que quiser atualizar. O CI roda esse `.bat` num Windows a cada mudança.
+
 **Para todos os projetos e conversas (nível do usuário):** rode o instalador na pasta do repositório.
 
 ```bash

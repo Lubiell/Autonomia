@@ -63,3 +63,27 @@ jobs:
         run: |
           & ${{ matrix.shell }} -NoProfile -ExecutionPolicy Bypass -File tests/package.test.ps1
           exit $LASTEXITCODE
+
+  bat:
+    name: instalar-autonomia.bat
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Instalador de um clique (baixa o zip deste commit e instala)
+        shell: cmd
+        env:
+          AUTONOMIA_ZIP: https://github.com/${{ github.repository }}/archive/${{ github.event.pull_request.head.sha || github.sha }}.zip
+          AUTONOMIA_SEM_PAUSA: "1"
+          CLAUDE_HOME: ${{ runner.temp }}\claude-bat
+        run: call instalar-autonomia.bat
+      - name: Conferir a instalação
+        shell: pwsh
+        env:
+          CLAUDE_HOME: ${{ runner.temp }}\claude-bat
+        run: |
+          $agents = (Get-ChildItem "$env:CLAUDE_HOME\agents\*.md").Count
+          $skills = (Get-ChildItem "$env:CLAUDE_HOME\skills" -Directory).Count
+          Write-Host "agents: $agents  skills: $skills"
+          if (-not (Test-Path "$env:CLAUDE_HOME\CLAUDE.md")) { throw 'CLAUDE.md ausente' }
+          if (-not (Test-Path "$env:CLAUDE_HOME\settings.json")) { throw 'settings.json ausente' }
+          if ($agents -lt 15 -or $skills -lt 100) { throw 'instalação incompleta' }
