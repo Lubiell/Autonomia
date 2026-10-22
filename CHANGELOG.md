@@ -15,6 +15,8 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
 ## 2026-10-23
+- Skill `apis-gratuitas`: APIs públicas sem chave e testadas (CEP, CNPJ, feriados, câmbio, Selic, FIPE, produto por código de barras), de `public-apis/public-apis`.
+- Skill `organizar-arquivos` (pasta bagunçada: plano antes, nada apagado, desfazer) e seção de briefing na `pecas-graficas`, ideias do carrossel de @gut1n.
 - `instalar-autonomia.bat`: instala ou atualiza no Windows com dois cliques (baixa o main do GitHub e roda o `install.ps1`). Novo job do CI roda o `.bat` num Windows e confere a instalação.
 - Carrosséis de plugins (@clubedasskills e outro): Playwright, Agent Skills, Graphify, Ponytail, Context7 e Strix já tinham decisão; `21st.dev MCP` registrado como opcional (exige chave; componentes React).
 
