@@ -84,6 +84,8 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 | `anthropics/claude-code-security-review` | revisão de segurança do diff em todo PR | GitHub Action |
 | `trailofbits/skills` (avulsos: secrets hygiene, release prep, Semgrep) | análise estática de verdade; importa porque há dado de saúde em repo público. **Nunca o marketplace inteiro** (~60 skills, maioria blockchain). Licença CC-BY-SA-4.0 | GitHub |
 
+- Candidatos oficiais de `anthropics/claude-plugins-official` (2026-10-22), aguardando o usuário: `receipts` (relatório de uso do Claude Code a partir das transcrições locais, script Node sem rede) e `claude-md-management` (audita o `CLAUDE.md` do projeto e registra o aprendido na sessão; só texto). `project-artifact` (página de status do projeto) fica atrás da skill `projetos`.
+
 ## Complementos pontuais
 Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 `playwright` (teste de navegador; a skill `webapp-testing` já vem no Autonomia), `cloudflare` (Workers/D1), `frontend-design` (UI), `canva` (peça gráfica), `marketing` (campanha e conteúdo). Do pack `coreyhaines31/marketingskills` (MIT, ~50 skills), copiar à mão só a skill avulsa que o trabalho pedir (`social`, `copywriting`, `video`), nunca o pack inteiro.
@@ -177,6 +179,12 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
 | `Repowise`, `Serena` | indexação semântica de repo grande; exigem servidor local e ~25 min de índice. Repos pequenos, trabalho pelo celular — custo sem ganho |
 | `tirth8205/code-review-graph` (MIT, v2.3.9, commit 2026-09-18) | mesma categoria do `Serena`: grafo de código via servidor MCP em Python (`fastmcp`, `tree-sitter`, `networkx`, `watchdog`), e o `install` grava MCP, hook de SessionStart, skills e regras em cada ferramenta detectada. O "60–70% menos tokens" do carrossel (@matheustilli, 2026-10-05) compara com ler o repositório inteiro, que o próprio README chama de teto que nenhum agente paga; contra busca por grep o README ainda não publicou medição. Repos pequenos + `scout` cobrem. Reavaliar só para repo grande (2026-10-05) |
+| `code-modernization` (plugin oficial) | modernização de sistema legado; traz hooks em UserPromptSubmit e Stop que enviam contagem de uso (`telemetry.sh`). Os projetos não são legados (2026-10-22) |
+| `hookify` (plugin oficial) | cria hooks a partir da conversa; hook amplo exige confirmação e o `guard.sh` já cobre os bloqueios (2026-10-22) |
+| `mcp-tunnels`, `cwc-makers` (plugins oficiais) | MCP privado por túnel com Docker e onboarding de hardware M5Stack: fora do uso (2026-10-22) |
+| `discernment-nudge` (`anthropics/skills`) | dispara depois de toda resposta substantiva; a regra [Provável]/[Chute] do `CLAUDE.md` já cobre, sem custo por turno (2026-10-22) |
+| `academy-guide` (`anthropics/skills`) | indica cursos do Claude Academy em toda pergunta "como faço"; ruído (2026-10-22) |
+| `planning-with-files` | plano em arquivo para tarefa longa; `handoff`, `projetos` e a compactação nativa cobrem (2026-10-22) |
 | modpack `repowise-dev` (no-ai-slop, critic, devil, deep, risk, decision) | personas de resposta; disputam gatilho com o agent `reviewer` e com a skill `spec` |
 | `Strix` | pentest autônomo real, mas exige Docker, chave de LLM paga e scan de 1–4h. Cobrir com `security-review.yml` no CI em vez disso |
 | `Ralph loop` | repete o prompt sem gate de verificação; a regra de evidência já confere saída real |
