@@ -5,7 +5,7 @@ description: Use em programação quando o trabalho tiver uma etapa definida —
 
 # Roteador de métodos de engenharia
 
-Pacotes `addyosmani/agent-skills` e `DietrichGebert/ponytail` (MIT), instalados só por comando para não disputar pedido. Esta skill os aciona quando a etapa pede.
+Pacotes `addyosmani/agent-skills` e `DietrichGebert/ponytail` (MIT) e plugins oficiais `claude-md-management` e `receipts` (Apache-2.0), instalados só por comando para não disputar pedido. Esta skill os aciona quando a etapa pede.
 
 Escolha na tabela o método da etapa atual e siga as instruções completas em `${CLAUDE_SKILL_DIR}/../<método>/SKILL.md` (com as referências da pasta dele).
 
@@ -58,6 +58,8 @@ Escolha na tabela o método da etapa atual e siga as instruções completas em `
 | Registrar decisão de arquitetura (ADR) ou documentar API. | `documentation-and-adrs` | `docs-writer` |
 | Contexto ruim: sessão nova, respostas piorando, regras do projeto. | `context-engineering` | `handoff` |
 | Atalhos marcados `shortcut:` deixados para depois. | `ponytail-debt` | — |
+| Fim de sessão longa: propor ao `CLAUDE.md` do projeto o que se aprendeu (pede ok antes de editar). | `revise-claude-md` | `claude-md-improver` |
+| Relatório do uso do Claude Code e do que foi entregue. | `receipts` | — |
 | Qual método serve, quando nenhum acima encaixa. | `using-agent-skills` | — |
 | Só se o usuário perguntar como usar o Ponytail. | `ponytail-help` | — |
 | Só se o usuário perguntar quanto o Ponytail economiza. | `ponytail-gain` | — |

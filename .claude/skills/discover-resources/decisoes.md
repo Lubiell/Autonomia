@@ -84,7 +84,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 | `anthropics/claude-code-security-review` | revisão de segurança do diff em todo PR | GitHub Action |
 | `trailofbits/skills` (avulsos: secrets hygiene, release prep, Semgrep) | análise estática de verdade; importa porque há dado de saúde em repo público. **Nunca o marketplace inteiro** (~60 skills, maioria blockchain). Licença CC-BY-SA-4.0 | GitHub |
 
-- Candidatos oficiais de `anthropics/claude-plugins-official` (2026-10-22), aguardando o usuário: `receipts` (relatório de uso do Claude Code a partir das transcrições locais, script Node sem rede) e `claude-md-management` (audita o `CLAUDE.md` do projeto e registra o aprendido na sessão; só texto). `project-artifact` (página de status do projeto) fica atrás da skill `projetos`.
+- Plugins oficiais `claude-md-management` e `receipts` — `anthropics/claude-plugins-official` (Apache-2.0, commit `465f093`), instalados a pedido do usuário (2026-10-22) como skills: `claude-md-improver` (dispara sozinho em pedido sobre `CLAUDE.md`), `revise-claude-md` (era comando; fim de sessão, pede ok antes de editar) e `receipts` (script Node que lê só `~/.claude/projects` e o git local, sem rede); os dois últimos pelo roteador `engenharia`. `project-artifact` fica atrás da skill `projetos` — 2026-10-22
 
 ## Complementos pontuais
 Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
