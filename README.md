@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 36 skills (mais 33 métodos de terceiros, acionados pelo roteador `engenharia`), 37 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 15 agents especializados, 40 skills (mais 33 métodos de terceiros, acionados pelo roteador `engenharia`), 37 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, escrita, finanças pessoais, saúde e rotina, segurança, mídia, IA generativa e LGPD). É o cérebro geral do Claude: instala na pasta global e vale para qualquer projeto ou pedido, permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -24,6 +24,9 @@ CHANGELOG.md              o que mudou, por data
 │   ├── data-analyst.md   processa base de dados e traz só o resultado (sonnet)
 │   ├── qa-web.md         testa o site no navegador real, não edita (sonnet)
 │   ├── docs-writer.md    README, guias e CHANGELOG a partir do código real (sonnet)
+│   ├── marketer.md       plano de conteúdo, campanha, lançamento e análise de resultados (sonnet)
+│   ├── business-advisor.md  preço, viabilidade, proposta, impostos e contratos com as contas (sonnet)
+│   ├── writer.md         texto longo: artigo, e-book, roteiro, relatório, material de estudo (sonnet)
 │   └── researcher.md     pesquisa na internet com fontes e datas, sem alterar arquivos (sonnet)
 └── skills/
     ├── analise-dados/        diagnóstico de dados e dashboard, etapa por etapa
@@ -78,10 +81,12 @@ tests/                    testes do hook e dos instaladores
 | Desenvolvimento | architect, developer, debugger, tester, reviewer, devops, scout, docs-writer | spec, api-backend, banco-dados, automacao, deploy-web, wrangler, workers-best-practices, firebase-hosting-basics, firebase-auth-basics, firebase-security-rules-auditor |
 | Sites | qa-web | frontend-design, seo, webapp-testing, accessibility, performance |
 | Dados | data-analyst | analise-dados |
-| Marketing | — | conteudo, trafego-pago |
-| Negócios e gestão | — | negocios, projetos, atendimento-vendas, produto, mei-impostos, contratos, rh |
+| Marketing | marketer | conteudo, trafego-pago |
+| Negócios e gestão | business-advisor | negocios, projetos, atendimento-vendas, produto, mei-impostos, contratos, rh |
 | Marca | — | marca, pecas-graficas |
-| Educação | — | cursos |
+| Educação e estudo | writer | cursos, estudo |
+| Escrita | writer | escrita |
+| Vida pessoal | — | financas-pessoais, saude-rotina |
 | IA generativa | — | prompts-ia |
 | Segurança e privacidade | security | seguranca-digital, lgpd |
 | Mídia | — | midia |

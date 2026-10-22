@@ -15,6 +15,7 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
 ## 2026-10-22
+- Autonomia como cérebro geral, para todas as áreas: agents `marketer`, `business-advisor` e `writer`, para o orquestrador delegar trabalho grande fora da programação; skills `financas-pessoais`, `estudo`, `escrita` e `saude-rotina`.
 - Instalados, a pedido, os pacotes Ponytail (6 skills) e `addyosmani/agent-skills` (25 skills), todos só por comando, para não disputar pedido com as skills existentes nem gastar contexto (lista no README, seção Atalhos). Ponytail sem os hooks.
 - Plugins oficiais `claude-md-management` (`/claude-md-improver`, `/revise-claude-md`) e `receipts` (`/receipts`), acionados pelo roteador `engenharia` ou sozinhos. Varredura de skills e plugins novos registrada em `decisoes.md`.
 - Graphify (global, com hooks) e OmniRoute (só por terminal) liberados a pedido do usuário, como passo manual no PC; não entram no instalador.
