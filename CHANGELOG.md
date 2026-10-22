@@ -14,6 +14,13 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 ## 2026-10-20
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
+## 2026-10-23
+- Skill `apis-gratuitas`: APIs públicas sem chave e testadas (CEP, CNPJ, feriados, câmbio, Selic, FIPE, produto por código de barras), de `public-apis/public-apis`.
+- Skill `organizar-arquivos` (pasta bagunçada: plano antes, nada apagado, desfazer) e seção de briefing na `pecas-graficas`, ideias do carrossel de @gut1n.
+- Carrossel de 6 repositórios (@devemdobro): `awesome-claude-code` e `everything-claude-code` já tinham decisão; 161 subagents e `claude-code-templates` recusados em massa (custo de contexto e `npx` sem auditoria); os dois guias ficam como material de estudo.
+- `instalar-autonomia.bat`: instala ou atualiza no Windows com dois cliques (baixa o main do GitHub e roda o `install.ps1`). Novo job do CI roda o `.bat` num Windows e confere a instalação.
+- Carrosséis de plugins (@clubedasskills e outro): Playwright, Agent Skills, Graphify, Ponytail, Context7 e Strix já tinham decisão; `21st.dev MCP` registrado como opcional (exige chave; componentes React).
+
 ## 2026-10-22
 - Autonomia como cérebro geral, para todas as áreas: agents `marketer`, `business-advisor` e `writer`, para o orquestrador delegar trabalho grande fora da programação; skills `financas-pessoais`, `estudo`, `escrita` e `saude-rotina`.
 - Instalados, a pedido, os pacotes Ponytail (6 skills) e `addyosmani/agent-skills` (25 skills), todos só por comando, para não disputar pedido com as skills existentes nem gastar contexto (lista no README, seção Atalhos). Ponytail sem os hooks.

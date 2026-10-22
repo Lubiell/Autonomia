@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 15 agents especializados, 40 skills (mais 33 métodos de terceiros, acionados pelo roteador `engenharia`), 37 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, escrita, finanças pessoais, saúde e rotina, segurança, mídia, IA generativa e LGPD). É o cérebro geral do Claude: instala na pasta global e vale para qualquer projeto ou pedido, permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 15 agents especializados, 42 skills (mais 33 métodos de terceiros, acionados pelo roteador `engenharia`), 37 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, escrita, finanças pessoais, saúde e rotina, segurança, mídia, IA generativa e LGPD). É o cérebro geral do Claude: instala na pasta global e vale para qualquer projeto ou pedido, permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -90,7 +90,7 @@ tests/                    testes do hook e dos instaladores
 | IA generativa | — | prompts-ia |
 | Segurança e privacidade | security | seguranca-digital, lgpd |
 | Mídia | — | midia |
-| Pesquisa e processo | researcher | discover-resources, grill-me, handoff, melhorar-projeto |
+| Pesquisa e processo | researcher | apis-gratuitas, organizar-arquivos, discover-resources, grill-me, handoff, melhorar-projeto |
 
 Documentos Word, planilhas, PDF e apresentações ficam com as skills da conta (`docx`, `xlsx`, `pdf`, `pptx`).
 
@@ -131,6 +131,8 @@ Antes de instalar, a skill `discover-resources` e o agent `security` avaliam o c
 ## Instalação
 
 **Num projeto:** copie `CLAUDE.md` e `.claude/` para a raiz do repositório.
+
+**Windows, em um clique:** baixe [`instalar-autonomia.bat`](instalar-autonomia.bat) e dê dois cliques. Ele baixa a versão mais nova do GitHub e roda o `install.ps1`; rode de novo sempre que quiser atualizar. O CI roda esse `.bat` num Windows a cada mudança.
 
 **Para todos os projetos e conversas (nível do usuário):** rode o instalador na pasta do repositório.
 

@@ -1,9 +1,18 @@
 ---
 name: pecas-graficas
-description: Use para criar ou revisar peça gráfica — cartaz, etiqueta, folheto, post visual, banner — pelo conector do Canva ou à mão, com checklist de design para quem não é designer e regras para peças de varejo.
+description: Use para criar ou revisar peça gráfica — cartaz, etiqueta, folheto, post visual, banner — pelo conector do Canva ou à mão, ou montar o briefing para um designer, com checklist de design para quem não é designer e regras para peças de varejo.
 ---
 
 # Peças gráficas
+
+## Antes de criar: briefing
+Transforme a ideia solta em briefing de uma tela, que serve para o Canva ou para mandar a um designer:
+- **Peça e uso:** formato, medidas finais (mm ou px), onde vai (impresso, Instagram, WhatsApp) e sangria se for impressa.
+- **Objetivo e público:** a única coisa que a pessoa deve fazer ou lembrar.
+- **Texto final:** título, apoio, preço, chamada, contato e logo, já revisados. Texto final antes do layout.
+- **Visual:** cores e fontes da marca (skill `marca`), referências que gosta e o que evitar.
+- **Materiais e prazo:** fotos e logo em alta, quem aprova, data de entrega e quantidade impressa.
+Faltando algo, pergunte só o essencial; o resto, assuma e marque como suposição.
 
 ## Caminho recomendado: conector do Canva
 Em claude.ai → Configurações → Conectores → Canva → autorizar. Cria design, edita existente, busca na biblioteca, redimensiona e exporta conversando; funciona pelo app do celular. Veja se ele está conectado na sessão antes de pedir arquivo ao usuário.
