@@ -33,8 +33,8 @@ check() {
     && pass=$((pass + 1)) || ko "$file: name '$name' fora do padrão (minúsculas, números e hífen; até 64)"
   [ -n "$desc" ] && pass=$((pass + 1)) || ko "$file: sem description"
   [ ${#desc} -le 1024 ] && pass=$((pass + 1)) || ko "$file: description com ${#desc} caracteres (máximo 1024)"
-  # Orçamento do Autonomia: a description entra no contexto em todo turno
-  [ ${#desc} -le "$BUDGET" ] && pass=$((pass + 1)) || ko "$file: description com ${#desc} caracteres (orçamento $BUDGET; encurte)"
+  # Orçamento do Autonomia: a description entra no contexto em todo turno (skill só por comando não entra)
+  grep -q '^disable-model-invocation:[[:space:]]*true' "$file" || [ ${#desc} -le "$BUDGET" ] && pass=$((pass + 1)) || ko "$file: description com ${#desc} caracteres (orçamento $BUDGET; encurte)"
   # Corpo depois do cabeçalho: skill só com description dispara e não diz o que fazer
   [ "$(awk '/^---[[:space:]]*$/ { n++; next } n >= 2' "$file" | tr -d '[:space:]' | wc -c)" -ge 20 ] \
     && pass=$((pass + 1)) || ko "$file: corpo vazio depois do cabeçalho"
@@ -85,6 +85,8 @@ if [ -f "$R" ]; then
   for d in "$ROOT"/.claude/skills/*/; do
     s="${d%/}"; n="$(basename "$s")"
     grep -q '^disable-model-invocation:[[:space:]]*true' "$s/SKILL.md" 2>/dev/null || continue
+    # Pacote de terceiros só por comando (com LICENSE.txt) não passa pelo roteador
+    [ -f "$s/LICENSE.txt" ] && continue
     grep -qF "| \`$n\` |" "$R" && pass=$((pass + 1)) || ko "atalho $n fora da tabela do roteador atalhos"
   done
 fi

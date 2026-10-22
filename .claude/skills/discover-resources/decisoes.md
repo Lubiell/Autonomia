@@ -66,6 +66,8 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
   - Pendentes de ok do usuário: PIX/boleto (`rafaelkamimura/claude-tools`) e consulta CNPJ/NF-e (`nikolasdehor/mcp-fiscal-brasil`), por envolverem dinheiro e dado fiscal (skill `spec`).
   - Descartados: `Zandereins/schliff` (nota depende de conjunto de avaliação gerado pelo próprio plugin), `vnmoorthy/groundtruth` (parado desde abril; mesma ideia do `prove_it`), `kursku/skills` (catálogo de 2.300 skills) — 2026-10-21
 
+- Pacotes `DietrichGebert/ponytail` (MIT, commit `09c434a`, 6 skills) e `addyosmani/agent-skills` (MIT, commit `aeac41d`, 25 skills) — instalados a pedido do usuário (2026-10-22), revendo a decisão anterior. Para não atrapalhar as existentes: todas com `disable-model-invocation: true` (só por comando, sem description no contexto e fora do roteador `atalhos`); Ponytail sem os hooks (ativação em toda sessão, statusline) e sem o modo sempre ativo; as referências de `agent-skills/references/` copiadas para dentro de cada skill que as cita. `idea-refine` traz um script que só cria `docs/ideas`. Nomes sem colisão com os daqui — 2026-10-22
+
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |
 |---|---|---|
@@ -172,7 +174,7 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `Headroom` | proxy de compressão entre o usuário e a API. Mesmo tratamento |
 | `Repowise`, `Serena` | indexação semântica de repo grande; exigem servidor local e ~25 min de índice. Repos pequenos, trabalho pelo celular — custo sem ganho |
 | `tirth8205/code-review-graph` (MIT, v2.3.9, commit 2026-09-18) | mesma categoria do `Serena`: grafo de código via servidor MCP em Python (`fastmcp`, `tree-sitter`, `networkx`, `watchdog`), e o `install` grava MCP, hook de SessionStart, skills e regras em cada ferramenta detectada. O "60–70% menos tokens" do carrossel (@matheustilli, 2026-10-05) compara com ler o repositório inteiro, que o próprio README chama de teto que nenhum agente paga; contra busca por grep o README ainda não publicou medição. Repos pequenos + `scout` cobrem. Reavaliar só para repo grande (2026-10-05) |
-| `safishamsi/graphify` (MIT/Apache-2.0, commit `c588b72`, 2026-10-22) | mesma categoria do `code-review-graph`: grafo do código em Python (`tree-sitter`, `networkx`, `numpy`), e o `graphify install` grava hook PreToolUse em toda busca e leitura e bloco fixo no `CLAUDE.md` (hook amplo, exige confirmação). O "80% menos tokens" do vídeo é do Graphify Cloud, pago. Repos pequenos + `scout` cobrem. Ponytail, OmniRoute e `addyosmani/agent-skills`, do mesmo vídeo, já decididos acima, sem fato novo. Reavaliar só para repo grande (2026-10-22) |
+| `safishamsi/graphify` (MIT/Apache-2.0, commit `c588b72`, 2026-10-22) | mesma categoria do `code-review-graph`: grafo do código em Python (`tree-sitter`, `networkx`, `numpy`), e o `graphify install` grava hook PreToolUse em toda busca e leitura e bloco fixo no `CLAUDE.md` (hook amplo, exige confirmação). O "80% menos tokens" do vídeo é do Graphify Cloud, pago. Repos pequenos + `scout` cobrem. Reavaliar só para repo grande (2026-10-22) |
 | modpack `repowise-dev` (no-ai-slop, critic, devil, deep, risk, decision) | personas de resposta; disputam gatilho com o agent `reviewer` e com a skill `spec` |
 | `Strix` | pentest autônomo real, mas exige Docker, chave de LLM paga e scan de 1–4h. Cobrir com `security-review.yml` no CI em vez disso |
 | `Ralph loop` | repete o prompt sem gate de verificação; a regra de evidência já confere saída real |

@@ -15,7 +15,8 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
 ## 2026-10-22
-- Avaliados os 4 do vídeo (Ponytail, OmniRoute, Graphify, `addyosmani/agent-skills`): nada instalado. Graphify recusado (hook em toda leitura e busca; ganho só em repo grande); os outros três já tinham decisão.
+- Instalados, a pedido, os pacotes Ponytail (6 skills) e `addyosmani/agent-skills` (25 skills), todos só por comando, para não disputar pedido com as skills existentes nem gastar contexto (lista no README, seção Atalhos). Ponytail sem os hooks.
+- `skills.test.sh`: pacote de terceiros só por comando fica fora do orçamento de description e do roteador.
 
 ## 2026-10-19
 - Skills `wrangler` e `workers-best-practices` atualizadas para o commit oficial `86505e4` da Cloudflare: Wrangler só em projeto que já tem `wrangler.jsonc/json/toml`; projeto novo segue o CLI `cf`. Skills do Firebase e do web-quality sem mudança relevante.
