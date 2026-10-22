@@ -17,7 +17,7 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 ## 2026-10-22
 - Instalados, a pedido, os pacotes Ponytail (6 skills) e `addyosmani/agent-skills` (25 skills), todos só por comando, para não disputar pedido com as skills existentes nem gastar contexto (lista no README, seção Atalhos). Ponytail sem os hooks.
 - Graphify (global, com hooks) e OmniRoute (só por terminal) liberados a pedido do usuário, como passo manual no PC; não entram no instalador.
-- `skills.test.sh`: pacote de terceiros só por comando fica fora do orçamento de description e do roteador.
+- Skill roteadora `engenharia`: aciona sozinha os 31 métodos quando a etapa de programação pede, depois das skills e agents do Autonomia (uma só descrição no contexto). `skills.test.sh` confere que cada método está na tabela dela.
 
 ## 2026-10-19
 - Skills `wrangler` e `workers-best-practices` atualizadas para o commit oficial `86505e4` da Cloudflare: Wrangler só em projeto que já tem `wrangler.jsonc/json/toml`; projeto novo segue o CLI `cf`. Skills do Firebase e do web-quality sem mudança relevante.

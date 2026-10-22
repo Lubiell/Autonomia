@@ -1,6 +1,6 @@
 # Claude Code — Orquestrador
 
-Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 34 skills (mais 31 de terceiros só por comando), 37 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
+Configuração de orquestração para o Claude Code: regras permanentes, 12 agents especializados, 35 skills (mais 31 métodos de terceiros, acionados pelo roteador `engenharia`), 37 atalhos de comando (desenvolvimento, dados, marketing, produto, negócios, projetos, atendimento, educação, segurança, mídia, IA generativa e LGPD), permissões, sandbox e um hook de segurança.
 
 ```text
 CLAUDE.md                 regras permanentes e roteamento
@@ -35,8 +35,9 @@ CHANGELOG.md              o que mudou, por data
     ├── workers-best-practices/ Workers em produção (oficial Cloudflare, Apache-2.0)
     ├── firebase-hosting-basics/, firebase-auth-basics/, firebase-security-rules-auditor/ (oficiais Firebase, Apache-2.0)
     ├── accessibility/, performance/  WCAG 2.2 e desempenho web (addyosmani/web-quality-skills, MIT)
-    ├── ponytail*/ (6)        só por comando: /ponytail, /ponytail-review… menos código (DietrichGebert/ponytail, MIT, sem os hooks)
-    ├── (25 de agent-skills)  só por comando: /spec-driven-development, /code-review-and-quality… (addyosmani/agent-skills, MIT)
+    ├── engenharia/           roteador: aciona sozinho os 31 métodos abaixo quando a etapa pede
+    ├── ponytail*/ (6)        pelo roteador ou por comando: /ponytail, /ponytail-review… menos código (DietrichGebert/ponytail, MIT, sem os hooks)
+    ├── (25 de agent-skills)  pelo roteador ou por comando: /spec-driven-development, /code-review-and-quality… (addyosmani/agent-skills, MIT)
     ├── mei-impostos/         MEI, DAS, DASN-SIMEI, NFS-e, quando virar ME
     ├── contratos/            contrato e proposta de prestação de serviço
     ├── marca/                posicionamento, tom de voz, paleta, tipografia, guia de marca
@@ -100,7 +101,7 @@ Rodam sozinhos: a skill `atalhos` (uma só descrição no contexto) reconhece o 
 | Programar | `/depurar` `/explicar-codigo` `/refatorar` `/otimizar` `/testes` |
 | Publicar e aprender | `/regex` `/mensagem-commit` `/documentar` `/quiz` `/comparar` |
 
-Pacotes de terceiros, só por comando (não disparam sozinhos nem passam pelo roteador, para não disputar pedido com as skills acima): `/ponytail` (`lite`, `full`, `ultra`, `off`), `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt`, `/ponytail-gain`, `/ponytail-help` e as 25 do `addyosmani/agent-skills` (lista em `/using-agent-skills`).
+Pacotes de terceiros: o roteador `engenharia` (uma só descrição no contexto) os aciona sozinho quando a etapa de programação pede — especificar, TDD, revisar, depurar, lançar… —, sempre depois das skills e agents daqui. Também dá para chamar direto pelo comando: `/ponytail` (`lite`, `full`, `ultra`, `off`), `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt`, `/ponytail-gain`, `/ponytail-help` e as 25 do `addyosmani/agent-skills` (lista em `/using-agent-skills`).
 
 ## Conectores (MCP) recomendados — opcionais
 Dão ao Claude acesso às suas contas e ferramentas. Não vêm instalados: cada um pede login ou chave sua. Instale só o que for usar, com o menor acesso possível (somente leitura quando existir), seguindo o README oficial de cada um.

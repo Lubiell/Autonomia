@@ -85,8 +85,11 @@ if [ -f "$R" ]; then
   for d in "$ROOT"/.claude/skills/*/; do
     s="${d%/}"; n="$(basename "$s")"
     grep -q '^disable-model-invocation:[[:space:]]*true' "$s/SKILL.md" 2>/dev/null || continue
-    # Pacote de terceiros só por comando (com LICENSE.txt) não passa pelo roteador
-    [ -f "$s/LICENSE.txt" ] && continue
+    # Pacote de terceiros só por comando (com LICENSE.txt) passa pelo roteador "engenharia"
+    if [ -f "$s/LICENSE.txt" ]; then
+      grep -qF "| \`$n\` |" "$ROOT/.claude/skills/engenharia/SKILL.md" 2>/dev/null && pass=$((pass + 1)) || ko "método $n fora da tabela do roteador engenharia"
+      continue
+    fi
     grep -qF "| \`$n\` |" "$R" && pass=$((pass + 1)) || ko "atalho $n fora da tabela do roteador atalhos"
   done
 fi
