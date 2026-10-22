@@ -15,6 +15,7 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
 ## 2026-10-23
+- Avaliados 5 MCPs (Perplexity, Playwright, Firecrawl, Glyph, Chrome) e mais 6 skills de @gut1n (GSD, scroll-world e outras): nada instalado; Playwright e Chrome DevTools já estão no README como opcionais.
 - Skill `apis-gratuitas`: APIs públicas sem chave e testadas (CEP, CNPJ, feriados, câmbio, Selic, FIPE, produto por código de barras), de `public-apis/public-apis`.
 - Skill `organizar-arquivos` (pasta bagunçada: plano antes, nada apagado, desfazer) e seção de briefing na `pecas-graficas`, ideias do carrossel de @gut1n.
 - Carrossel de 6 repositórios (@devemdobro): `awesome-claude-code` e `everything-claude-code` já tinham decisão; 161 subagents e `claude-code-templates` recusados em massa (custo de contexto e `npx` sem auditoria); os dois guias ficam como material de estudo.
