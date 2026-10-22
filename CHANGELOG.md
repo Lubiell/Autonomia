@@ -14,6 +14,13 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 ## 2026-10-20
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
+## 2026-10-22
+- Autonomia como cérebro geral, para todas as áreas: agents `marketer`, `business-advisor` e `writer`, para o orquestrador delegar trabalho grande fora da programação; skills `financas-pessoais`, `estudo`, `escrita` e `saude-rotina`.
+- Instalados, a pedido, os pacotes Ponytail (6 skills) e `addyosmani/agent-skills` (25 skills), todos só por comando, para não disputar pedido com as skills existentes nem gastar contexto (lista no README, seção Atalhos). Ponytail sem os hooks.
+- Plugins oficiais `claude-md-management` (`/claude-md-improver`, `/revise-claude-md`) e `receipts` (`/receipts`), acionados pelo roteador `engenharia` ou sozinhos. Varredura de skills e plugins novos registrada em `decisoes.md`.
+- Graphify (global, com hooks) e OmniRoute (só por terminal) liberados a pedido do usuário, como passo manual no PC; não entram no instalador.
+- Skill roteadora `engenharia`: aciona sozinha os 31 métodos quando a etapa de programação pede, depois das skills e agents do Autonomia (uma só descrição no contexto). `skills.test.sh` confere que cada método está na tabela dela.
+
 ## 2026-10-19
 - Skills `wrangler` e `workers-best-practices` atualizadas para o commit oficial `86505e4` da Cloudflare: Wrangler só em projeto que já tem `wrangler.jsonc/json/toml`; projeto novo segue o CLI `cf`. Skills do Firebase e do web-quality sem mudança relevante.
 
