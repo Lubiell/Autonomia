@@ -16,6 +16,7 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 
 ## 2026-10-23
 - `instalar-autonomia.bat`: instala ou atualiza no Windows com dois cliques (baixa o main do GitHub e roda o `install.ps1`). Novo job do CI roda o `.bat` num Windows e confere a instalação.
+- Carrosséis de plugins (@clubedasskills e outro): Playwright, Agent Skills, Graphify, Ponytail, Context7 e Strix já tinham decisão; `21st.dev MCP` registrado como opcional (exige chave; componentes React).
 
 ## 2026-10-22
 - Autonomia como cérebro geral, para todas as áreas: agents `marketer`, `business-advisor` e `writer`, para o orquestrador delegar trabalho grande fora da programação; skills `financas-pessoais`, `estudo`, `escrita` e `saude-rotina`.
