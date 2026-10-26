@@ -14,6 +14,9 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 ## 2026-10-20
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
+## 2026-10-26
+- Rotina semanal: Claude Code 2.1.304–2.1.310 revisado. No Windows, a 2.1.310 passou a barrar comandos quando o Git Bash falta (antes o hook de segurança falhava calado); README avisa para instalar o Git for Windows. Skills copiadas sem mudança na origem.
+
 ## 2026-10-23
 - Avaliados 5 MCPs (Perplexity, Playwright, Firecrawl, Glyph, Chrome) e mais 6 skills de @gut1n (GSD, scroll-world e outras): nada instalado; Playwright e Chrome DevTools já estão no README como opcionais.
 - Skill `apis-gratuitas`: APIs públicas sem chave e testadas (CEP, CNPJ, feriados, câmbio, Selic, FIPE, produto por código de barras), de `public-apis/public-apis`.
