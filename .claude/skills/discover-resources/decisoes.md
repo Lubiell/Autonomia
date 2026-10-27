@@ -73,6 +73,7 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 
 - Skill `apis-gratuitas` — lista filtrada de `public-apis/public-apis` (commit `339ab55`), testada em 2026-10-23 (ViaCEP, BrasilAPI, BCB/SGS, Frankfurter, Nager.Date, FIPE, Open Food Facts, Wikipédia); AwesomeAPI devolveu 429 apesar de "sem limite" na lista; IBGE e Open-Meteo não responderam daqui. Pedido do usuário — 2026-10-23
 - Carrossel de 8 skills (@gut1n, 2026-10-23; arquivos só por comentário "A40", sem repositório para auditar): ideias reescritas aqui. `arquivos-em-ordem` → skill nova `organizar-arquivos` (plano antes, nada apagado, registro para desfazer); `briefing-de-design` → seção Briefing na `pecas-graficas`. Já cobertos: `redes-sociais` e `redator-de-conteudo` (`conteudo`, `escrita`), `agente-de-pesquisa` (`researcher`), `analise-de-dados` (`analise-dados`, `data-analyst`), `robo-do-navegador` (`automacao` + skill de conta `chrome-browser`), `piloto-automatico` (`automacao`, `plano`) — 2026-10-23
+- Guia de Wi-Fi lento (@souoallan, breezedm.app/wifi/guia-wifi.md; prompt, nada a instalar) — virou seção da skill `seguranca-digital`, com diagnóstico primeiro, biblioteca de terceiros só perguntando e sem deixar ferramenta de controle do roteador instalada por padrão — 2026-10-27
 
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |

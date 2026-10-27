@@ -28,5 +28,16 @@ Para código e sistemas, use o agent `security`. Esta skill cuida de pessoas, co
 ## Empresa pequena
 Contas individuais (nada de senha compartilhada), acesso só ao necessário, remoção no dia em que alguém sai, Wi-Fi de visitantes separado, computador com disco criptografado (BitLocker no Windows, FileVault no Mac).
 
+## Wi-Fi lento no roteador de casa
+Só no roteador da própria pessoa, com o Claude Code num aparelho ligado à rede lenta (sessão na nuvem não alcança a rede de casa).
+1. **Diagnóstico primeiro, sem mudar nada:** velocidade e atraso com a rede carregada; banda (2,4/5 GHz), canal e vizinhos nele, largura, modo (Wi-Fi 4/5/6), potência e band steering, contra o melhor que o modelo permite.
+2. **Senha do roteador** no cofre do sistema (Gerenciador de Credenciais no Windows, Keychain no Mac, `secret-tool` no Linux), gravada e lida por comando que a pessoa roda; nunca no chat, nunca exibida. Login falhou uma vez: pare e pergunte.
+3. **Acesso:** página de administração ou API oficial do modelo. Biblioteca de terceiros ou integração do Home Assistant é dependência nova: pergunte antes. Captcha ou conta da operadora: abra o navegador e deixe a pessoa entrar.
+4. **Antes de cada mudança:** configuração inteira salva numa pasta `roteador` na pasta pessoal; valor antigo e novo na tela; aplica só com o sim; relê o valor e mede de novo.
+5. **Nunca:** mudar nome ou senha do Wi-Fi (formulário que reenvia a senha mantém a mesma), reiniciar sem perguntar, atualizar firmware, resetar ou usar brecha. Ferramenta que fica instalada para controlar o roteador, com a senha guardada, só se a pessoa pedir.
+6. **Operadora travou as configurações:** arrume o que der no computador e escreva a mensagem exata para a operadora.
+
+Entregue: antes X Mbps, depois Y Mbps; **Arrumado**, **Como desfazer**, **O que preciso de você**. Adaptado do guia de @souoallan (breezedm.app/wifi).
+
 ## Estudar segurança ofensiva
 Só em ambiente seu: máquina virtual isolada com laboratórios feitos para isso (OWASP Juice Shop, DVWA), plataformas de CTF e programas de bug bounty dentro do escopo publicado. Testar sistema de terceiros sem autorização por escrito é crime (Lei 12.737/2012). O Autonomia não instala ferramentas de ataque.
