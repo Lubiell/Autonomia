@@ -14,6 +14,9 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 ## 2026-10-20
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
+## 2026-10-27
+- `melhorar-projeto`: dispara em "avalie, procure erros e melhorias" (no teste de 23/10 o Claude avaliou sozinho, sem a skill); roda os testes do projeto e, em avaliação completa, chama `security` e `qa-web` em paralelo.
+
 ## 2026-10-26
 - Rotina semanal: Claude Code 2.1.304–2.1.310 revisado. No Windows, a 2.1.310 passou a barrar comandos quando o Git Bash falta (antes o hook de segurança falhava calado); README avisa para instalar o Git for Windows. Skills copiadas sem mudança na origem.
 
