@@ -1,12 +1,12 @@
 ---
 name: melhorar-projeto
-description: Use quando pedirem para melhorar, revisar ou avaliar um projeto (site, sistema, app, automação, base de dados) ou perguntarem "o que falta", "como deixar melhor", "qual agente usar". Diagnostica por área e sugere, em ordem de prioridade, o agent ou a skill que resolve cada ponto.
+description: Use quando pedirem para avaliar, revisar, auditar ou melhorar um projeto inteiro (site, sistema, app, automação, base de dados), "procurar erros e melhorias", ou perguntarem "o que falta", "como deixar melhor", "qual agente usar". Diagnostica por área e sugere, em ordem de prioridade, o agent ou a skill que resolve cada ponto.
 ---
 
 # Melhorar projeto: diagnóstico e agent indicado
 
 ## 1. Diagnóstico rápido (só leitura)
-Levante a stack real e o estado: README/CLAUDE.md, comandos de teste/build/lint, CI, `git status`. Projeto grande ou desconhecido: delegue o levantamento ao `scout`. Confira cada área com evidência (arquivo, comando, saída), nunca por suposição:
+Levante a stack real e o estado: README/CLAUDE.md, comandos de teste/build/lint, CI, `git status`. Projeto grande ou desconhecido: delegue o levantamento ao `scout`. Rode os testes e o build que o projeto já tem. Em avaliação completa, delegue em paralelo o `security` e, se houver interface, o `qa-web`, cada um com o seu escopo; o resto você confere. Confira cada área com evidência (arquivo, comando, saída), nunca por suposição:
 
 | Área | Sinal de problema | Agent | Skill |
 |---|---|---|---|
