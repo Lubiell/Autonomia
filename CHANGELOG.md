@@ -14,6 +14,9 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 ## 2026-10-20
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
+## 2026-10-30
+- Avaliado o carrossel de 42 skills de design (@matheustilli): nada instalado; as áreas já têm skill no Autonomia ou na conta.
+
 ## 2026-10-27
 - `melhorar-projeto`: dispara em "avalie, procure erros e melhorias" (no teste de 23/10 o Claude avaliou sozinho, sem a skill); roda os testes do projeto e, em avaliação completa, chama `security` e `qa-web` em paralelo.
 
