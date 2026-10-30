@@ -16,6 +16,7 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 
 ## 2026-10-30
 - Avaliado o carrossel de 42 skills de design (@matheustilli): nada instalado; as áreas já têm skill no Autonomia ou na conta.
+- Avaliado o carrossel de 42 ferramentas em 5 departamentos (@matheustilli): nada instalado; 15 já tinham decisão, 5 são cobertas por skills daqui, 6 são conectores da conta e os outros 16 ficam recusados com motivo em `decisoes.md`.
 
 ## 2026-10-27
 - `melhorar-projeto`: dispara em "avalie, procure erros e melhorias" (no teste de 23/10 o Claude avaliou sozinho, sem a skill); roda os testes do projeto e, em avaliação completa, chama `security` e `qa-web` em paralelo.
