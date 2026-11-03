@@ -37,5 +37,13 @@ MIT. Lista de servidores MCP, não software. Faltou conector para um sistema: co
 ## Não usar — `claude-task-master`
 Fatia tarefas a partir de um documento de requisitos: colide com a skill `spec` e a `plano` (duas camadas decidindo o mesmo). Licença NOASSERTION.
 
+## Gateway de WhatsApp — `OpenWA` (`rmyndharis/OpenWA`)
+MIT, v0.27.1, commit `11bb959` (2026-11-02). Servidor NestJS em Docker (Node 22) que expõe o WhatsApp por API REST, webhook e painel, com várias sessões. Fala com o WhatsApp por cliente **não oficial** (`whatsapp-web.js` com Chromium, ou `baileys`); o próprio README avisa que há risco de restrição ou banimento da conta e que não tem vínculo com a Meta. Li README, licença e `package.json`; **não auditei o código** (scripts, entrypoint, dependências).
+
+- **Usar:** número próprio ou de teste, volume baixo, para integrar WhatsApp a um sistema (aviso, resposta automática, CRM simples) sem pagar a API oficial. Ligar o envio com ritmo (`SEND_PACING_ENABLED=true`) e manter caminho alternativo (SMS, e-mail ou Cloud API oficial) para o que for crítico.
+- **Não usar:** número principal de negócio, disparo em massa ou lista fria (viola os termos do WhatsApp e é o que leva ao ban). Para cliente que paga, a API oficial (WhatsApp Business Cloud API) é o caminho sem risco de conta.
+- **Cuidados:** exige servidor ligado o tempo todo (VPS ou Docker; não é para o celular). Guarda mensagens e contatos, que são dado pessoal: seguir a skill `lgpd` (base legal, retenção, consentimento para contato). Chave de API com escopo mínimo e painel fora da internet aberta.
+- **Papel do Claude:** escrever o que conversa com ele (Worker ou script que recebe o webhook, validação do payload, texto das respostas com `atendimento-vendas`). Instalar e manter o servidor é por conta do usuário.
+
 ## Regra geral
 Ferramenta externa entra quando resolve um problema que o Autonomia tem **e não resolve com o que já existe**. Uma por vez, usada por uma semana, decisão registrada com o motivo.

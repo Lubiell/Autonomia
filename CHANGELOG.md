@@ -14,6 +14,9 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 ## 2026-10-20
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
+## 2026-11-03
+- `OpenWA` (gateway de WhatsApp) registrado como opcional em `ferramentas-externas.md`, com uso, limites e cuidados (ban, LGPD, servidor 24h). Nada instalado; código não auditado.
+
 ## 2026-10-30
 - Avaliado o carrossel de 42 skills de design (@matheustilli): nada instalado; as áreas já têm skill no Autonomia ou na conta.
 - Avaliado o carrossel de 42 ferramentas em 5 departamentos (@matheustilli): nada instalado; 15 já tinham decisão, 5 são cobertas por skills daqui, 6 são conectores da conta e os outros 16 ficam recusados com motivo em `decisoes.md`.
