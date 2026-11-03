@@ -43,6 +43,9 @@ jobs:
       - name: Instalador (install.sh)
         if: runner.os != 'Windows'
         run: bash tests/install.test.sh
+      - name: Disparo de WhatsApp (disparo.py)
+        if: runner.os == 'Linux'
+        run: python3 tests/disparo_whatsapp_test.py
 
   powershell:
     name: install.ps1 (${{ matrix.shell }})

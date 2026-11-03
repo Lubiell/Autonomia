@@ -18,10 +18,10 @@ Script `disparo.py` em Python, só com a biblioteca padrão (sem dependência no
 
 - **Entrada:**
   - `contatos.csv`, com as colunas `telefone,nome,consentimento`. A linha sem `consentimento` preenchido é ignorada e registrada como `sem_consentimento`.
-  - `campanha.json`, com `texto` (aceita `{{nome}}`), `imagem_url` (opcional) e `legenda`.
-- **Telefone:** normaliza para `55DDDNÚMERO`. Antes do primeiro envio, confere o número em `GET /api/sessions/{id}/contacts/check/{numero}` e usa o `chatId` que o OpenWA devolver. Isso resolve o problema do nono dígito em números do Brasil. O formato exato da resposta será conferido no código do OpenWA antes da implementação.
+  - `campanha.json`, com `texto` (aceita `{{nome}}`; vira a legenda quando há foto) e, opcionalmente, `imagem` (arquivo local, enviado em `base64` com `mimetype` e `filename`, campos do SDK do OpenWA) ou `imagem_url` (link).
+- **Telefone:** normaliza para `55DDDNÚMERO`. Antes do primeiro envio, confere o número em `GET /api/sessions/{id}/contacts/check/{numero}` e usa o `chatId` que o OpenWA devolver. Isso resolve o problema do nono dígito em números do Brasil. A resposta tem `number`, `exists` e `whatsappId` (conferido no SDK Python do OpenWA).
 - **Envio:**
-  - Usa `POST /api/sessions/{id}/messages/send-image` (`chatId`, `url`, `caption`) quando há foto, ou `send-text` (`chatId`, `text`) quando não há.
+  - Usa `POST /api/sessions/{id}/messages/send-image` (`chatId`, `url` ou `base64`, `caption`) quando há foto, ou `send-text` (`chatId`, `text`) quando não há.
   - Autentica pelo cabeçalho `X-API-Key`, lido da variável de ambiente `OPENWA_API_KEY`. A chave nunca fica em arquivo do repositório.
 - **Ritmo:**
   - Espera aleatória de 20 a 60 s entre envios.
@@ -30,7 +30,7 @@ Script `disparo.py` em Python, só com a biblioteca padrão (sem dependência no
   - Recomenda ligar `SEND_PACING_ENABLED=true` no servidor.
 - **Registro:**
   - `envios.csv` guarda telefone, status, horário e erro.
-  - Ao rodar de novo, o script pula quem já está como `enviado`, o que torna a execução repetível.
+  - Ao rodar de novo, o script pula quem já está como `enviado`, `nao_existe` ou `incerto`, o que torna a execução repetível. `incerto` cobre timeout, 5xx ou resposta inválida no envio, quando a mensagem pode ter saído: o contato não é reenviado.
 - **Descadastro:**
   - O texto termina com "Responda SAIR para não receber mais".
   - Os números listados em `descadastro.csv` nunca recebem.

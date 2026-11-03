@@ -1,0 +1,9 @@
+# Dado pessoal (LGPD): nunca vai para o Git.
+contatos.csv
+envios.csv
+descadastro.csv
+*.jpg
+*.jpeg
+*.png
+*.webp
+__pycache__/
