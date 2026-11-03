@@ -15,6 +15,7 @@ O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o inst
 - Rotina semanal: quando o `CLAUDE.md` do próprio repositório define a política de merge, vale a dele no lugar da regra geral de tarefa de risco. Regra de projeto fica no projeto, não no Autonomia.
 
 ## 2026-11-03
+- Ferramenta `ferramentas/disparo-whatsapp/`: script em Python (só biblioteca padrão) que envia foto e texto via OpenWA para contatos que autorizaram, um por vez, com intervalo, limite diário, parada após 3 falhas, registro para retomar e descadastro. Sem `--enviar`, só simula. Spec em `docs/specs/2026-11-03-disparo-whatsapp.md`.
 - `OpenWA` (gateway de WhatsApp) registrado como opcional em `ferramentas-externas.md`, com uso, limites e cuidados (ban, LGPD, servidor 24h). Nada instalado; código não auditado.
 
 ## 2026-10-30
