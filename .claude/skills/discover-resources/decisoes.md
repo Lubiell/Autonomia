@@ -221,6 +221,7 @@ Detalhe de uso em `ferramentas-externas.md`, nesta pasta.
 | `ollama/ollama` | roda LLM aberto no próprio PC; exige RAM/GPU e o modelo local é bem mais fraco que o Claude. Só se um projeto precisar processar dado sensível sem enviar para a nuvem. Nunca como proxy do Claude Code (mesma regra do `OmniRoute`) (2026-10-07) |
 | `supabase/supabase` | Postgres gerenciado com login e armazenamento; alternativa ao Firebase/D1 só se o projeto precisar de SQL relacional com autenticação pronta. A `banco-dados` já cobre Postgres. Usar o serviço hospedado, não instalar o repositório (2026-10-07) |
 | `FlowiseAI/Flowise` | montar agente de IA arrastando blocos; mesma regra de `CrewAI`/`LangGraph`: só se o projeto for construir um agente. Para ligar sistemas, `n8n` (2026-10-07) |
+| `rmyndharis/OpenWA` (MIT, v0.27.1, commit `11bb959`) | opcional, só documentado em `ferramentas-externas.md`; nada instalado. Gateway de WhatsApp por cliente não oficial (`whatsapp-web.js`/`baileys`): risco de ban da conta, servidor 24h e dado pessoal de conversa (`lgpd`). Código não auditado. Usar só em número próprio ou de teste, com ritmo de envio; cliente pagante pede a API oficial (2026-11-03) |
 | `public-apis/public-apis` | catálogo de APIs gratuitas; consulta quando um projeto precisar de dado externo, conferindo termos e limite de cada API (2026-10-07) |
 | `github/gitignore` | modelos oficiais de `.gitignore` (CC0); usar o da linguagem ao criar projeto novo em vez de escrever de memória (2026-10-07) |
 
