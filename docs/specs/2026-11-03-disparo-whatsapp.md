@@ -41,6 +41,7 @@ Script `disparo.py` em Python, só com a biblioteca padrão (sem dependência no
 - **LGPD:**
   - `contatos.csv`, `envios.csv` e `descadastro.csv` entram no `.gitignore`.
   - Só o `contatos.exemplo.csv` vai para o repositório.
+- **Servidor:** o OpenWA roda no PC do usuário, em Docker, na porta 2785. O script roda no próprio PC, pelo endereço `http://localhost:2785`. Pelo celular, também roda no Termux, apontando para o IP do PC na mesma rede Wi-Fi com a opção `--url`. O painel do OpenWA não fica exposto à internet.
 - **Local:** `ferramentas/disparo-whatsapp/` neste repositório, porque esta sessão não cria repositório novo. Dá para mover para um repositório próprio depois.
 
 ## Fora de escopo
