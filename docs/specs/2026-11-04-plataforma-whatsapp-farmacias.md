@@ -1,6 +1,6 @@
-# Spec — Plataforma de atendimento por WhatsApp para farmácias (MVP)
+# Spec — WhatsApp Humanae: atendimento por WhatsApp para farmácias (MVP)
 Data: 2026-11-04
-Status: **aguardando ok do usuário**
+Status: **aprovada pelo usuário em 2026-11-04 (caminho A)**. Nome do produto: WhatsApp Humanae.
 
 ## Problema
 O usuário quer oferecer a drogarias uma plataforma de atendimento por WhatsApp no estilo da grupounicocontato.com.br. A plataforma teria:
@@ -25,7 +25,7 @@ Hoje não existe nada disso, e o produto inteiro levaria meses. É preciso escol
 ## Solução (MVP)
 1. **Servidor:** Chatwoot self-hosted em Docker numa VPS **no Brasil**, com HTTPS, backup diário criptografado do Postgres e uma conta Chatwoot por rede de farmácias, para separar os dados de cada cliente.
 2. **WhatsApp:** uma caixa de entrada por número, via Cloud API. A conta Meta (WABA) é **da farmácia**, que paga as mensagens dela direto à Meta. Respostas dentro da janela de 24 h são grátis. Mensagem iniciada pela empresa é cobrada por modelo (*template*): marketing ~US$ 0,06 e utilidade ~US$ 0,007 no Brasil [Provável; conferir na tabela oficial antes de orçar].
-3. **Conector próprio** (serviço pequeno, em Python como o resto do kit), ligado como *Agent Bot* do Chatwoot:
+3. **Conector próprio** (serviço pequeno, em Python só com a biblioteca padrão, estado em SQLite), ligado como *Agent Bot* do Chatwoot:
    - dá boas-vindas e pergunta a filial e o assunto (orçamento, entrega, outro);
    - manda a conversa para o time certo (filial e setor) e passa para um humano;
    - fora do horário, responde com o horário de funcionamento.
@@ -41,7 +41,7 @@ Hoje não existe nada disso, e o produto inteiro levaria meses. É preciso escol
 - Copiar marca, textos, depoimentos ou números de terceiros.
 
 ## Onde fica o código
-Em um repositório novo do produto (por exemplo `lubiell/farma-atende`), criado pelo usuário e anexado à sessão. Esta spec fica aqui até lá.
+Em um repositório novo do produto, `Lubiell/whatsapp-humanae`, criado pelo usuário e anexado à sessão. Esta spec fica aqui até lá.
 
 ## Arquivos afetados (no repositório novo)
 - `docker-compose.yml`, `.env.example` (sem segredo) e `docs/instalacao.md`: subir o Chatwoot.
