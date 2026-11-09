@@ -114,7 +114,7 @@ Dão ao Claude acesso às suas contas e ferramentas. Não vêm instalados: cada 
 
 | Conector | Para quê | Cuidado |
 |---|---|---|
-| Playwright MCP (`microsoft/playwright-mcp`) | navegar e testar sites de forma interativa | baixa navegadores |
+| Playwright MCP (`microsoft/playwright-mcp`) | navegar e testar sites de forma interativa | **já vem no `.mcp.json` do repositório** (versão fixada); o Claude pede aprovação na primeira vez; baixa navegadores; não roda no Termux |
 | Chrome DevTools MCP (`ChromeDevTools/chrome-devtools-mcp`) | desempenho real (LCP/INP), rede, console | desligue a telemetria (`--no-usage-statistics`) |
 | GitHub MCP (`github/github-mcp-server`) | PRs, issues, Actions | use `--read-only` e token de escopo mínimo |
 | Cloudflare MCP (`cloudflare/mcp-server-cloudflare`) | Workers, logs, documentação | token de API com escopo mínimo |
@@ -130,7 +130,7 @@ Antes de instalar, a skill `discover-resources` e o agent `security` avaliam o c
 
 ## Instalação
 
-**Num projeto:** copie `CLAUDE.md` e `.claude/` para a raiz do repositório.
+**Num projeto:** copie `CLAUDE.md`, `.claude/` e `.mcp.json` (navegador pelo Playwright MCP) para a raiz do repositório.
 
 **Windows, em um clique:** baixe [`instalar-autonomia.bat`](instalar-autonomia.bat) e dê dois cliques. Ele baixa a versão mais nova do GitHub e roda o `install.ps1`; rode de novo sempre que quiser atualizar. O CI roda esse `.bat` num Windows a cada mudança.
 

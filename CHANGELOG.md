@@ -2,6 +2,9 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-11-09
+- Playwright MCP no `.mcp.json` (versão `0.0.83` fixada): o Claude abre e usa páginas web num navegador real ao trabalhar no repositório. Em outro projeto, copie o `.mcp.json` junto com `.claude/`. `browser-use` segue recusado.
+
 ## 2026-10-21
 - `skills.test.sh` reprova skills ou agents com descrições parecidas demais, que disputam o mesmo gatilho, e skill com corpo vazio. Também confere que todo hook do `settings.json` existe e usa evento válido.
 - `guard.sh` bloqueia também `git stash clear`, `git branch -D` e `git checkout .`/`git restore .` (sem `--staged`), que descartam trabalho sem volta.
