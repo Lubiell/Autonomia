@@ -2,6 +2,9 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-11-10
+- Backup no Drive: reenvia quando muda qualquer branch ou tag, não só a principal (pushes em outras branches ficavam fora do backup); marca salva em `<repo>-refs.txt`. Agendamento a cada 15 minutos em vez de 1 hora. Sem `BACKUP_GH_TOKEN`, o job avisa que os privados ficaram de fora. Teste novo `tests/backup-drive.test.sh` no CI.
+
 ## 2026-11-09
 - Playwright MCP no `.mcp.json` (versão `0.0.83` fixada): o Claude abre e usa páginas web num navegador real ao trabalhar no repositório. Em outro projeto, copie o `.mcp.json` junto com `.claude/`. `browser-use` segue recusado.
 

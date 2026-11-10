@@ -43,6 +43,9 @@ jobs:
       - name: Instalador (install.sh)
         if: runner.os != 'Windows'
         run: bash tests/install.test.sh
+      - name: Backup no Drive (backup-drive.sh)
+        if: runner.os == 'Linux'
+        run: bash tests/backup-drive.test.sh
       - name: Disparo de WhatsApp (disparo.py)
         if: runner.os == 'Linux'
         run: python3 tests/disparo_whatsapp_test.py

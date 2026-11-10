@@ -2,8 +2,9 @@
 # Backup de todos os repositórios do dono no Google Drive, uma pasta por repositório:
 #   <destino>/<repo>/<repo>.zip         código da branch principal
 #   <destino>/<repo>/<repo>.bundle      histórico completo (git clone <repo>.bundle)
-#   <destino>/<repo>/<repo>-versao.txt  commit, data e mensagem do último backup
-# Só reenvia o repositório cujo último commit mudou desde o backup anterior.
+#   <destino>/<repo>/<repo>-versao.txt  commit, data e mensagem da branch principal
+#   <destino>/<repo>/<repo>-refs.txt    impressão digital de todas as branches e tags
+# Só reenvia o repositório em que alguma branch ou tag mudou desde o backup anterior.
 #
 # Variáveis:
 #   BACKUP_OWNER      dono dos repositórios (obrigatória)
@@ -24,6 +25,7 @@ elif [ -n "${BACKUP_GH_TOKEN:-}" ]; then
   repos="$(GH_TOKEN="$BACKUP_GH_TOKEN" gh api --paginate '/user/repos?affiliation=owner&per_page=100' \
     --jq '.[] | [.name, .default_branch, .clone_url] | @tsv')"
 else
+  echo "::warning::Segredo BACKUP_GH_TOKEN não configurado: repositórios privados ficam sem backup."
   repos="$(gh api --paginate "/users/$owner/repos?type=owner&per_page=100" \
     --jq '.[] | [.name, .default_branch, .clone_url] | @tsv')"
 fi
@@ -36,13 +38,17 @@ while IFS=$'\t' read -r name branch url; do
     auth_url="https://x-access-token:${BACKUP_GH_TOKEN}@${url#https://}"
   fi
 
-  head="$(git ls-remote "$auth_url" "refs/heads/$branch" 2>/dev/null | cut -f1 || true)"
+  refs="$(git ls-remote "$auth_url" 'refs/heads/*' 'refs/tags/*' 2>/dev/null || true)"
+  head="$(printf '%s\n' "$refs" | awk -v r="refs/heads/$branch" '$2 == r {print $1}')"
   if [ -z "$head" ]; then
     echo "$name: sem commits na branch $branch, pulando"
     continue
   fi
-  last="$(rclone cat "$dest/$name/$name-versao.txt" 2>/dev/null | cut -d' ' -f1 || true)"
-  if [ "$head" = "$last" ] && [ "${BACKUP_FORCE:-0}" != 1 ]; then
+  # Impressão digital de todas as branches e tags: push em qualquer branch
+  # (não só na principal) dispara novo backup, pois o .bundle guarda todas.
+  marca="$(printf '%s\n' "$refs" | LC_ALL=C sort | git hash-object --stdin)"
+  last="$(rclone cat "$dest/$name/$name-refs.txt" 2>/dev/null || true)"
+  if [ "$marca" = "$last" ] && [ "${BACKUP_FORCE:-0}" != 1 ]; then
     echo "$name: já atualizado ($head)"
     iguais=$((iguais + 1))
     continue
@@ -57,15 +63,17 @@ while IFS=$'\t' read -r name branch url; do
   git --git-dir="$repo_dir" bundle create -q "$work/$name.bundle" --all
   git --git-dir="$repo_dir" archive --format=zip --prefix="$name/" -o "$work/$name.zip" "$branch"
   git --git-dir="$repo_dir" log -1 --format='%H %cI %s' "$branch" > "$work/$name-versao.txt"
+  printf '%s' "$marca" > "$work/$name-refs.txt"
 
-  # copyto sobrescreve o arquivo de mesmo nome. A versão vai por último:
+  # copyto sobrescreve o arquivo de mesmo nome. A marca vai por último:
   # se um envio falhar no meio, o próximo backup tenta de novo.
   rclone copyto "$work/$name.zip" "$dest/$name/$name.zip"
   rclone copyto "$work/$name.bundle" "$dest/$name/$name.bundle"
   rclone copyto "$work/$name-versao.txt" "$dest/$name/$name-versao.txt"
+  rclone copyto "$work/$name-refs.txt" "$dest/$name/$name-refs.txt"
   echo "$name: backup enviado ($head)"
   feitos=$((feitos + 1))
-  rm -r -f -- "$repo_dir" "$work/$name.zip" "$work/$name.bundle" "$work/$name-versao.txt"
+  rm -r -f -- "$repo_dir" "$work/$name.zip" "$work/$name.bundle" "$work/$name-versao.txt" "$work/$name-refs.txt"
 done <<< "$repos"
 
 echo "Resumo: $feitos enviados, $iguais já atualizados, $falhas falhas"

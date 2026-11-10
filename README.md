@@ -211,9 +211,10 @@ Não vêm instalados; avalie com a skill `discover-resources`.
 O workflow `.github/workflows/backup-drive.yml` (com `.github/scripts/backup-drive.sh`) faz backup de **todos os seus repositórios**, cada um na própria pasta `Backups-GitHub/<repositório>/` do Drive:
 - `<repositório>.zip`: o código da branch principal, abre em qualquer lugar;
 - `<repositório>.bundle`: o histórico completo (restaura com `git clone <repositório>.bundle`);
-- `<repositório>-versao.txt`: commit e data do backup.
+- `<repositório>-versao.txt`: commit e data da branch principal no backup;
+- `<repositório>-refs.txt`: marca de todas as branches e tags, usada para saber se algo mudou.
 
-Roda de hora em hora, a cada atualização do `main` do Autonomia e pelo botão **Run workflow** em Actions. Só reenvia o repositório que mudou; repositório novo entra sozinho na próxima hora. Cada envio substitui o arquivo anterior de mesmo nome; o Drive guarda as versões antigas no histórico do arquivo (30 dias). Sem o segredo abaixo, o job só avisa e não falha. Em repositório público, o GitHub pausa agendamentos depois de 60 dias sem atividade; um commit ou um **Run workflow** reativa.
+Roda a cada 15 minutos (o GitHub pode atrasar agendamentos em horário de pico), a cada atualização do `main` do Autonomia e pelo botão **Run workflow** em Actions. Só reenvia o repositório em que alguma branch ou tag mudou, inclusive push fora da branch principal; repositório novo entra sozinho no próximo ciclo. Cada envio substitui o arquivo anterior de mesmo nome; o Drive guarda as versões antigas no histórico do arquivo (30 dias). Sem o segredo abaixo, o job só avisa e não falha. Em repositório público, o GitHub pausa agendamentos depois de 60 dias sem atividade; um commit ou um **Run workflow** reativa.
 
 **Configurar uma vez, pelo celular no Termux (~5 min):**
 1. No Termux: `pkg install rclone`.
@@ -224,7 +225,7 @@ Roda de hora em hora, a cada atualização do `main` do Autonomia e pelo botão 
 
 No PC o processo é o mesmo, instalando o rclone com `winget install Rclone.Rclone`.
 
-**Repositórios privados (opcional):** sem mais nada, entram só os públicos. Para incluir os privados, crie um token de acesso (GitHub > Settings > Developer settings > Fine-grained tokens, acesso a todos os repositórios, permissão **Contents: Read-only**) e salve no Autonomia como segredo `BACKUP_GH_TOKEN`.
+**Repositórios privados:** sem mais nada, entram só os públicos (o job avisa). Para incluir os privados, crie um token de acesso (GitHub > Settings > Developer settings > Fine-grained tokens, acesso a todos os repositórios, permissão **Contents: Read-only**) e salve no Autonomia como segredo `BACKUP_GH_TOKEN`.
 
 Os tokens dão acesso só ao necessário; não cole em chat nem em arquivo do repositório. Para revogar o do Drive: myaccount.google.com/permissions.
 

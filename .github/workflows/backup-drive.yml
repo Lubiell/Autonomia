@@ -2,8 +2,9 @@ name: backup-drive
 
 # Backup de TODOS os repositórios do dono no Google Drive, uma pasta por
 # repositório (Backups-GitHub/<repo>/), substituindo o backup anterior.
-# Repositório novo entra sozinho. Roda de hora em hora, a cada atualização
-# do main deste repositório e pelo botão Run workflow; só reenvia o que mudou.
+# Repositório novo entra sozinho. Roda a cada 15 minutos, a cada atualização
+# do main deste repositório e pelo botão Run workflow; só reenvia o repositório
+# em que alguma branch ou tag mudou.
 # Precisa do segredo GDRIVE_TOKEN (ver README, "Backup no Google Drive");
 # sem ele, o job só avisa e termina sem erro.
 
@@ -11,7 +12,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '17 * * * *'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
     inputs:
       force:
