@@ -16,6 +16,7 @@ Trabalhe em cópia; nunca sobrescreva o original. Confira se `ffmpeg` (ou `magic
 - Miniatura: `ffmpeg -ss 00:00:05 -i in.mp4 -frames:v 1 capa.jpg`
 - Juntar vídeos do mesmo formato: lista `lista.txt` com linhas `file 'a.mp4'` e `ffmpeg -f concat -safe 0 -i lista.txt -c copy junto.mp4`
 - Legenda embutida: `ffmpeg -i in.mp4 -vf subtitles=legenda.srt saida.mp4`. Para gerar o `.srt` a partir da fala, use uma ferramenta de transcrição (ex.: Whisper) e revise o texto.
+- Legenda/transcrição de vídeo do YouTube sem baixar o vídeo: `yt-dlp --write-auto-subs --sub-langs pt,en --skip-download URL` (gera `.vtt`; para `.srt`: `ffmpeg -i in.vtt out.srt`). Legenda automática erra nome e termo técnico: revise antes de usar.
 
 ## Áudio (podcast, narração)
 - Volume padrão para podcast (cerca de −16 LUFS): `ffmpeg -i in.wav -af loudnorm=I=-16:TP=-1.5:LRA=11 normalizado.wav`

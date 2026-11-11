@@ -43,6 +43,7 @@ Ao notar no projeto um ponto fraco fora do pedido (sem testes, sem revisão de s
 
 ## Conclusão
 Só conclua com o pedido implementado, validações executadas e bloqueios resolvidos ou explicitados.
+Validação no ambiente-alvo (deploy, staging, máquina do usuário) é relato à parte das checagens locais: VERIFICADA com a evidência, FALHOU, ou NÃO FEITA com o que falta para fazê-la. Teste local, revisão ou merge não contam como validação no alvo; tarefa só local, diga que não se aplica.
 Evidência é saída gerada depois da última alteração; relatório de subagent é alegação: confira o `git diff` e rode a verificação você mesmo. Dizer "não verifiquei X" é aceitável; afirmar sem verificar não é.
 
 Relatório final (curto; omita seção vazia):
