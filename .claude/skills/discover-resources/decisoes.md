@@ -75,6 +75,9 @@ Instalar sempre um por vez, usando por uma semana antes do próximo. Auditar ant
 - Skill `apis-gratuitas` — lista filtrada de `public-apis/public-apis` (commit `339ab55`), testada em 2026-10-23 (ViaCEP, BrasilAPI, BCB/SGS, Frankfurter, Nager.Date, FIPE, Open Food Facts, Wikipédia); AwesomeAPI devolveu 429 apesar de "sem limite" na lista; IBGE e Open-Meteo não responderam daqui. Pedido do usuário — 2026-10-23
 - Carrossel de 8 skills (@gut1n, 2026-10-23; arquivos só por comentário "A40", sem repositório para auditar): ideias reescritas aqui. `arquivos-em-ordem` → skill nova `organizar-arquivos` (plano antes, nada apagado, registro para desfazer); `briefing-de-design` → seção Briefing na `pecas-graficas`. Já cobertos: `redes-sociais` e `redator-de-conteudo` (`conteudo`, `escrita`), `agente-de-pesquisa` (`researcher`), `analise-de-dados` (`analise-dados`, `data-analyst`), `robo-do-navegador` (`automacao` + skill de conta `chrome-browser`), `piloto-automatico` (`automacao`, `plano`) — 2026-10-23
 
+- Ideias do `affaan-m/ECC` (MIT, ex-everything-claude-code), sem instalar o plugin: `/handoff` grava em `~/.claude/handoffs/` e ganha a seção "o que não funcionou"; atalhos novos `retomar` (briefing de retomada) e `aprender` (extrai padrão da sessão para skill, com aprovação); validação no ambiente-alvo (VERIFICADA/FALHOU/NÃO FEITA) na Conclusão do `CLAUDE.md`. Recusado o que exige o runtime do ECC: memory-persistence, unified-memory, gateguard, hookify e continuous-learning-v2 (observer em segundo plano gastando chamadas) — 2026-11-11
+- Legenda do YouTube com `yt-dlp` na `midia` e prompt de vídeo "como diretor" na `prompts-ia` — ideias de `Panniantong/Agent-Reach` e dos STYLE.md de `lemomo-ai/lemo-opuscar` (MIT), ambos recusados abaixo como instalação — 2026-11-11
+
 ## Instalar — fila, em ordem de valor
 | Ferramenta | O que resolve | Onde |
 |---|---|---|
@@ -109,6 +112,9 @@ Instalar só quando o trabalho for daquele tipo, e desinstalar depois:
 | `feature-dev`, `code-review` | trazem o próprio ciclo de planejar/construir/revisar; duplicam `architect`, `developer` e `reviewer` |
 | `pr-review-toolkit` | colide com o agent `reviewer` |
 | `disler/claude-code-damage-control` | exige `uv` ou Bun; coberto pelo `guard.sh` (2026-10-02) |
+| `tashfeenahmed/freellmapi` | empilha cotas gratuitas de ~34 provedores com chaves que o próprio usuário cria; o README diz "experimentação pessoal, não produção"; trocar o Claude por modelos fracos quebra agents e skills, e dado de cliente em cota gratuita pesa na LGPD (2026-11-11) |
+| `Panniantong/Agent-Reach` | Twitter/Reddit via cookies copiados do Chrome num Chromium anti-detecção proprietário (CloakBrowser): viola termos, arrisca banir a conta, binário não auditável; YouTube e GitHub já cobertos por `yt-dlp` (dica na `midia`) e `gh` (2026-11-11) |
+| `lemomo-ai/lemo-opuscar` (plugin) | o `setup.sh` da skill clona e dá `git reset --hard` em `~/lemo-opuscar` a cada uso (código novo da internet executado a cada atualização) e instala de 350 MB a 1 GB+; estrutura dos STYLE.md aproveitada na `prompts-ia` (2026-11-11) |
 | `karanb192/claude-code-hooks` | exige Node ≥18; coberto pelo `guard.sh` (2026-10-02) |
 | `security-guidance` | trocado pelo `claude-security`: faz uma chamada de LLM ao fim de todo turno e em `git commit`/`push` e exige Python; o `claude-security` roda só quando chamado (2026-10-03) |
 | `caveman` (JuliusBrussee/caveman) | o modo proxy intercepta o tráfego da API; a skill só encurta a prosa, que o `CLAUDE.md` já pede curta, e é feita para inglês. Ganho real citado no próprio repositório (estudo JetBrains): ~8,5% menos tokens de saída, não os 65% anunciados (2026-10-03) |

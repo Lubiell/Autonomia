@@ -2,6 +2,11 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-11-11
+- `/handoff` grava em `~/.claude/handoffs/` (antes, pasta temporária) e ganha a seção "o que não funcionou". Atalhos novos: `/retomar` lê o handoff mais recente e faz o briefing de retomada; `/aprender` extrai da sessão um padrão reutilizável e propõe onde gravá-lo, com aprovação antes de escrever. Ideias do `affaan-m/ECC`, sem instalar o plugin.
+- `CLAUDE.md`: validação no ambiente-alvo (deploy, staging, máquina do usuário) relatada à parte das checagens locais, como VERIFICADA, FALHOU ou NÃO FEITA.
+- `midia`: legenda do YouTube com `yt-dlp` sem baixar o vídeo. `prompts-ia`: seção "Vídeo" com prompt estilo diretor. Avaliados e recusados: `freellmapi`, `Agent-Reach` e o plugin `lemo-opuscar` (motivos em `decisoes.md`).
+
 ## 2026-11-10
 - Backup no Drive: reenvia quando muda qualquer branch ou tag, não só a principal (pushes em outras branches ficavam fora do backup); marca salva em `<repo>-refs.txt`. Agendamento a cada 15 minutos em vez de 1 hora. Sem `BACKUP_GH_TOKEN`, o job avisa que os privados ficaram de fora. Teste novo `tests/backup-drive.test.sh` no CI.
 
