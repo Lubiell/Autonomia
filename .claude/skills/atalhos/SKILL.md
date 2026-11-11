@@ -82,3 +82,5 @@ Escolha na tabela o atalho que corresponde ao pedido e siga as instruções comp
 |---|---|
 | Entrevista o usuário, uma pergunta por vez, até o plano ou a ideia ficar sem pontas soltas, antes de implementar. Use com /grill-me, opcionalmente seguido do assunto. | `grill-me` |
 | Gera um documento de passagem para outra sessão ou agent continuar o trabalho desta conversa. Use com /handoff, opcionalmente dizendo para que será a próxima sessão. | `handoff` |
+| Retoma numa sessão nova o trabalho registrado pelo /handoff, com briefing do estado e do que não repetir. Use com /retomar, opcionalmente com data ou caminho. | `retomar` |
+| Extrai da sessão um padrão reutilizável e propõe onde gravá-lo (linha em skill existente ou skill nova), com aprovação antes de escrever. Use com /aprender. | `aprender` |

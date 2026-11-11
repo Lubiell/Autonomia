@@ -27,6 +27,15 @@ Ordem que funciona na maioria das ferramentas:
 - Parâmetros variam por ferramenta (ex.: no Midjourney, `--ar 9:16` define a proporção): confira a documentação da que for usar.
 - Gere variações e escolha; refine o prompt pelo que deu errado.
 
+## Vídeo
+Descreva como um diretor, não como lista de tags (estrutura dos STYLE.md do lemomo-ai/lemo-opuscar, MIT):
+1. **Essência e o que NÃO é:** o estilo em 1–2 frases e os vizinhos a evitar (ex.: "aquarela translúcida; não é tinta a óleo nem vetor com textura").
+2. **Assunto e ação** em ordem: o que acontece primeiro, depois, por fim.
+3. **Câmera como vocabulário**, um movimento por ideia: dolly lateral = jornada; tilt vertical = escala; push-in = atenção ao detalhe; plano fixo = estudo.
+4. **Luz e paleta:** 3–5 cores nomeadas e um acento reservado a um só elemento recorrente.
+5. **Movimento:** o que se move e como (suave, sem tremer) e o que fica parado.
+6. **Som e legenda**, se a ferramenta aceitar.
+
 ## Limites
 - Não use nome de artista vivo, marca ou pessoa real para imitar estilo ou rosto; não crie imagem enganosa de pessoa real.
 - Imagem de produto em anúncio deve corresponder ao produto real.

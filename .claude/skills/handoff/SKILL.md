@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Escreva um documento curto para uma sessão nova, que não viu esta conversa, continuar de onde parou.
 
-Salve fora do repositório: na pasta temporária do sistema (ou na scratchpad da sessão, se houver). Diga o caminho no fim.
+Salve fora do repositório, em `~/.claude/handoffs/AAAA-MM-DD-<tema>.md` (crie a pasta se faltar), para o `/retomar` encontrar depois. Diga o caminho no fim. Se o usuário pedir um lugar específico, vale o pedido.
 
 Se o usuário passou argumento, ele descreve o foco da próxima sessão: priorize o que serve a esse foco.
 
@@ -18,9 +18,10 @@ Se o usuário passou argumento, ele descreve o foco da próxima sessão: prioriz
 3. **Decisões:** o que foi decidido e por quê, inclusive o que foi recusado — para a próxima sessão não refazer a discussão.
 4. **Arquivos-chave:** caminhos com uma linha sobre cada um.
 5. **Como verificar:** comandos de teste/build e o resultado esperado.
-6. **Pendências e bloqueios:** o que falta, o que espera o usuário.
-7. **Próximo passo:** a primeira ação concreta.
-8. **Skills e agents sugeridos** para a próxima sessão.
+6. **O que não funcionou:** cada abordagem tentada que falhou, com o motivo exato (erro, causa) — sem isso a próxima sessão repete o beco sem saída. Nada falhou: escreva "nenhuma".
+7. **Pendências e bloqueios:** o que falta, o que espera o usuário.
+8. **Próximo passo:** a primeira ação concreta.
+9. **Skills e agents sugeridos** para a próxima sessão.
 
 ## Regras
 - Não duplique o que já está registrado (PR, commit, `decisoes.md`, plano, issue): aponte o caminho ou a URL.
