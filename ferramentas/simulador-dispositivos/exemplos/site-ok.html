@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exemplo responsivo</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 16px; max-width: 720px; }
+  button { padding: 12px 20px; font-size: 16px; }
+  @media (prefers-color-scheme: dark) { body { background: #111; color: #eee; } }
+</style>
+</head>
+<body>
+<h1>Loja Exemplo</h1>
+<p>Página que se ajusta a qualquer tela.</p>
+<button id="local">Onde estou?</button>
+<p id="saida"></p>
+<script>
+  document.getElementById('local').addEventListener('click', () => {
+    navigator.geolocation.getCurrentPosition((p) => {
+      document.getElementById('saida').textContent = p.coords.latitude + ', ' + p.coords.longitude;
+    });
+  });
+</script>
+</body>
+</html>
