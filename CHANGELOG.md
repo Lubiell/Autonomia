@@ -2,6 +2,9 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-11-25
+- Ferramenta `ferramentas/simulador-dispositivos/`: abre um site ou app web como celular Android, iPhone, celular pequeno, tablet, notebook e monitor de PC (Playwright 1.63.0, Chromium), com GPS, rede 3G/offline, modo escuro e tela deitada simulados. Gera print e relatório por aparelho e aponta erro de JavaScript, arquivo que não carregou, rolagem lateral, falta de viewport e botão pequeno. Teste `tests/simulador.test.js` no CI.
+
 ## 2026-11-10
 - Backup no Drive: reenvia quando muda qualquer branch ou tag, não só a principal (pushes em outras branches ficavam fora do backup); marca salva em `<repo>-refs.txt`. Agendamento a cada 15 minutos em vez de 1 hora. Sem `BACKUP_GH_TOKEN`, o job avisa que os privados ficaram de fora. Teste novo `tests/backup-drive.test.sh` no CI.
 

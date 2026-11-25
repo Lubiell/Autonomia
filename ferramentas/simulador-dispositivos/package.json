@@ -1,0 +1,13 @@
+{
+  "name": "simulador-dispositivos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Abre um site ou app web como celular, tablet e PC e aponta os problemas.",
+  "license": "MIT",
+  "scripts": {
+    "simular": "node simular.js"
+  },
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}

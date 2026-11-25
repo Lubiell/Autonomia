@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exemplo com problemas</title>
+<style> .faixa { width: 1200px; background: #fc0; padding: 8px; } </style>
+</head>
+<body>
+<!-- Faixa de largura fixa, imagem que não existe e erro de JavaScript. -->
+<div class="faixa">Faixa com largura fixa de 1200px</div>
+<img src="imagem-que-nao-existe.png" alt="quebrada">
+<a href="#">x</a>
+<script>
+  console.error('falha simulada');
+  funcaoQueNaoExiste();
+</script>
+</body>
+</html>
