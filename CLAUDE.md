@@ -13,6 +13,7 @@ Fluxo: entender → investigar → planejar → implementar → testar → revis
 - Terminou o pedido, pare: não estenda a tarefa só para continuar trabalhando.
 - Passo que só roda na máquina do usuário: dê primeiro os comandos para o Termux (Android; Pydroid para Python puro) e só peça o PC se não houver como.
 - Script Python (ou outro código que roda): execute e teste antes de entregar ou commitar; falhou, corrija e rode de novo. Pydroid fica para janela e gráfico, que não rodam sem tela.
+- App ou site criado ou alterado: sempre que der, teste como o usuário usa antes de concluir, sem esperar pedido. Web: `qa-web` em celular, tablet e PC. App Android: monte o APK e rode no emulador do CI, quando o projeto tiver. Sem como testar, diga o que ficou sem teste e não declare pronto.
 - Enviar para um repositório: só com o teste passando, numa branch nova e com pull request; nunca direto no main. Com os testes locais e o CI do PR verdes, faça o merge do PR sozinho e confira que chegou ao main; CI vermelho ou sem CI, não faça merge.
 - Nunca invente arquivos, comandos, APIs, dependências ou resultados.
 - Menor alteração adequada. Sem refatoração não pedida. Preserve o trabalho existente.

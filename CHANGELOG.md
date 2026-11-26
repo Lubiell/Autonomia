@@ -2,6 +2,9 @@
 
 O que mudou no Autonomia, por data. Para atualizar uma instalação, rode o instalador de novo (`install.sh` ou `install.ps1`). O motivo de cada adoção ou recusa está em `.claude/skills/discover-resources/decisoes.md`.
 
+## 2026-11-26
+- Regra no `CLAUDE.md`: app ou site criado ou alterado é testado como o usuário usa sempre que der, sem esperar pedido (web pelo `qa-web` em celular, tablet e PC; APK no emulador do CI, quando houver). `qa-web` usa o simulador de aparelhos e testa 6 aparelhos em vez de 2 larguras.
+
 ## 2026-11-25
 - Ferramenta `ferramentas/simulador-dispositivos/`: abre um site ou app web como celular Android, iPhone, celular pequeno, tablet, notebook e monitor de PC (Playwright 1.63.0, Chromium), com GPS, rede 3G/offline, modo escuro e tela deitada simulados. Gera print e relatório por aparelho e aponta erro de JavaScript, arquivo que não carregou, rolagem lateral, falta de viewport e botão pequeno. Teste `tests/simulador.test.js` no CI.
 
